@@ -1,6 +1,9 @@
 import { createBoard } from './board.js';
 import { createZonesOverlay } from './zonesOverlay.js';
-import { ZONES_BY_ID } from './data/zones.js';
+import { ZONES_BY_ID, zoneCenter } from './data/zones.js';
+import { CHARACTERS_BY_ID } from './data/characters.js';
+import { createCharacterCard } from './cards/card.js';
+import './cards/card.css';
 
 const board = await createBoard({
   viewport: document.getElementById('viewport'),
@@ -32,6 +35,13 @@ const zonesOverlay = createZonesOverlay(document.getElementById('board'));
 window.addEventListener('keydown', (e) => {
   if (e.key === 'z' || e.key === 'Z') zonesOverlay.toggle();
 });
+
+// Prueba: personaje inicial en un solar exterior (paso 13B de la preparación).
+const lot = ZONES_BY_ID['lot-top-left-1'];
+const card = createCharacterCard(CHARACTERS_BY_ID['boiled-egg-seller']);
+card.style.width = `${lot.w * 100 * 0.92}%`;
+const { u, v } = zoneCenter(lot);
+board.place(card, u, v);
 
 // Expuesto para depurar desde la consola.
 window.iki = { board, zones: ZONES_BY_ID };

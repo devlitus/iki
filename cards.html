@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IKI · Cartas</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 40px;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 16px;
+        box-sizing: border-box;
+        background: linear-gradient(180deg, #7a4c2c, #5a3720);
+        font-family: system-ui, sans-serif;
+      }
+      .card.big { width: 360px; }
+    </style>
+  </head>
+  <body>
+    <div id="cards"></div>
+    <script type="module">
+      import './src/cards/card.css';
+      import { CHARACTERS } from './src/data/characters.js';
+      import { createCharacterCard } from './src/cards/card.js';
+      const root = document.getElementById('cards');
+      root.style.cssText = 'display:flex;flex-wrap:wrap;gap:40px;align-items:center;justify-content:center';
+      for (const c of CHARACTERS) {
+        const big = createCharacterCard(c);
+        big.classList.add('big');
+        root.append(big, createCharacterCard(c));
+      }
+    </script>
+  </body>
+</html>
