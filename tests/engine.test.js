@@ -1,53 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, OUTER_LOTS, KOBUN_PER_PLAYER } from '../src/game/setup.js';
+import { OUTER_LOTS, KOBUN_PER_PLAYER } from '../src/game/setup.js';
+import { newGame, tweak, placeAll, turnOf } from './helpers.js';
 import { createRng } from '../src/game/random.js';
 import { act, legalActions, whoseTurn } from '../src/game/engine.js';
 import { CHARACTERS_BY_ID } from '../src/data/characters.js';
 import { ZONES_BY_ID } from '../src/data/zones.js';
 
 // --- Ayudas ------------------------------------------------------------------------------------
-
-const BOARDS = ['yellow', 'blue', 'red', 'purple'];
-
-/** Partida de n jugadores con los personajes iniciales ya puestos: lista para la fase A del mes 1. */
-function newGame(n = 3, seed = 7) {
-  let g = createGame({ players: BOARDS.slice(0, n).map((boardId) => ({ boardId })), seed });
-  const cards = [...g.initialCharacters];
-  // Del último solar exterior hacia atrás: con 3 jugadores deja libre lot-top-left-1, que usan muchos tests.
-  [...OUTER_LOTS].reverse().slice(0, n).forEach((lot, i) => {
-    g = act(g, { type: 'placeInitial', card: cards[i], lot });
-  });
-  return g;
-}
-
-/** Copia con cambios: edit(g) modifica el borrador. */
-function tweak(g, edit) {
-  const copy = structuredClone(g);
-  edit(copy);
-  return copy;
-}
-
-/** Coloca los Ikizama: `slots[k]` es el espacio del k-ésimo jugador en el orden de colocación. */
-function placeAll(g, slots) {
-  const order = [...g.order];
-  slots.forEach((slot) => (g = act(g, { type: 'placeIkizama', slot })));
-  return { g, order };
-}
-
-/** Lleva la partida hasta el turno del jugador con ese espacio de Ikizama. */
-function turnOf(g, slot) {
-  const all = ['1-4', '1', '2', '3', '4'];
-  const slots = [slot, ...all.filter((s) => s !== slot)].slice(0, g.players.length);
-  g = placeAll(g, slots).g;
-  if (g.turn.slot === slot) return g;
-  // El turno de ese espacio no es el primero: se salta a él sin jugar los anteriores.
-  return tweak(g, (d) => {
-    const i = d.players.findIndex((p) => p.ikizama === slot);
-    d.turnList = [i, ...d.turnList.filter((x) => x !== i)];
-    d.turn = { index: 0, player: i, slot, step: 'b1', didShop: false, didChar: false };
-  });
-}
 
 const player = (g, slot = g.turn.slot) => g.players[g.turn.player];
 const throws = (fn, re) => assert.throws(fn, re);
@@ -462,30 +422,35 @@ function playMonth(g) {
   return g;
 }
 
-test('el mes 3 (Día de Pago) se queda en la fase de evento', () => {
+test('el mes 3 (Día de Pago) se resuelve y empieza el mes 4 con las cartas de Verano', () => {
   let g = newGame();
-  g = playMonth(playMonth(g));
-  assert.equal(g.month, 3);
-  g = playMonth(g);
-  assert.equal(g.phase, 'event');
+  g = playMonth(playMonth(playMonth(g)));
+  // Sin arroz suficiente puede quedar una decisión de comida; la respondemos con la primera opción legal.
+  while (g.pending) g = act(g, legalActions(g)[0]);
+  assert.equal(g.month, 4);
+  assert.equal(g.phase, 'ikizama');
+  assert.equal(g.row.length, 4);
+  for (const r of g.row) assert.equal(CHARACTERS_BY_ID[r.card].season, 'summer');
 });
 
 // --- Partidas al azar --------------------------------------------------------------------------
 
-test('partidas al azar con jugadas legales: sin errores y con el estado siempre coherente', () => {
-  for (const seed of [1, 2, 3, 4, 5, 6]) {
+test('partidas al azar con jugadas legales: llegan al Día de Año Nuevo con el estado siempre coherente', () => {
+  for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
     const rng = createRng(seed * 977);
     const n = 3 + (seed % 2);
     let g = newGame(n, seed);
     let steps = 0;
-    while (g.phase !== 'event' && steps++ < 3000) {
+    while (g.phase !== 'newyear' && steps++ < 20000) {
       const options = legalActions(g);
       assert.ok(options.length > 0, `sin jugadas en ${g.phase}/${g.turn?.step} (semilla ${seed})`);
       g = act(g, options[Math.floor(rng.next() * options.length)]);
       assertCoherent(g);
     }
-    assert.equal(g.phase, 'event', `la semilla ${seed} no llegó al primer Día de Pago`);
-    assert.equal(g.month, 3);
+    assert.equal(g.phase, 'newyear', `la semilla ${seed} no llegó al mes 13`);
+    assert.equal(g.month, 13);
+    assert.equal(g.pending, null);
+    assert.ok(g.players.every((p) => p.oyakata === null), 'los Oyakata se recogen');
   }
 });
 

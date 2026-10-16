@@ -70,11 +70,13 @@ export function advanceFire(g, p, n = 1) {
 export const characterLots = (g, owner) =>
   Object.entries(g.lots).filter(([, l]) => l.kind === 'character' && l.owner === owner).map(([id]) => id);
 
-/** Retira el personaje del solar: su dueño recupera el Kobun. Devuelve la carta. */
+/** Quita la carta del solar (personaje o edificio): su dueño recupera el Kobun. Devuelve el solar. */
 export function removeLot(g, lotId) {
   const lot = g.lots[lotId];
   delete g.lots[lotId];
-  g.players[lot.owner].kobun += 1;
+  const owner = g.players[lot.owner];
+  owner.kobun += 1;
+  if (lot.kind === 'building') owner.buildings = owner.buildings.filter((b) => b !== lot.card);
   return lot;
 }
 

@@ -141,6 +141,9 @@ Luego: recoger cartas, elegir tipo del Marionetista (Comodín) y puntuación fin
 > interfaz (guarda los estados anteriores del turno), no en el motor. `pending` solo hará falta para las decisiones
 > que surgen en mitad de un evento (comida, incendio, Marionetista):
 
+> **Hecho en la fase C**: `game.pending` (`{ type, player, … }`) y la acción `resolve`. Solo `food` y `avoidFire`;
+> el Marionetista se decidirá en la puntuación final.
+
 El motor se para y pide una elección cuando hace falta:
 - solar donde colocar la carta contratada / el edificio;
 - qué personaje propio gana experiencia (Costurera, Pipa de Invierno…);

@@ -1,8 +1,9 @@
 import { CHARACTERS_BY_ID } from '../data/characters.js';
-import { SEASONS } from '../data/decks.js';
 import { ZONES_BY_ID, LOT_IDS, STREET_ENTRY, LAP_FROM } from '../data/zones.js';
 import { placeInitialCard, currentPlacer } from './setup.js';
 import { activateCharacter, activateShop } from './abilities.js';
+import { startEvent, resolvePending } from './events.js';
+import { startMonth, seasonOf } from './month.js';
 import { advanceFire, assertFreeLot, characterLots, gainXp, log, pay, receive, rule } from './state.js';
 
 /**
@@ -13,7 +14,8 @@ import { advanceFire, assertFreeLot, characterLots, gainXp, log, pay, receive, r
  *   'initial-characters' → cada jugador coloca su personaje inicial (setup.js)
  *   'ikizama'            → fase A: se coloca el Ikizama en el marcador, por orden de Extinción de Incendios
  *   'actions'            → fase B: turnos por orden del Ikizama; `game.turn` es el turno en curso
- *   'event'              → fase C: Evento del mes (Día de Pago e Incendio: aún sin implementar)
+ *   'event'              → fase C: Evento del mes (Día de Pago, Incendio); solo se ve cuando espera una decisión
+ *   'newyear'            → mes 13, Día de Año Nuevo (aún sin implementar)
  *
  * Acciones (`{ type, … }`):
  *   placeInitial { card, lot }          paso 13 de la preparación
@@ -24,15 +26,12 @@ import { advanceFire, assertFreeLot, characterLots, gainXp, log, pay, receive, r
  *   shop { …elección }                  B2: la tienda de la casilla (ver abilities.js)
  *   character { lot, …elección }        B2: activa un personaje de los puestos de la casilla
  *   endTurn                             B3: recupera el Ikizama y pasa el turno
+ *   resolve { drop? | use? }            fase C: contesta la decisión pendiente (`game.pending`, ver events.js)
  */
 
 export const IKIZAMA_SLOTS = ['1-4', '1', '2', '3', '4'];
 export const INCOME = 4;
-/** Meses con un Evento simple (+1 mon en cada carta de la fila). El resto de meses tiene Día de Pago o Incendio. */
-const PLAIN_EVENT_MONTHS = [1, 2, 4, 7, 10];
-const REVEALED_PER_MONTH = 4;
-
-export const seasonOf = (month) => SEASONS[Math.min(3, Math.floor((month - 1) / 3))];
+export { seasonOf };
 
 /** Aplica una acción. Devuelve el estado nuevo; lanza un Error si no es válida. */
 export function act(game, action) {
@@ -45,22 +44,13 @@ export function act(game, action) {
 
 /** Jugador al que le toca decidir ahora (o null si la partida no espera a nadie). */
 export function whoseTurn(g) {
+  if (g.pending) return g.pending.player;
   if (g.phase === 'ikizama') return currentPlacer(g);
   if (g.phase === 'actions') return g.turn.player;
   return null;
 }
 
 // --- Fases -------------------------------------------------------------------------------------
-
-/** Inicio de mes: se muestran las 4 primeras cartas del mazo de la estación y empieza la fase A. */
-function startMonth(g) {
-  const deck = g.decks[seasonOf(g.month).id];
-  for (let i = 0; i < REVEALED_PER_MONTH && deck.length; i++) g.row.push({ card: deck.shift(), mons: 0 });
-  g.phase = 'ikizama';
-  g.order = [...g.fireStack]; // mes 1: sentido horario desde el inicial; luego, por Extinción de Incendios
-  g.turn = null;
-  log(g, { type: 'month', month: g.month });
-}
 
 /** Fase B: turnos por orden del Ikizama, empezando por el más a la izquierda. */
 function startActions(g) {
@@ -84,17 +74,7 @@ function endTurn(g) {
   g.players[player].ikizama = null; // B3
   if (index + 1 < g.turnList.length) return beginTurn(g, index + 1);
   g.turn = null;
-  endOfActions(g);
-}
-
-/** Fase C. Por ahora solo los meses con Evento simple; Día de Pago e Incendio se quedan esperando. */
-function endOfActions(g) {
-  g.phase = 'event';
-  if (PLAIN_EVENT_MONTHS.includes(g.month)) {
-    g.row.forEach((r) => (r.mons += 1));
-    g.month += 1;
-    startMonth(g);
-  }
+  startEvent(g);
 }
 
 // --- Acciones ----------------------------------------------------------------------------------
@@ -200,6 +180,11 @@ const HANDLERS = {
     inStep(g, 'business');
     endTurn(g);
   },
+
+  resolve(g, a) {
+    inPhase(g, 'event');
+    resolvePending(g, a);
+  },
 };
 
 // --- Jugadas legales ---------------------------------------------------------------------------
@@ -220,6 +205,8 @@ export function legalActions(g) {
 }
 
 function candidates(g) {
+  if (g.pending?.type === 'avoidFire') return [{ type: 'resolve', use: true }, { type: 'resolve', use: false }];
+  if (g.pending?.type === 'food') return combinations(characterLots(g, g.pending.player), g.pending.drop).map((drop) => ({ type: 'resolve', drop }));
   if (g.phase === 'ikizama') return IKIZAMA_SLOTS.map((slot) => ({ type: 'placeIkizama', slot }));
   if (g.phase !== 'actions') return [];
   const p = g.turn.player;
@@ -291,4 +278,10 @@ function characterCandidates(g, lot, p) {
     default:
       return [base];
   }
+}
+
+/** Todas las formas de elegir `k` elementos de `list`. */
+function combinations(list, k) {
+  if (k === 0) return [[]];
+  return list.flatMap((x, i) => combinations(list.slice(i + 1), k - 1).map((rest) => [x, ...rest]));
 }

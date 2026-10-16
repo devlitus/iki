@@ -104,6 +104,8 @@ export function createGame({ players, seed }) {
     pickOrder,
     lots: {}, // lotId → { kind: 'character' | 'building', card, owner, xp }
     log: [],
+    pending: null, // decisión que espera a un jugador (ver events.js)
+    event: null, // Evento del mes en curso
   };
 }
 
