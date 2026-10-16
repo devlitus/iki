@@ -86,6 +86,8 @@ export function createPlayerModal() {
         <span>Marcador ${st.score.track}</span>
         <span>Variedad ${st.score.variety}</span>
         <span>Pescado ${st.score.fish}</span>
+        <span>Tabaco ${st.score.tobacco}</span>
+        <span>Edificios ${st.score.buildings}</span>
         <span>Recursos ${st.score.resources}</span>
         <b>= ${st.score.total} IKI</b>
       </footer>`;

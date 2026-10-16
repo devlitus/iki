@@ -20,8 +20,11 @@ export const resourceChips = ({ mon, rice, sandal, wood, koban }) => [
 ].filter(([, n], i) => n > 0 || i < 3)
   .map(([res, n, label]) => `<span class="res" title="${label}"><span class="ic ic-${res}"></span>×${n}</span>`).join('');
 
-/** Mazos de Personaje (paso 8) y personajes iniciales (paso 13A). */
-export function renderDecks(el, game, { selectedCard, onSelectCard }) {
+/**
+ * Mazos de Personaje (paso 8) y, debajo, los personajes iniciales (paso 13A) o, ya en juego, la fila de cartas del
+ * mes con los mons que tiene encima cada una. En la fase B1 se pueden pulsar las que el jugador de turno puede contratar.
+ */
+export function renderDecks(el, game, { selectedCard, onSelectCard, hireable = new Set(), hiring = null, onSelectHire }) {
   const picker = currentPicker(game);
   const decks = SEASONS.map((s) => `
     <div class="deck" data-steps="8" title="Mazo de ${s.name}: ${game.decks[s.id].length} cartas">
@@ -29,23 +32,38 @@ export function renderDecks(el, game, { selectedCard, onSelectCard }) {
       <span>${s.name}<br>${game.decks[s.id].length}</span>
     </div>`).join('');
 
-  const initial = game.initialCharacters.length
-    ? `<div class="initial-row" data-steps="13">
+  let lower;
+  if (game.initialCharacters.length) {
+    lower = `<div class="initial-row" data-steps="13">
         <span class="label">Personajes iniciales${picker != null ? ` · elige ${PLAYER_BOARDS_BY_ID[game.players[picker].boardId].name}` : ''}</span>
         <div class="initial-cards">${game.initialCharacters.map((id) => `
-          <button type="button" class="initial-card${id === selectedCard ? ' selected' : ''}" data-card="${id}"
+          <button type="button" class="initial-card${id === selectedCard ? ' selected' : ''}" data-card="${id}" data-zoom="${CHARACTERS_BY_ID[id].scan}"
             ${picker == null ? 'disabled' : ''} title="${CHARACTERS_BY_ID[id].name}">
             <img src="${CHARACTERS_BY_ID[id].scan}" alt="${CHARACTERS_BY_ID[id].name}" draggable="false">
           </button>`).join('')}</div>
         <p>${selectedCard ? 'Ahora pulsa un solar exterior libre del tablero.' : 'Pulsa una carta y después un solar exterior libre.'}</p>
-      </div>`
-    : `<div class="initial-row"><span class="label">Fila de personajes</span>
+      </div>`;
+  } else if (game.phase !== 'initial-characters') {
+    const choosing = game.phase === 'actions' && game.turn?.step === 'b1';
+    lower = `<div class="initial-row" data-steps="13"><span class="label">Fila de personajes · ${game.row.length}</span>
+        <div class="initial-cards row-cards${choosing ? ' choosing' : ''}">${game.row.map(({ card, mons }) => `
+          <button type="button" class="initial-card${card === hiring ? ' selected' : ''}" data-hire="${card}" data-zoom="${CHARACTERS_BY_ID[card].scan}"
+            ${hireable.has(card) ? '' : 'disabled'} title="${CHARACTERS_BY_ID[card].name} · cuesta ${CHARACTERS_BY_ID[card].cost} mons${mons ? ` (con ${mons} mons encima)` : ''}">
+            <img src="${CHARACTERS_BY_ID[card].scan}" alt="${CHARACTERS_BY_ID[card].name}" draggable="false">
+            ${mons ? `<span class="mons-on-card" title="${mons} mons encima: ayudan a pagar la carta"><span class="ic ic-mon"></span>${mons}</span>` : ''}
+          </button>`).join('')}</div>
+        <p class="muted">${game.row.length ? 'Los mons de encima se los queda quien la contrate.' : 'No quedan cartas este mes.'}</p></div>`;
+  } else {
+    lower = `<div class="initial-row"><span class="label">Fila de personajes</span>
         <div class="row-slots">${'<span class="slot"></span>'.repeat(4)}</div>
-        <p>El mes 1 empieza mostrando 4 cartas de Primavera.</p></div>`;
+        <p>Cada mes se muestran 4 cartas de la estación.</p></div>`;
+  }
 
-  el.innerHTML = `<div class="decks">${decks}</div>${initial}`;
-  el.querySelectorAll('.initial-card').forEach((b) =>
+  el.innerHTML = `<div class="decks">${decks}</div>${lower}`;
+  el.querySelectorAll('.initial-card[data-card]').forEach((b) =>
     b.addEventListener('click', () => onSelectCard(b.dataset.card === selectedCard ? null : b.dataset.card)));
+  el.querySelectorAll('.initial-card[data-hire]').forEach((b) =>
+    b.addEventListener('click', () => onSelectHire?.(b.dataset.hire === hiring ? null : b.dataset.hire)));
 }
 
 /** Edificios (paso 6) y reserva (paso 7). */
@@ -80,7 +98,9 @@ export function renderPlayers(el, game, { onOpenBoard }) {
   const picker = currentPicker(game);
   const active = activePlayer(game);
   // Debajo del activo, los siguientes: en el paso 13 por orden de elección, después por orden de turno.
-  const sequence = picker != null ? game.pickOrder : game.turnOrder;
+  const sequence = picker != null ? game.pickOrder
+    : (game.phase === 'actions' || game.phase === 'newyear') && game.turnList ? game.turnList
+    : game.phase === 'ikizama' ? game.order : game.turnOrder;
   const from = sequence.indexOf(active);
   const order = [...sequence.slice(from), ...sequence.slice(0, from)];
 
@@ -93,7 +113,7 @@ export function renderPlayers(el, game, { onOpenBoard }) {
       <article class="seat${index === active ? ' active' : ''}${picker === index ? ' picking' : ''}" data-player="${index}" data-steps="9 10 11 12 13" style="--player-color: ${board.color}" title="Ver el tablero de ${board.name}">
         <header class="who">
           <h3>${board.name}</h3>
-          ${index === active ? '<span class="badge playing">jugando</span>' : ''}
+          ${index === active && game.phase !== 'ended' ? '<span class="badge playing">jugando</span>' : ''}
           ${index === game.starter ? '<span class="badge">inicial</span>' : ''}
           <span class="dice" title="${p.rolls.length > 1 ? 'Tirada y desempates' : 'Tirada'}">
             ${p.rolls.map((r, i) => die(r, i < p.rolls.length - 1 ? 'tied' : (index === game.starter ? 'win' : ''))).join('')}
@@ -110,11 +130,13 @@ export function renderPlayers(el, game, { onOpenBoard }) {
           <div title="Pipas y Bolsas de Tabaco"><dt>Pipa · Tabaco</dt><dd>${st.pipes} · ${st.tobacco}</dd></div>
           <div title="Tipos de Personaje distintos contratados"><dt>Variedad</dt><dd>${st.types.length}/${MAX_TYPES}</dd></div>
         </dl>
-        <p class="status muted">
+        <p class="status muted">${picker != null || game.phase === 'ready' || game.phase === 'initial-characters' ? `
           <span>Turno ${st.turn}.º</span>
           <span>${lot
             ? `${CHARACTERS_BY_ID[lot[1].card].name}`
-            : picker === index ? '<b>Elige personaje inicial</b>' : `Elige personaje ${game.pickOrder.indexOf(index) + 1}.º`}</span>
+            : picker === index ? '<b>Elige personaje inicial</b>' : `Elige personaje ${game.pickOrder.indexOf(index) + 1}.º`}</span>` : `
+          <span title="Casilla del marcador de Ikizama">Ikizama: ${p.ikizama ?? 'en su tablero'}</span>
+          <span title="Casilla de la calle donde está su Oyakata">${st.oyakata}</span>`}
         </p>
       </article>`;
   }).join('');

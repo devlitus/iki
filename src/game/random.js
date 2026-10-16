@@ -13,6 +13,8 @@ export function createRng(seed) {
   };
   return {
     next,
+    /** Estado interno: createRng(state) continúa la secuencia justo donde se quedó. */
+    state: () => a,
     /** Entero en [1, sides]. */
     roll: (sides = 6) => 1 + Math.floor(next() * sides),
     /** Copia mezclada (Fisher-Yates). */

@@ -1,0 +1,81 @@
+/* En juego la columna izquierda gana ancho: lleva el panel de turno. */
+#app.playing { grid-template-columns: clamp(250px, 19vw, 360px) minmax(0, 1fr) clamp(240px, 17vw, 320px); }
+
+/* Panel de turno */
+#turn { gap: 8px; }
+#turn[hidden] { display: none; }
+.turn-head h2 { margin: 0; font: 400 22px/1.1 'Patrick Hand SC', system-ui, sans-serif; }
+.turn-who { margin: 2px 0 0; padding-left: 8px; border-left: 4px solid var(--player-color); }
+.who-name { color: var(--player-color); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6); }
+.turn-body { display: flex; flex-direction: column; gap: 6px; }
+.turn-body p { margin: 0; }
+.turn-error { margin: 0; padding: 4px 8px; border-radius: 5px; background: rgba(214, 50, 58, 0.35); }
+.preview { padding: 4px 8px; border-radius: 5px; background: rgba(0, 0, 0, 0.25); }
+.btn.wide { width: 100%; text-align: left; }
+.btn.primary:not(:disabled) { background: #3f7f4a; border-color: #6fb37a; }
+.btn.on { border-color: #ffd27a; background: rgba(255, 210, 122, 0.25); }
+.slots, .zone-list, .stepper { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.stepper > span { margin-right: auto; }
+.check { display: flex; align-items: center; gap: 6px; }
+.biz { display: flex; flex-direction: column; gap: 5px; padding: 6px 8px; border-radius: 6px; background: rgba(0, 0, 0, 0.2); }
+.biz h3 { margin: 0; font: 400 17px/1.1 'Patrick Hand SC', system-ui, sans-serif; }
+.picks { display: flex; flex-wrap: wrap; gap: 5px; }
+.pick { width: 46px; padding: 0; border: 2px solid transparent; border-radius: 5px; background: none; cursor: pointer; }
+.pick img { display: block; width: 100%; border-radius: 3px; }
+.pick:hover:not(:disabled) { transform: translateY(-2px); }
+.pick.selected { border-color: #ffd27a; }
+.pick:disabled { opacity: 0.35; cursor: default; }
+.char { display: grid; grid-template-columns: 46px 1fr; gap: 8px; align-items: start; }
+.char img { width: 100%; border-radius: 3px; }
+.char .ability { margin: 2px 0 0; }
+.swap { display: flex; align-items: center; gap: 4px; }
+.swap select { flex: 1; min-width: 0; font: inherit; }
+.turn-log ol { margin: 4px 0 0; padding-left: 16px; display: flex; flex-direction: column; gap: 2px; font-size: 12px; }
+.turn-log summary { cursor: pointer; }
+.ic-iki { width: auto; padding: 0 3px; border-radius: 3px; background: #2b2622; }
+
+/* Fila de cartas: las que no se pueden contratar se apagan mientras se elige */
+.row-cards.choosing .initial-card:disabled { opacity: 0.35; }
+.initial-card { position: relative; }
+.mons-on-card { position: absolute; left: 3px; bottom: 3px; display: inline-flex; align-items: center; gap: 2px; padding: 0 5px; border-radius: 99px; background: rgba(0, 0, 0, 0.75); font-size: 11px; font-weight: 700; }
+
+/* Piezas del tablero con imagen */
+#pieces .piece { display: block; height: auto; pointer-events: auto; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6)); }
+.piece-calendar { width: 3%; }
+.piece-market { width: 3.2%; }
+.piece-facedown { width: 3.4%; }
+.piece-fire { width: 2.3%; }
+.piece-oyakata { width: 1.6%; }
+.piece-ikizama { width: 1.5%; }
+#pieces .tok-score { width: 2.2%; font-size: clamp(6px, 0.5vw, 10px); }
+#pieces .kobun-on-card { position: absolute; left: 87%; top: 67%; bottom: auto; width: 15%; transform: translate(-50%, -50%); border: 0; background: none; box-shadow: none; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7)); }
+#pieces .kobun-on-card.on-building { left: 50%; top: auto; bottom: 2%; transform: translateX(-50%); }
+
+/* Ampliación de cartas al pasar el ratón */
+#card-zoom { position: fixed; z-index: 40; height: min(60vh, 520px); border-radius: 8px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7); pointer-events: none; }
+#card-zoom[hidden] { display: none; }
+
+/* Diálogos: resumen del Evento y puntuación final */
+.iki-dialog { max-width: min(760px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 16px 20px; color: var(--ink); border: 2px solid #ffd27a; border-radius: 10px; background: var(--table-dark); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); }
+.iki-dialog::backdrop { background: rgba(10, 6, 3, 0.72); }
+.iki-dialog h2 { margin: 0 0 8px; font: 400 28px/1 'Patrick Hand SC', system-ui, sans-serif; }
+.iki-dialog ul { margin: 0 0 12px; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }
+.iki-dialog footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+#final-table { width: min(980px, calc(100vw - 32px)); }
+.score-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+.score-table th, .score-table td { padding: 6px 10px; text-align: center; border-bottom: 1px solid rgba(243, 233, 218, 0.15); }
+.score-table tbody th { text-align: left; font-weight: 400; opacity: 0.85; }
+.score-table thead th { vertical-align: bottom; color: var(--player-color); }
+.score-table .winner { background: rgba(255, 210, 122, 0.16); }
+.score-table .total td, .score-table .total th { font-size: 20px; font-weight: 700; color: #ffd27a; border-top: 2px solid rgba(243, 233, 218, 0.4); }
+.final-detail { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; }
+.final-detail section { padding: 8px; border-left: 4px solid var(--player-color); border-radius: 6px; background: var(--panel); font-size: 12px; }
+.final-detail h3 { margin: 0 0 4px; color: var(--player-color); font: 400 18px/1 'Patrick Hand SC', system-ui, sans-serif; }
+.final-detail p { margin: 0 0 3px; }
+
+@media (max-height: 560px), (max-width: 1000px) {
+  #app.playing { grid-template-columns: clamp(170px, 22vw, 230px) minmax(0, 1fr) clamp(170px, 22vw, 230px); }
+  .turn-head h2 { font-size: 17px; }
+  .iki-dialog { padding: 10px 12px; }
+  .score-table th, .score-table td { padding: 3px 6px; }
+}

@@ -56,12 +56,24 @@ const STREET_COLS = [[0.0240, 0.2256], [0.2495, 0.4512], [0.5490, 0.7500], [0.77
 const STREET_ROWS = { top: [0.4572, 0.4979], bottom: [0.5043, 0.5449] };
 const STREET_ORDER = ['street-t4', 'street-t3', 'street-t2', 'street-t1', 'street-b1', 'street-b2', 'street-b3', 'street-b4'];
 
+// Tienda de cada casilla (el pergamino de su lado de la calle) y sus 2 puestos: los solares de detrás del pergamino.
+const STREET_SHOPS = {
+  top: ['shop-rice', 'shop-sandals', 'shop-exchange', 'shop-fish'],
+  bottom: ['shop-fire-tower', 'shop-tobacco', 'shop-pawn', 'shop-construction'],
+};
+const stallsOf = (row, i) => {
+  const side = i < 2 ? 'left' : 'right';
+  const first = (i % 2) * 2 + 1;
+  return [`lot-${row}-${side}-${first}`, `lot-${row}-${side}-${first + 1}`];
+};
+
 const street = [];
 for (const [row, [y0, y1]] of Object.entries(STREET_ROWS)) {
   STREET_COLS.forEach(([x0, x1], i) => {
     const id = `street-${row[0]}${i + 1}`;
     const next = STREET_ORDER[(STREET_ORDER.indexOf(id) + 1) % STREET_ORDER.length];
-    street.push(rect(id, 'street', `Calle ${row === 'top' ? 'arriba' : 'abajo'} ${i + 1}`, x0, y0, x1 - x0, y1 - y0, { next }));
+    street.push(rect(id, 'street', `Calle ${row === 'top' ? 'arriba' : 'abajo'} ${i + 1}`, x0, y0, x1 - x0, y1 - y0,
+      { next, shop: STREET_SHOPS[row][i], stalls: stallsOf(row, i) }));
   });
 }
 street.push(rect('street-lap', 'street', 'Casilla de vuelta (+1 experiencia a todos tus personajes)', 0.4605, 0.4410, 0.0365, 0.0270));
@@ -120,3 +132,32 @@ export function zoneCenter(zone) {
 
 /** Radio vertical de un círculo en fracción del ALTO (el radio r va en fracción del ancho). */
 export const radiusV = (zone) => zone.r * BOARD_ASPECT;
+
+// --- Reglas ligadas a las zonas ---------------------------------------------------------------
+
+/** Casillas de la calle en el sentido de las flechas. */
+export const STREET = STREET_ORDER;
+/** Al pasar de esta casilla a la siguiente se cruza la casilla de vuelta (+1 experiencia a todos tus personajes). */
+export const LAP_FROM = 'street-t3';
+/** Primera casilla al salir de la zona inicial: se entra por la casilla de vuelta sin completar vuelta. */
+export const STREET_ENTRY = 'street-t2';
+
+/**
+ * Nagayas: 4 manzanas de 4 solares, ordenados desde el solar exterior (origen del incendio, con el estampado de su
+ * loseta de Incendio) hacia el cruce central.
+ */
+export const NAGAYAS = [
+  { id: 'top-left', pattern: 'yellow', lots: ['lot-top-left-1', 'lot-top-left-2', 'lot-top-left-3', 'lot-top-left-4'] },
+  { id: 'top-right', pattern: 'blue', lots: ['lot-top-right-4', 'lot-top-right-3', 'lot-top-right-2', 'lot-top-right-1'] },
+  { id: 'bottom-left', pattern: 'red', lots: ['lot-bottom-left-1', 'lot-bottom-left-2', 'lot-bottom-left-3', 'lot-bottom-left-4'] },
+  { id: 'bottom-right', pattern: 'purple', lots: ['lot-bottom-right-4', 'lot-bottom-right-3', 'lot-bottom-right-2', 'lot-bottom-right-1'] },
+];
+export const NAGAYAS_BY_ID = Object.fromEntries(NAGAYAS.map((n) => [n.id, n]));
+
+/** Grupos de la Bonificación por Armonía: los 4 Nagayas y el 5.º grupo de las esquinas. */
+export const HARMONY_GROUPS = [
+  ...NAGAYAS.map((n) => n.lots),
+  ZONES.filter((z) => z.group === 'lots' && z.corner).map((z) => z.id),
+];
+
+export const LOT_IDS = ZONES.filter((z) => z.group === 'lots').map((z) => z.id);
