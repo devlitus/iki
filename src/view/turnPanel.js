@@ -143,6 +143,7 @@ function b1Body(game, { ui }) {
   const def = ui.hire && CHARACTERS_BY_ID[ui.hire];
   const lots = ui.hire ? legalLots(game, (lot) => ({ type: 'hire', card: ui.hire, lot })) : [];
   let hint = 'Elige una carta de la fila para contratarla.';
+  if (!hireableCards(game).size) hint = 'No puedes contratar a nadie de la fila (mons, Kobun o solares libres): elige Ingresos.';
   if (def) hint = lots.length ? `Contratar a <b>${def.name}</b>: pulsa un solar libre del tablero. Los solares de las esquinas cuestan 2 mons más.`
     : `No puedes contratar a ${def.name} ahora (mons, Kobun o solares).`;
   return `

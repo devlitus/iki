@@ -97,7 +97,7 @@ const SHOPS = {
       const e = pipe.effect;
       if (e.fire) advanceFire(g, p, e.fire);
       if (e.gain) receive(g, p, toCost(e.gain));
-      if (e.xp) xpToOwn(g, p, a.target);
+      if (e.xp && characterLots(g, p).length) xpToOwn(g, p, a.target); // sin personajes en el tablero, la experiencia se pierde
     }
     if (a.bag) g.players[p].tobacco.push(takeToken(g, p, a.bag, 'bag').id);
   },

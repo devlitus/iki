@@ -289,6 +289,12 @@ test('pipa de Invierno de experiencia: sube un personaje propio', () => {
   const done = act(g, { type: 'shop', pipe: 'winter-pipe-2', target: mine });
   assert.equal(done.lots[mine].xp, 1);
   throws(() => act(g, { type: 'shop', pipe: 'winter-pipe-2', target: 'lot-top-left-1' }), /tus personajes/);
+
+  // Sin personajes en el tablero se puede comprar igual (la pipa dobla el tabaco); la experiencia se pierde.
+  const alone = tweak(g, (d) => {
+    for (const [id, l] of Object.entries(d.lots)) if (l.owner === d.turn.player) delete d.lots[id];
+  });
+  assert.deepEqual(act(alone, { type: 'shop', pipe: 'winter-pipe-2' }).players[g.turn.player].pipes, ['winter-pipe-2']);
 });
 
 test('Lugar de Construcción: 1 mon → arroz, o 1 mon + coste → edificio', () => {
