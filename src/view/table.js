@@ -1,31 +1,32 @@
 import { PLAYER_BOARDS_BY_ID } from '../data/playerBoards.js';
 import { SEASONS, BUILDINGS_BY_ID, BUILDING_BACK } from '../data/decks.js';
 import { CHARACTERS_BY_ID } from '../data/characters.js';
-import { currentPicker } from '../game/setup.js';
+import { currentPicker, activePlayer } from '../game/setup.js';
+import { playerStats, MAX_FISH, MAX_TYPES } from '../game/playerStats.js';
 
 /**
- * Mesa alrededor del tablero: mazos arriba, edificios y reserva a la derecha, un asiento por jugador en
- * cada lado del tablero. Todo lo que dibuja un paso de la preparación lleva `data-steps` para que el
+ * Mesa alrededor del tablero: mazos, edificios y reserva en la columna izquierda; los jugadores en la
+ * derecha, en fichas compactas con el activo arriba. Todo lo que dibuja un paso de la preparación lleva `data-steps` para que el
  * panel de pasos lo pueda resaltar.
  */
 
 const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
 
-const die = (value, cls = '') => `<span class="die ${cls}" role="img" aria-label="Dado: ${value}">${
+export const die = (value, cls = '') => `<span class="die ${cls}" role="img" aria-label="Dado: ${value}">${
   Array.from({ length: 9 }, (_, i) => `<i class="${PIPS[value].includes(i) ? 'pip' : ''}"></i>`).join('')}</span>`;
 
-const resourceChips = ({ mon, rice, sandal, wood, koban }) => [
+export const resourceChips = ({ mon, rice, sandal, wood, koban }) => [
   ['mon', mon, 'Mons'], ['rice', rice, 'Arroz'], ['sandal', sandal, 'Sandalias'], ['wood', wood, 'Madera'], ['koban', koban, 'Koban'],
 ].filter(([, n], i) => n > 0 || i < 3)
   .map(([res, n, label]) => `<span class="res" title="${label}"><span class="ic ic-${res}"></span>×${n}</span>`).join('');
 
-/** Mazos de Personaje (paso 8) y personajes iniciales (paso 13A), encima del tablero. */
+/** Mazos de Personaje (paso 8) y personajes iniciales (paso 13A). */
 export function renderDecks(el, game, { selectedCard, onSelectCard }) {
   const picker = currentPicker(game);
   const decks = SEASONS.map((s) => `
     <div class="deck" data-steps="8" title="Mazo de ${s.name}: ${game.decks[s.id].length} cartas">
       <div class="pile"><img src="${s.back}" alt=""><img src="${s.back}" alt=""><img src="${s.back}" alt="Mazo de ${s.name}"></div>
-      <span>${s.name} · ${game.decks[s.id].length}</span>
+      <span>${s.name}<br>${game.decks[s.id].length}</span>
     </div>`).join('');
 
   const initial = game.initialCharacters.length
@@ -42,13 +43,13 @@ export function renderDecks(el, game, { selectedCard, onSelectCard }) {
         <div class="row-slots">${'<span class="slot"></span>'.repeat(4)}</div>
         <p>El mes 1 empieza mostrando 4 cartas de Primavera.</p></div>`;
 
-  el.innerHTML = decks + initial;
+  el.innerHTML = `<div class="decks">${decks}</div>${initial}`;
   el.querySelectorAll('.initial-card').forEach((b) =>
     b.addEventListener('click', () => onSelectCard(b.dataset.card === selectedCard ? null : b.dataset.card)));
 }
 
-/** Edificios (paso 6) y reserva (paso 7), a la derecha. */
-export function renderSide(el, game) {
+/** Edificios (paso 6) y reserva (paso 7). */
+export function renderSupply(el, game) {
   el.innerHTML = `
     <section class="panel" data-steps="6">
       <span class="label">Edificios · ${game.buildings.length} al azar</span>
@@ -71,42 +72,54 @@ export function renderSide(el, game) {
     </section>`;
 }
 
-/** Un asiento por jugador en su lado del tablero (pasos 9-13). */
-export function renderSeats(slots, game) {
+/**
+ * Una ficha compacta por jugador (pasos 9-13), empezando por el activo. Al pulsar la ficha se abre su
+ * tablero de jugador en un modal (`onOpenBoard(index)`) con toda su información.
+ */
+export function renderPlayers(el, game, { onOpenBoard }) {
   const picker = currentPicker(game);
-  for (const [seat, el] of Object.entries(slots)) {
-    const index = game.players.findIndex((p) => p.seat === seat);
-    el.hidden = index < 0;
-    if (index < 0) { el.replaceChildren(); continue; }
+  const active = activePlayer(game);
+  // Debajo del activo, los siguientes: en el paso 13 por orden de elección, después por orden de turno.
+  const sequence = picker != null ? game.pickOrder : game.turnOrder;
+  const from = sequence.indexOf(active);
+  const order = [...sequence.slice(from), ...sequence.slice(0, from)];
 
+  el.innerHTML = order.map((index) => {
     const p = game.players[index];
     const board = PLAYER_BOARDS_BY_ID[p.boardId];
-    const turn = game.turnOrder.indexOf(index);
-    const pick = game.pickOrder.indexOf(index);
+    const st = playerStats(game, index);
     const lot = Object.entries(game.lots).find(([, l]) => l.owner === index && l.initial);
-    const vertical = seat === 'left' || seat === 'right';
-
-    el.className = `seat seat-${seat} ${vertical ? 'v' : 'h'}${picker === index ? ' picking' : ''}`;
-    el.dataset.steps = '9 10 11 12 13';
-    el.style.setProperty('--player-color', board.color);
-    el.innerHTML = `
-      <div class="strip"><img src="${board.image}" alt="Tablero de jugador ${board.name}" draggable="false"></div>
-      <div class="who">
-        <h3>${board.name}</h3>
-        <div class="dice" title="${p.rolls.length > 1 ? 'Tirada y desempates' : 'Tirada'}">
-          ${p.rolls.map((r, i) => die(r, i < p.rolls.length - 1 ? 'tied' : (index === game.starter ? 'win' : ''))).join('')}
+    return `
+      <article class="seat${index === active ? ' active' : ''}${picker === index ? ' picking' : ''}" data-player="${index}" data-steps="9 10 11 12 13" style="--player-color: ${board.color}" title="Ver el tablero de ${board.name}">
+        <header class="who">
+          <h3>${board.name}</h3>
+          ${index === active ? '<span class="badge playing">jugando</span>' : ''}
           ${index === game.starter ? '<span class="badge">inicial</span>' : ''}
-        </div>
-        <div class="chips">${resourceChips(p.resources)}</div>
-        <div class="chips pieces" title="Ikizama y Kobun disponibles">
-          <span class="ikizama"></span>${'<span class="kobun"></span>'.repeat(p.kobun)}
-        </div>
-        <span class="muted">Turno ${turn + 1}.º · pila ${turn === 0 ? 'arriba' : `${turn + 1}.ª`}</span>
-        <span class="muted">${lot
-          ? `${CHARACTERS_BY_ID[lot[1].card].name}`
-          : picker === index ? '<b>Elige personaje inicial</b>' : `Elige personaje ${pick + 1}.º`}</span>
-      </div>`;
-  }
+          <span class="dice" title="${p.rolls.length > 1 ? 'Tirada y desempates' : 'Tirada'}">
+            ${p.rolls.map((r, i) => die(r, i < p.rolls.length - 1 ? 'tied' : (index === game.starter ? 'win' : ''))).join('')}
+          </span>
+          <button type="button" class="btn btn-sm open-board">Tablero</button>
+        </header>
+        <div class="chips">${resourceChips(p.resources)}${st.specials.length
+          ? `<span class="res" title="${st.specials.join(', ')}"><span class="ic ic-special">★</span>×${st.specials.length}</span>` : ''}</div>
+        <dl class="facts">
+          <div title="Kobun libres para contratar o construir"><dt>Kobun</dt><dd>${st.kobunFree}/${st.kobunTotal}</dd></div>
+          <div title="Puntos de IKI en el marcador"><dt>IKI</dt><dd>${st.iki}</dd></div>
+          <div title="Nivel de Extinción de Incendios y posición en la pila"><dt>Incendios</dt><dd>${st.fire} · ${st.fireStack}.º</dd></div>
+          <div title="Pescados de estaciones distintas"><dt>Pescado</dt><dd>${st.fish}/${MAX_FISH}</dd></div>
+          <div title="Pipas y Bolsas de Tabaco"><dt>Pipa · Tabaco</dt><dd>${st.pipes} · ${st.tobacco}</dd></div>
+          <div title="Tipos de Personaje distintos contratados"><dt>Variedad</dt><dd>${st.types.length}/${MAX_TYPES}</dd></div>
+        </dl>
+        <p class="status muted">
+          <span>Turno ${st.turn}.º</span>
+          <span>${lot
+            ? `${CHARACTERS_BY_ID[lot[1].card].name}`
+            : picker === index ? '<b>Elige personaje inicial</b>' : `Elige personaje ${game.pickOrder.indexOf(index) + 1}.º`}</span>
+        </p>
+      </article>`;
+  }).join('');
+  // Toda la ficha abre el tablero; el botón es el destino para el teclado.
+  el.querySelectorAll('.seat').forEach((s) => s.addEventListener('click', () => onOpenBoard(Number(s.dataset.player))));
 }
 
 /** Panel lateral ocultable con los pasos de preparación; al pulsar uno se resaltan sus piezas. */

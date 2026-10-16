@@ -1,6 +1,6 @@
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 5;
-const FIT_MARGIN = 24;
+const FIT_MARGIN = 8;
 
 /**
  * Tablero 2D: encaja la imagen en la ventana, permite zoom (rueda / pellizco) y desplazamiento,

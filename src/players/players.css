@@ -109,3 +109,14 @@
   .picker-board img { height: 50vh; }
   .picker-boards { justify-content: flex-start; }
 }
+
+/* Pantallas bajas (móvil en horizontal): los tableros se ajustan al alto que dejan cabecera y botones. */
+@media (max-height: 560px) {
+  #board-picker { padding: 8px; }
+  .picker-panel { gap: 6px; padding: 8px 12px; }
+  .picker-panel h2 { font-size: 18px; }
+  .picker-board { gap: 4px; padding: 4px; }
+  .picker-board img { height: calc(100vh - 150px); }
+  .picker-owner { font-size: 16px; }
+  .picker-panel footer button { padding: 3px 10px; }
+}

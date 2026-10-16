@@ -4,10 +4,11 @@ import { ZONES_BY_ID } from './data/zones.js';
 import './cards/card.css';
 import { createBoardPicker } from './players/boardPicker.js';
 import './players/players.css';
-import { createGame, placeInitialCard, MIN_PLAYERS } from './game/setup.js';
+import { createGame, placeInitialCard, MIN_PLAYERS, GAME_VERSION } from './game/setup.js';
 import { randomSeed } from './game/random.js';
-import { renderDecks, renderSide, renderSeats, createStepsDrawer } from './view/table.js';
+import { renderDecks, renderSupply, renderPlayers, createStepsDrawer } from './view/table.js';
 import { renderBoardPieces } from './view/boardPieces.js';
+import { createPlayerModal } from './view/playerModal.js';
 import './view/table.css';
 
 const board = await createBoard({
@@ -46,19 +47,20 @@ const GAME_KEY = 'iki.game';
 let game = loadGame();
 let selectedCard = null;
 
-const seats = Object.fromEntries(['top', 'left', 'right', 'bottom'].map((s) => [s, document.getElementById(`seat-${s}`)]));
 const steps = createStepsDrawer({
   drawer: document.getElementById('steps'),
   toggle: document.getElementById('open-steps'),
   root: document.getElementById('app'),
 });
 const btnReroll = document.getElementById('reroll');
+const playerModal = createPlayerModal();
 
 function render() {
   if (!game) return;
   renderDecks(document.getElementById('decks'), game, { selectedCard, onSelectCard: (id) => { selectedCard = id; render(); } });
-  renderSide(document.getElementById('side'), game);
-  renderSeats(seats, game);
+  renderSupply(document.getElementById('supply'), game);
+  renderPlayers(document.getElementById('players'), game, { onOpenBoard: (i) => playerModal.open(game, i) });
+  playerModal.update(game);
   renderBoardPieces(board, game, { selectedCard, onPlace });
   btnReroll.disabled = Object.keys(game.lots).length > 0;
   steps.refresh();
@@ -86,7 +88,7 @@ const picker = createBoardPicker({ onDone: (players) => { if (players.length >= 
 const openPicker = () => picker.open();
 document.getElementById('open-picker').addEventListener('click', openPicker);
 window.addEventListener('keydown', (e) => {
-  if ((e.key === 'j' || e.key === 'J') && !e.target.closest?.('#board-picker')) openPicker();
+  if ((e.key === 'j' || e.key === 'J') && !e.target.closest?.('#board-picker, #player-modal')) openPicker();
 });
 if (game) render();
 else if (picker.players.length >= MIN_PLAYERS) newGame(picker.players);
@@ -95,7 +97,7 @@ else openPicker();
 function loadGame() {
   try {
     const saved = JSON.parse(localStorage.getItem(GAME_KEY) ?? 'null');
-    return saved?.version === 1 ? saved : null;
+    return saved?.version === GAME_VERSION ? saved : null;
   } catch {
     return null;
   }

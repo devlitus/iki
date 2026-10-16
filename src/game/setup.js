@@ -9,7 +9,7 @@ import { ZONES } from '../data/zones.js';
  */
 
 /** Asientos alrededor del tablero en sentido horario visto desde arriba. */
-export const SEATS = { 3: ['bottom', 'left', 'right'], 4: ['bottom', 'left', 'top', 'right'] };
+export const GAME_VERSION = 2;
 export const MIN_PLAYERS = 3; // falta el lado de 2 jugadores del tablero
 export const MAX_PLAYERS = 4;
 
@@ -69,16 +69,22 @@ export function createGame({ players, seed }) {
   const [, ...laterSeasons] = SEASONS;
 
   return {
-    version: 1,
+    version: GAME_VERSION,
     seed,
     phase: 'initial-characters',
     month: 1, // paso 2
     players: players.map((p, i) => ({
       boardId: p.boardId,
-      seat: SEATS[n][i],
       rolls: rolls[i],
       resources: { ...STARTING_RESOURCES }, // paso 9
-      kobun: KOBUN_PER_PLAYER,
+      kobun: KOBUN_PER_PLAYER, // Kobun libres en el tablero de jugador
+      ikizama: null, // casilla del marcador de Ikizama; null = en su tablero
+      specials: [], // fichas especiales: move, avoid-fire, wild, hire
+      fish: [], // un Pescado por estación, como máximo 4
+      pipes: [],
+      tobacco: [],
+      retired: [], // personajes retirados (ids de carta), en las columnas de su tablero
+      buildings: [], // edificios construidos (ids)
       fire: 0, // paso 11
       iki: 0, // paso 12
       oyakata: `queue-${turnOrder.indexOf(i) + 1}`, // paso 10
@@ -104,6 +110,12 @@ export function currentPicker(game) {
   if (game.phase !== 'initial-characters') return null;
   return game.pickOrder[pickedCount(game)] ?? null;
 }
+
+/**
+ * Jugador que está jugando: durante el paso 13 el que elige personaje; después, el del turno.
+ * Aún no hay turnos, así que tras la preparación es el jugador inicial.
+ */
+export const activePlayer = (game) => currentPicker(game) ?? game.turnOrder[0];
 
 const pickedCount = (game) => Object.values(game.lots).filter((l) => l.initial).length;
 

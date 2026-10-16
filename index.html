@@ -9,17 +9,17 @@
   </head>
   <body>
     <div id="app">
-      <header id="toolbar">
-        <h1>IKI</h1>
-        <button type="button" class="btn" id="open-steps" aria-controls="steps" aria-expanded="false">Pasos de preparación</button>
-        <button type="button" class="btn" id="reroll" title="Nueva preparación con los mismos jugadores">Volver a tirar dados</button>
-        <button type="button" class="btn" id="open-picker">Jugadores (J)</button>
-        <span class="spacer"></span>
-        <span class="hint">Rueda: zoom · Arrastrar: mover · Doble clic: encajar · Alt + clic: coordenadas · Z: zonas</span>
-      </header>
-      <section id="decks"></section>
-      <article id="seat-top" class="seat" hidden></article>
-      <article id="seat-left" class="seat" hidden></article>
+      <aside id="side">
+        <header id="toolbar">
+          <h1>IKI</h1>
+          <button type="button" class="btn" id="open-steps" aria-controls="steps" aria-expanded="false">Pasos de preparación</button>
+          <button type="button" class="btn" id="reroll" title="Nueva preparación con los mismos jugadores">Volver a tirar dados</button>
+          <button type="button" class="btn" id="open-picker">Jugadores (J)</button>
+        </header>
+        <section id="decks" class="panel"></section>
+        <div id="supply"></div>
+        <p class="hint">Rueda: zoom · Arrastrar: mover · Doble clic: encajar · Alt + clic: coordenadas · Z: zonas</p>
+      </aside>
       <main id="viewport">
         <div id="board">
           <img id="board-image" src="/textures/tablero-iki.jpg" alt="Tablero de IKI" draggable="false" />
@@ -27,11 +27,13 @@
         </div>
         <div id="toast" hidden></div>
       </main>
-      <article id="seat-right" class="seat" hidden></article>
-      <article id="seat-bottom" class="seat" hidden></article>
-      <aside id="side"></aside>
+      <section id="players" aria-label="Jugadores"></section>
     </div>
     <nav id="steps" aria-label="Pasos de preparación"></nav>
+    <div id="rotate-hint" role="alert">
+      <div class="phone" aria-hidden="true"></div>
+      <p>Gira el móvil: IKI se juega en horizontal.</p>
+    </div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

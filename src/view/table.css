@@ -1,18 +1,13 @@
-/* Mesa: barra arriba, mazos, asientos alrededor del tablero y columna derecha con edificios y reserva. */
+/* Mesa: columna izquierda (barra, mazos, edificios, reserva), tablero a todo el alto y jugadores a la derecha. */
 #app {
   position: fixed;
   inset: 0;
   display: grid;
   gap: 10px;
   padding: 10px;
-  grid-template-columns: auto minmax(0, 1fr) auto minmax(180px, 230px);
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
-  grid-template-areas:
-    "bar bar bar bar"
-    "decks decks decks side"
-    ". s-top . side"
-    "s-left board s-right side"
-    ". s-bottom . side";
+  grid-template-columns: clamp(190px, 13vw, 260px) minmax(0, 1fr) clamp(260px, 18vw, 360px);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: "side board players";
   background:
     radial-gradient(ellipse at center, rgba(255, 220, 170, 0.18), transparent 70%),
     repeating-linear-gradient(0deg, transparent 0 22px, rgba(0, 0, 0, 0.08) 22px 23px, transparent 23px 61px),
@@ -20,10 +15,9 @@
     linear-gradient(180deg, var(--table-light), var(--table-dark));
 }
 
-#toolbar { grid-area: bar; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-#toolbar h1 { margin: 0 8px 0 0; font: 400 24px/1 'Patrick Hand SC', system-ui, sans-serif; }
-#toolbar .spacer { flex: 1; }
-#toolbar .hint { opacity: 0.7; font-size: 12px; }
+#toolbar { display: flex; flex-direction: column; gap: 6px; }
+#toolbar h1 { margin: 0 0 2px; font: 400 26px/1 'Patrick Hand SC', system-ui, sans-serif; }
+#side .hint { margin: auto 0 0; opacity: 0.6; font-size: 11px; }
 .btn {
   font: inherit;
   color: var(--ink);
@@ -45,24 +39,25 @@
 #viewport #hint, #viewport #toast { position: absolute; }
 
 /* Mazos y personajes iniciales */
-#decks { grid-area: decks; display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; padding: 8px 10px; border-radius: 8px; background: var(--panel); }
-.deck { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; }
-.pile { position: relative; width: 52px; aspect-ratio: 63 / 97; }
+.decks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.deck { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; text-align: center; }
+.pile { position: relative; width: calc(100% - 4px); max-width: 52px; aspect-ratio: 63 / 97; }
 .pile img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 3px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); }
 .pile img:nth-child(1) { transform: translate(3px, 3px); filter: brightness(0.75); }
 .pile img:nth-child(2) { transform: translate(1.5px, 1.5px); filter: brightness(0.88); }
-.initial-row { display: flex; flex-direction: column; gap: 4px; margin-left: 12px; min-width: 0; }
+.initial-row { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .initial-row p { margin: 0; font-size: 12px; opacity: 0.8; }
-.initial-cards, .row-slots { display: flex; gap: 8px; }
+.initial-cards, .row-slots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .initial-card { padding: 0; border: 2px solid transparent; border-radius: 5px; background: none; cursor: pointer; transition: transform 0.15s; }
-.initial-card img { display: block; width: 58px; border-radius: 3px; }
+.initial-card img { display: block; width: 100%; border-radius: 3px; }
 .initial-card:hover:not(:disabled) { transform: translateY(-3px); }
 .initial-card.selected { border-color: #ffd27a; transform: translateY(-5px); }
 .initial-card:disabled { cursor: default; }
-.row-slots .slot { width: 48px; aspect-ratio: 63 / 97; border: 1.5px dashed rgba(243, 233, 218, 0.4); border-radius: 4px; }
+.row-slots .slot { aspect-ratio: 63 / 97; border: 1.5px dashed rgba(243, 233, 218, 0.4); border-radius: 4px; }
 
-/* Columna derecha */
+/* Columna izquierda */
 #side { grid-area: side; display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; }
+#supply { display: contents; }
 #side .panel { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 8px; background: var(--panel); }
 .buildings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .buildings img { width: 100%; display: block; border-radius: 3px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5); }
@@ -80,38 +75,57 @@
 .ic-koban { width: 18px; background: url('/tokens/koban.webp') center / contain no-repeat; border-radius: 0; }
 .ic-special { background: #2b2622; border-radius: 4px; color: #ffd27a; }
 
-/* Asientos de jugador */
-.seat { display: flex; gap: 10px; padding: 8px; border: 2px solid var(--player-color); border-radius: 8px; background: var(--panel); min-width: 0; min-height: 0; }
-.seat[hidden] { display: none; }
-.seat-top { grid-area: s-top; } .seat-bottom { grid-area: s-bottom; }
-.seat-left { grid-area: s-left; } .seat-right { grid-area: s-right; }
-.seat.v { flex-direction: column; align-items: center; width: 128px; align-self: stretch; }
-.seat.h { align-items: center; }
+/* Jugadores en la columna derecha: una ficha compacta cada uno, el activo arriba y resaltado */
+#players { grid-area: players; display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow-y: auto; }
+.seat { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 1px solid color-mix(in srgb, var(--player-color) 55%, transparent); border-left-width: 5px; border-radius: 8px; background: var(--panel); }
+.seat.active { border-color: var(--player-color); border-width: 2px 2px 2px 6px; background: color-mix(in srgb, var(--player-color) 14%, var(--panel)); }
+.seat { cursor: pointer; }
+.seat:hover { filter: brightness(1.12); }
 .seat.picking { box-shadow: 0 0 0 3px #ffd27a; }
 .seat h3 { margin: 0; font: 400 20px/1 'Patrick Hand SC', system-ui, sans-serif; color: var(--player-color); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6); }
-.seat .who { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
-.seat.v .who { align-items: center; text-align: center; }
-.seat.h .who { flex: none; width: 190px; }
-.seat .chips, .seat .dice { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
-.seat.v .chips, .seat.v .dice { justify-content: center; }
+.seat .who { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.seat .who .open-board { margin-left: auto; }
+.seat .chips, .seat .dice { display: flex; gap: 5px 10px; align-items: center; flex-wrap: wrap; }
+.seat .dice { gap: 3px; }
+.seat .status { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 0; }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 8px; margin: 0; }
+.facts div { min-width: 0; }
+.facts dt { font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; opacity: 0.65; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.facts dd { margin: 0; font-weight: 600; }
 .badge { padding: 1px 7px; border-radius: 99px; background: #ffd27a; color: #2b1a0c; font-size: 11px; font-weight: 700; }
+.badge.playing { background: var(--player-color); color: #fff; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5); }
+.btn-sm { padding: 2px 9px; font-size: 12px; }
 
-/* Tablero de jugador: vertical a los lados; tumbado (girado con unidades de contenedor) arriba y abajo. */
-.strip img { display: block; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5)); }
-.seat.v .strip { order: 2; flex: 1 1 0; min-height: 0; width: 58px; }
-.seat.v .strip img { width: 100%; height: 100%; object-fit: contain; }
-.seat-right .strip img { transform: rotate(180deg); }
-.seat.h .strip { position: relative; container-type: size; flex: 1 1 auto; min-width: 0; max-width: 620px; aspect-ratio: 3000 / 447; }
-.seat.h .strip img { position: absolute; left: 50%; top: 50%; width: 100cqh; height: 100cqw; transform: translate(-50%, -50%) rotate(-90deg); }
-.seat-top .strip img { transform: translate(-50%, -50%) rotate(90deg); }
+/* Modal del tablero de jugador */
+#player-modal { width: min(1500px, calc(100vw - 32px)); max-height: calc(100vh - 32px); padding: 0; color: var(--ink); border: 2px solid var(--player-color); border-radius: 10px; background: var(--table-dark); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); }
+#player-modal::backdrop { background: rgba(10, 6, 3, 0.72); }
+#player-modal header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; }
+#player-modal h2 { margin: 0; font: 400 28px/1 'Patrick Hand SC', system-ui, sans-serif; color: var(--player-color); }
+#player-modal header .actions { display: flex; gap: 6px; margin-left: auto; }
+#player-modal .close { font-size: 18px; line-height: 1; }
+/* La imagen es vertical (447×3000): se tumba dentro de una caja con la proporción del tablero tumbado. */
+.board-strip { position: relative; container-type: size; aspect-ratio: 3000 / 447; margin: 0 16px; filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5)); }
+.board-strip img { position: absolute; left: 50%; top: 50%; width: 100cqh; height: 100cqw; transform: translate(-50%, -50%) rotate(90deg); }
+#player-modal .cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 16px; }
+#player-modal section { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 8px; background: var(--panel); }
+#player-modal h3 { margin: 0; font: 400 20px/1 'Patrick Hand SC', system-ui, sans-serif; }
+#player-modal h4 { margin: 4px 0 0; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.75; }
+#player-modal dl { display: flex; flex-direction: column; gap: 4px; margin: 0; padding-top: 6px; border-top: 1px solid rgba(243, 233, 218, 0.12); }
+#player-modal dl div { display: flex; justify-content: space-between; gap: 12px; }
+#player-modal dt { display: inline-flex; align-items: center; gap: 6px; opacity: 0.8; }
+#player-modal dd { margin: 0; font-weight: 600; text-align: right; }
+#player-modal ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 3px; }
+#player-modal li { display: flex; align-items: center; gap: 6px; }
+#player-modal section p { margin: 0; }
+.type-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--type-color); border: 1px solid rgba(255, 255, 255, 0.6); flex: none; }
+#player-modal footer { display: flex; align-items: baseline; gap: 6px 16px; flex-wrap: wrap; padding: 0 16px 16px; }
+#player-modal footer b { margin-left: auto; font-size: 16px; color: #ffd27a; }
 
 .die { display: inline-grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); width: 24px; height: 24px; padding: 3px; border-radius: 5px; background: #fbfaf6; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); }
 .die i { width: 4px; height: 4px; border-radius: 50%; place-self: center; }
 .die i.pip { background: #1c2230; }
 .die.win { box-shadow: 0 0 0 2px #ffd27a; }
 .die.tied { opacity: 0.45; }
-.ikizama { width: 14px; height: 14px; border-radius: 3px; background: var(--player-color); border: 2px solid #fff; }
-.kobun { width: 11px; height: 11px; border-radius: 50%; background: var(--player-color); border: 2px solid #fff; }
 
 /* Panel de pasos (ocultable) */
 #steps {
@@ -169,22 +183,41 @@
   .lot-target.armed { animation: none; }
 }
 
-/* Pantallas estrechas: el tablero arriba y los asientos debajo, en dos columnas. */
-@media (max-width: 900px) {
-  #app {
-    position: static;
-    min-height: 100%;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: auto auto 70vh auto auto auto auto;
-    grid-template-areas: "bar bar" "decks decks" "board board" "s-bottom s-bottom" "s-left s-right" "s-top s-top" "side side";
-  }
-  html, body { overflow: auto; height: auto; }
-  .seat.v { width: auto; flex-direction: row; }
-  .seat.v .strip { order: 0; flex: none; width: 40px; }
-  .seat.v .who { align-items: flex-start; text-align: left; }
-  .seat.v .chips, .seat.v .dice { justify-content: flex-start; }
-  .seat.h { flex-wrap: wrap; }
-  .seat.h .who { width: auto; }
-  .seat.h .strip { flex-basis: 100%; }
-  #toolbar .hint { display: none; }
+/* Pantallas bajas o estrechas (móvil en horizontal): las mismas tres columnas, más compactas. */
+@media (max-height: 560px), (max-width: 1000px) {
+  #app { gap: 6px; padding: 6px; grid-template-columns: clamp(130px, 17vw, 190px) minmax(0, 1fr) clamp(180px, 25vw, 260px); }
+  html, body { font-size: 12px; }
+  #side, #players { gap: 6px; }
+  #side .panel { gap: 6px; padding: 6px; }
+  #toolbar { gap: 4px; }
+  #toolbar h1 { font-size: 20px; }
+  #toolbar .btn { padding: 3px 6px; font-size: 11px; }
+  #side .hint { display: none; }
+  .decks { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+  .deck { font-size: 10px; }
+  .pile { max-width: 40px; }
+  .reserve { grid-template-columns: minmax(0, 1fr); gap: 3px; }
+  .initial-row p { font-size: 10px; }
+  .seat { gap: 4px; padding: 5px 7px; }
+  .seat h3 { font-size: 16px; }
+  .facts dt { font-size: 9px; }
+  .die { width: 18px; height: 18px; padding: 2px; }
+  .die i { width: 3px; height: 3px; }
+  #player-modal { width: calc(100vw - 16px); max-height: calc(100vh - 16px); }
+  #player-modal header { padding: 8px 10px; }
+  #player-modal h2 { font-size: 22px; }
+  .board-strip { margin: 0 10px; }
+  #player-modal .cols { gap: 8px; padding: 10px; }
+  #player-modal section { padding: 8px; }
+  #player-modal footer { padding: 0 10px 10px; }
 }
+
+/* En móvil solo se juega en horizontal: en vertical se pide girar el teléfono. */
+#rotate-hint { display: none; }
+@media (orientation: portrait) and (pointer: coarse) and (max-width: 900px) {
+  #app, #steps, #board-picker, #player-modal { display: none; }
+  #rotate-hint { position: fixed; inset: 0; display: grid; place-content: center; gap: 12px; padding: 24px; text-align: center; font-size: 16px; }
+  #rotate-hint .phone { width: 46px; height: 76px; margin: 0 auto; border: 3px solid var(--ink); border-radius: 9px; animation: rotate-phone 2s ease-in-out infinite; }
+}
+@keyframes rotate-phone { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+@media (prefers-reduced-motion: reduce) { #rotate-hint .phone { animation: none; transform: rotate(-90deg); } }
