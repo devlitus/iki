@@ -24,9 +24,7 @@ export function renderDecks(el, game, { selectedCard, onSelectCard }) {
   const picker = currentPicker(game);
   const decks = SEASONS.map((s) => `
     <div class="deck" data-steps="8" title="Mazo de ${s.name}: ${game.decks[s.id].length} cartas">
-      <div class="pile">${s.back
-        ? `<img src="${s.back}" alt=""><img src="${s.back}" alt=""><img src="${s.back}" alt="Mazo de ${s.name}">`
-        : '<span class="blank">sin escanear</span>'}</div>
+      <div class="pile"><img src="${s.back}" alt=""><img src="${s.back}" alt=""><img src="${s.back}" alt="Mazo de ${s.name}"></div>
       <span>${s.name} · ${game.decks[s.id].length}</span>
     </div>`).join('');
 

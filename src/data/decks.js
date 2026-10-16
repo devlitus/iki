@@ -1,6 +1,6 @@
 /**
  * Mazos de Personaje por estación y cartas de Edificio (ver docs/reglas.md, preparación pasos 6 y 8).
- * Los ids coinciden con los escaneos de public/cards/<estación>/<id>.jpg. Invierno aún no tiene escaneos.
+ * Los ids coinciden con los escaneos de public/cards/<estación>/<id>.jpg.
  */
 
 export const SEASONS = [
@@ -20,7 +20,7 @@ export const SEASONS = [
       'construction-worker', 'puppeteer', 'geisha-tatsumi', 'puppet-maker', 'tatami-maker', 'sushi-stall', 'tempura-stall'],
   },
   {
-    id: 'winter', name: 'Invierno', back: null,
+    id: 'winter', name: 'Invierno', back: '/cards/winter/winter-back.jpg',
     cards: ['charcoal-seller', 'chili-seller', 'candy-seller', 'candy-maker', 'fan-maker', 'glass-blower', 'brush-maker',
       'kabuki-actor', 'samurai', 'sumo-wrestler', 'buddhist-sculptor', 'karuta-maker', 'stone-carver', 'incense-shop'],
   },
@@ -28,9 +28,8 @@ export const SEASONS = [
 
 export const SEASONS_BY_ID = Object.fromEntries(SEASONS.map((s) => [s.id, s]));
 
-/** Imagen de una carta de estación, o null si aún no está escaneada. */
-export const seasonCardImage = (seasonId, cardId) =>
-  (SEASONS_BY_ID[seasonId].back ? `/cards/${seasonId}/${cardId}.jpg` : null);
+/** Imagen de una carta de estación. */
+export const seasonCardImage = (seasonId, cardId) => `/cards/${seasonId}/${cardId}.jpg`;
 
 export const BUILDINGS = [
   { id: 'farm', name: 'Granja' },
