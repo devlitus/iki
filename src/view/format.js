@@ -22,7 +22,10 @@ export const chip = (res, n) => (res === 'iki'
 export const chips = (list) => list.map(({ res, n }) => chip(res, n)).join(' ');
 
 /** Coste de un edificio ({ wood: 1, mon: 2 }) en chips. */
-export const costChips = (cost) => Object.entries(cost).filter(([, n]) => n > 0).map(([res, n]) => chip(res, n)).join(' ');
+export const costChips = (cost) => Object.entries(cost).filter(([, n]) => n > 0).map(([res, n]) => chip(res, n)).join(' · ');
+
+/** Coste de un edificio en texto plano (para `title` y `alt`, donde no cabe HTML). */
+export const costText = (cost) => Object.entries(cost).filter(([, n]) => n > 0).map(([res, n]) => `${n} ${RES_LABEL[res]}`).join(', ');
 
 /** Lo que hace un personaje al activarlo, en una línea. */
 export function abilityText(def) {

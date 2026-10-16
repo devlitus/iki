@@ -4,7 +4,7 @@ import { MARKET_BY_ID, describeToken } from '../data/market.js';
 import { ZONES_BY_ID, STREET, LOT_IDS } from '../data/zones.js';
 import { act, whoseTurn, seasonOf, IKIZAMA_SLOTS } from '../game/engine.js';
 import { characterLots } from '../game/state.js';
-import { abilityText, cardName, chips, costChips, logLine, playerColor, playerName, shopName, who } from './format.js';
+import { abilityText, cardName, chips, costChips, costText, logLine, playerColor, playerName, shopName, who } from './format.js';
 
 /**
  * Panel de turno (columna izquierda) y objetivos del tablero. Solo pinta el estado y manda acciones: lo que el
@@ -236,7 +236,7 @@ function constructionBody(game, ui) {
   return `
     ${shopBtn(game, `${chips([{ res: 'mon', n: 1 }])} → ${chips([{ res: 'rice', n: 1 }])}`, { choice: 'rice' })}
     <p class="label">Construir (+1 mon)</p>
-    <div class="picks">${game.buildings.map((b) => picture(BUILDINGS_BY_ID[b].image, `${BUILDINGS_BY_ID[b].name}: ${costChips(BUILDINGS_BY_ID[b].cost)}`,
+    <div class="picks">${game.buildings.map((b) => picture(BUILDINGS_BY_ID[b].image, `${BUILDINGS_BY_ID[b].name}: ${costText(BUILDINGS_BY_ID[b].cost)}`,
       `data-do="building" data-via="shop" data-building="${b}"`, { selected: b === sel, disabled: !canBuildAny(game, { type: 'shop', choice: 'build', building: b }) })).join('')}</div>
     ${sel ? `<p class="muted">Cuesta ${costChips(BUILDINGS_BY_ID[sel].cost)} + 1 mon (+2 en las esquinas). Pulsa un solar libre.</p>` : ''}`;
 }
@@ -275,7 +275,7 @@ function characterBody(game, lot, { ui }) {
       btn(cardName(game.lots[l].card), `data-do="char" data-lot="${lot}" data-target="${l}"`, { disabled: !isLegal(game, { type: 'character', lot, target: l }) })).join('')}</div>`;
   } else if (a.kind === 'build') {
     const sel = ui.building?.via === 'char' && ui.building.lot === lot ? ui.building.building : null;
-    options = `<div class="picks">${game.buildings.map((b) => picture(BUILDINGS_BY_ID[b].image, `${BUILDINGS_BY_ID[b].name}: ${costChips(BUILDINGS_BY_ID[b].cost)}`,
+    options = `<div class="picks">${game.buildings.map((b) => picture(BUILDINGS_BY_ID[b].image, `${BUILDINGS_BY_ID[b].name}: ${costText(BUILDINGS_BY_ID[b].cost)}`,
       `data-do="building" data-via="char" data-lot="${lot}" data-building="${b}"`,
       { selected: b === sel, disabled: !canBuildAny(game, { type: 'character', lot, building: b }) })).join('')}</div>
       ${sel ? '<p class="muted">Pulsa un solar libre del tablero.</p>' : ''}`;
