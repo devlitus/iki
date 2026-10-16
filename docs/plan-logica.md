@@ -197,6 +197,10 @@ Sustituye la estimación actual de `playerStats.js`.
 **Verificación**: jugar en el navegador una partida de 3 jugadores hasta la tabla final, sin errores en consola, y
 revisar en apaisado móvil que no se rompe.
 
+> **Hecho**: 6 partidas (3 y 4 jugadores) conducidas con clics reales sobre el panel, la fila y los solares, hasta la
+> tabla final: sin errores de consola, sin mensajes de error del panel y sin quedarse atascadas. Cubren construcción
+> (tienda y personaje), «Evitar un incendio», Comodín y comida. La tabla final cabe en apaisado (844×390).
+
 ---
 
 ## 5. Orden de trabajo
