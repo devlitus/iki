@@ -29,5 +29,6 @@ export function createCover({ onNew, onContinue }) {
       (canContinue ? btnContinue : el.querySelector('.cover-new')).focus();
     },
     hide,
+    get visible() { return !el.hidden; },
   };
 }

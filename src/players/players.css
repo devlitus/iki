@@ -48,6 +48,9 @@
 }
 .picker-close { padding: 2px 10px; font-size: 20px; }
 .picker-panel footer button:disabled { opacity: 0.4; cursor: default; }
+.picker-seats { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; }
+.picker-panel .picker-seat { padding: 4px 10px; border-left: 4px solid var(--player-color); font-size: 14px; }
+.picker-panel .picker-seat.ai { background: rgba(90, 174, 220, 0.18); }
 .picker-done:not(:disabled) { background: #3f7f4a; border-color: #6fb37a; }
 
 .picker-boards {

@@ -205,6 +205,15 @@ const HANDLERS = {
 
 // --- Jugadas legales ---------------------------------------------------------------------------
 
+/** El estado tras `action`, o null si no es válida (para quien prueba muchas jugadas y no quiere aplicar cada una dos veces). */
+export function tryAct(g, action) {
+  try {
+    return act(g, action);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Todas las jugadas válidas ahora mismo, como acciones completas (la interfaz las usa para resaltar y los tests para
  * jugar partidas al azar). Se generan los candidatos y se descartan los que `act` rechaza, así la validación es una sola.
@@ -220,7 +229,8 @@ export function legalActions(g) {
   });
 }
 
-function candidates(g) {
+/** Acciones que se prueban en cada momento (algunas pueden no ser válidas); `legalActions` se queda con las válidas. */
+export function candidates(g) {
   if (g.pending?.type === 'wildType') return Object.keys(CHARACTER_TYPES).map((cardType) => ({ type: 'resolve', cardType }));
   if (g.pending?.type === 'avoidFire') return [{ type: 'resolve', use: true }, { type: 'resolve', use: false }];
   if (g.pending?.type === 'food') return combinations(characterLots(g, g.pending.player), g.pending.drop).map((drop) => ({ type: 'resolve', drop }));

@@ -26,6 +26,7 @@ export const resourceChips = ({ mon, rice, sandal, wood, koban }) => [
  */
 export function renderDecks(el, game, { selectedCard, onSelectCard, hireable = new Set(), hiring = null, onSelectHire }) {
   const picker = currentPicker(game);
+  const humanPicker = picker != null && !game.players[picker].ai; // cuando elige la IA, las cartas no se pueden pulsar
   const decks = SEASONS.map((s) => `
     <div class="deck" data-steps="8" title="Mazo de ${s.name}: ${game.decks[s.id].length} cartas">
       <div class="pile"><img src="${s.back}" alt=""><img src="${s.back}" alt=""><img src="${s.back}" alt="Mazo de ${s.name}"></div>
@@ -35,13 +36,13 @@ export function renderDecks(el, game, { selectedCard, onSelectCard, hireable = n
   let lower;
   if (game.initialCharacters.length) {
     lower = `<div class="initial-row" data-steps="13">
-        <span class="label">Personajes iniciales${picker != null ? ` · elige ${PLAYER_BOARDS_BY_ID[game.players[picker].boardId].name}` : ''}</span>
+        <span class="label">Personajes iniciales${picker != null ? ` · elige ${PLAYER_BOARDS_BY_ID[game.players[picker].boardId].name}${game.players[picker].ai ? ' (IA)' : ''}` : ''}</span>
         <div class="initial-cards">${game.initialCharacters.map((id) => `
           <button type="button" class="initial-card${id === selectedCard ? ' selected' : ''}" data-card="${id}" data-zoom="${CHARACTERS_BY_ID[id].scan}"
-            ${picker == null ? 'disabled' : ''} title="${CHARACTERS_BY_ID[id].name}">
+            ${humanPicker ? '' : 'disabled'} title="${CHARACTERS_BY_ID[id].name}">
             <img src="${CHARACTERS_BY_ID[id].scan}" alt="${CHARACTERS_BY_ID[id].name}" draggable="false">
           </button>`).join('')}</div>
-        <p>${selectedCard ? 'Ahora pulsa un solar exterior libre del tablero.' : 'Pulsa una carta y después un solar exterior libre.'}</p>
+        <p>${picker != null && !humanPicker ? 'La IA está eligiendo su personaje…' : selectedCard ? 'Ahora pulsa un solar exterior libre del tablero.' : 'Pulsa una carta y después un solar exterior libre.'}</p>
       </div>`;
   } else if (game.phase !== 'initial-characters') {
     const choosing = game.phase === 'actions' && game.turn?.step === 'b1';
@@ -113,6 +114,7 @@ export function renderPlayers(el, game, { onOpenBoard }) {
       <article class="seat${index === active ? ' active' : ''}${picker === index ? ' picking' : ''}" data-player="${index}" data-steps="9 10 11 12 13" style="--player-color: ${board.color}" title="Ver el tablero de ${board.name}">
         <header class="who">
           <h3>${board.name}</h3>
+          ${p.ai ? '<span class="badge" title="Lo juega la IA">IA</span>' : ''}
           ${index === active && game.phase !== 'ended' ? '<span class="badge playing">jugando</span>' : ''}
           ${index === game.starter ? '<span class="badge">inicial</span>' : ''}
           <span class="dice" title="${p.rolls.length > 1 ? 'Tirada y desempates' : 'Tirada'}">

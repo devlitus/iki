@@ -8,7 +8,9 @@ const STORAGE_KEY = 'iki.playerBoards';
  * Los ya elegidos quedan bloqueados con el nombre de su jugador. Con 3-4 jugadores se puede empezar
  * (falta el lado de 2 jugadores del tablero). La elección se guarda en localStorage.
  *
- * `onDone(players)` recibe, al pulsar Empezar, la lista `[{ player: 1, boardId: 'red' }, ...]` en orden de
+ * Cada jugador elegido se puede marcar como IA con el interruptor del pie (por defecto, humano).
+ *
+ * `onDone(players)` recibe, al pulsar Empezar, la lista `[{ player: 1, boardId: 'red', ai: false }, ...]` en orden de
  * elección, que es también el orden de los asientos alrededor de la mesa (sentido horario).
  */
 export function createBoardPicker({ onDone, onCancel } = {}) {
@@ -25,6 +27,7 @@ export function createBoardPicker({ onDone, onCancel } = {}) {
       </header>
       <div class="picker-boards"></div>
       <footer>
+        <div class="picker-seats" aria-label="Quién juega cada asiento"></div>
         <button type="button" class="picker-undo">Deshacer</button>
         <button type="button" class="picker-reset">Reiniciar</button>
         <button type="button" class="picker-done">Empezar</button>
@@ -34,6 +37,7 @@ export function createBoardPicker({ onDone, onCancel } = {}) {
 
   const title = overlay.querySelector('#picker-title');
   const list = overlay.querySelector('.picker-boards');
+  const seats = overlay.querySelector('.picker-seats');
   const btnUndo = overlay.querySelector('.picker-undo');
   const btnReset = overlay.querySelector('.picker-reset');
   const btnDone = overlay.querySelector('.picker-done');
@@ -50,12 +54,18 @@ export function createBoardPicker({ onDone, onCancel } = {}) {
       <span class="picker-owner"></span>`;
     opt.addEventListener('click', () => {
       if (players.length >= MAX_PLAYERS || ownerOf(board.id)) return;
-      players = [...players, { player: players.length + 1, boardId: board.id }];
+      players = [...players, { player: players.length + 1, boardId: board.id, ai: false }];
       update();
     });
     list.append(opt);
   }
 
+  seats.addEventListener('click', (e) => {
+    const seat = e.target.closest('[data-seat]');
+    if (!seat) return;
+    players = players.map((p) => (p.player === Number(seat.dataset.seat) ? { ...p, ai: !p.ai } : p));
+    update();
+  });
   btnUndo.addEventListener('click', () => { players = players.slice(0, -1); update(); });
   btnReset.addEventListener('click', () => { players = []; update(); });
   btnDone.addEventListener('click', () => { close(); onDone?.(players); });
@@ -76,8 +86,12 @@ export function createBoardPicker({ onDone, onCancel } = {}) {
       const owner = ownerOf(opt.dataset.id);
       opt.classList.toggle('taken', Boolean(owner));
       opt.disabled = Boolean(owner) || full;
-      opt.querySelector('.picker-owner').textContent = owner ? `Jugador ${owner.player}` : '';
+      opt.querySelector('.picker-owner').textContent = owner ? `Jugador ${owner.player}${owner.ai ? ' · IA' : ''}` : '';
     }
+    seats.innerHTML = players.map((p) => `
+      <button type="button" class="picker-seat${p.ai ? ' ai' : ''}" data-seat="${p.player}" style="--player-color:${PLAYER_BOARDS_BY_ID[p.boardId].color}"
+        aria-pressed="${p.ai}" title="Pulsa para cambiar entre humano e IA">
+        ${PLAYER_BOARDS_BY_ID[p.boardId].name}: <b>${p.ai ? 'IA' : 'Humano'}</b></button>`).join('');
     btnUndo.disabled = players.length === 0;
     btnReset.disabled = players.length === 0;
     btnDone.disabled = players.length < MIN_PLAYERS;
@@ -100,7 +114,7 @@ export function createBoardPicker({ onDone, onCancel } = {}) {
   }
 
   update();
-  return { open, close, get players() { return players; } };
+  return { open, close, get players() { return players; }, get isOpen() { return !overlay.hidden; } };
 }
 
 function load() {
@@ -108,7 +122,7 @@ function load() {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]');
     const valid = Array.isArray(saved) && saved.every((p, i) => p.player === i + 1 && PLAYER_BOARDS_BY_ID[p.boardId]);
     const unique = new Set(saved.map((p) => p.boardId)).size === saved.length;
-    return valid && unique && saved.length <= MAX_PLAYERS ? saved : [];
+    return valid && unique && saved.length <= MAX_PLAYERS ? saved.map((p) => ({ ...p, ai: p.ai === true })) : [];
   } catch {
     return [];
   }

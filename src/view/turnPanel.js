@@ -3,6 +3,7 @@ import { BUILDINGS_BY_ID } from '../data/decks.js';
 import { MARKET_BY_ID, describeToken } from '../data/market.js';
 import { ZONES_BY_ID, STREET, LOT_IDS } from '../data/zones.js';
 import { act, whoseTurn, seasonOf, IKIZAMA_SLOTS } from '../game/engine.js';
+import { isAiTurn } from '../ai/player.js';
 import { characterLots } from '../game/state.js';
 import { abilityText, cardName, chips, costChips, costText, logLine, playerColor, playerName, shopName, who } from './format.js';
 
@@ -41,7 +42,7 @@ function hireCost(game, p, card, lot) {
 
 /** Cartas de la fila que el jugador de turno puede contratar en algún solar libre. */
 export function hireableCards(game) {
-  if (game.phase !== 'actions' || game.turn.step !== 'b1') return new Set();
+  if (game.phase !== 'actions' || game.turn.step !== 'b1' || isAiTurn(game)) return new Set();
   const lots = freeLots(game);
   return new Set(game.row.filter((r) => lots.some((lot) => isLegal(game, { type: 'hire', card: r.card, lot }))).map((r) => r.card));
 }
@@ -50,6 +51,7 @@ export function hireableCards(game) {
 
 /** Zonas del tablero que se pueden pulsar ahora: [{ zone, title, onClick }]. */
 export function boardTargets(game, { ui, dispatch }) {
+  if (isAiTurn(game)) return []; // juega la IA: el tablero no se pulsa
   const p = whoseTurn(game);
   if (game.phase === 'ikizama') {
     return IKIZAMA_SLOTS.filter((slot) => isLegal(game, { type: 'placeIkizama', slot })).map((slot) => ({
@@ -89,13 +91,14 @@ export function renderTurnPanel(el, game, ctx) {
       ${p != null ? `<p class="turn-who" style="--player-color:${playerColor(game, p)}">Juega ${who(game, p)}${game.turn?.slot ? ` · Ikizama ${game.turn.slot}` : ''}</p>` : ''}
     </header>`;
 
-  const body = game.pending ? pendingBody(game, ctx) : { ikizama: ikizamaBody, actions: actionsBody, newyear: actionsBody, event: () => '', ended: endedBody }[game.phase]?.(game, ctx) ?? '';
+  const aiPlaying = isAiTurn(game);
+  const body = aiPlaying ? `<p class="ai-thinking" role="status">${who(game, p)} está pensando…</p>` : game.pending ? pendingBody(game, ctx) : { ikizama: ikizamaBody, actions: actionsBody, newyear: actionsBody, event: () => '', ended: endedBody }[game.phase]?.(game, ctx) ?? '';
 
   el.innerHTML = `
     ${header}
     ${ui.error ? `<p class="turn-error" role="alert">${ui.error}</p>` : ''}
     <div class="turn-body">${body}</div>
-    ${ctx.canUndo ? '<button type="button" class="btn btn-sm" data-do="undo">↶ Deshacer</button>' : ''}
+    ${ctx.canUndo && !aiPlaying ? '<button type="button" class="btn btn-sm" data-do="undo">↶ Deshacer</button>' : ''}
     <details class="turn-log" open>
       <summary class="label">Registro</summary>
       <ol>${game.log.slice(-8).reverse().map((e) => `<li>${logLine(game, e)}</li>`).join('')}</ol>
