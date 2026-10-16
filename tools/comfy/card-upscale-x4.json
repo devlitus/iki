@@ -1,0 +1,124 @@
+{
+ "m": {
+  "class_type": "UpscaleModelLoader",
+  "inputs": {
+   "model_name": "RealESRGAN_x4plus.safetensors"
+  }
+ },
+ "l0": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "salt-seller-clean.png"
+  }
+ },
+ "u0": {
+  "class_type": "ImageUpscaleWithModel",
+  "inputs": {
+   "upscale_model": [
+    "m",
+    0
+   ],
+   "image": [
+    "l0",
+    0
+   ]
+  }
+ },
+ "s0": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "u0",
+    0
+   ],
+   "filename_prefix": "iki/initial/salt-seller_x4"
+  }
+ },
+ "l1": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "cotton-seller-clean.png"
+  }
+ },
+ "u1": {
+  "class_type": "ImageUpscaleWithModel",
+  "inputs": {
+   "upscale_model": [
+    "m",
+    0
+   ],
+   "image": [
+    "l1",
+    0
+   ]
+  }
+ },
+ "s1": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "u1",
+    0
+   ],
+   "filename_prefix": "iki/initial/cotton-seller_x4"
+  }
+ },
+ "l2": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "glasses-seller-clean.png"
+  }
+ },
+ "u2": {
+  "class_type": "ImageUpscaleWithModel",
+  "inputs": {
+   "upscale_model": [
+    "m",
+    0
+   ],
+   "image": [
+    "l2",
+    0
+   ]
+  }
+ },
+ "s2": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "u2",
+    0
+   ],
+   "filename_prefix": "iki/initial/glasses-seller_x4"
+  }
+ },
+ "l3": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "boiled-egg-seller-clean.png"
+  }
+ },
+ "u3": {
+  "class_type": "ImageUpscaleWithModel",
+  "inputs": {
+   "upscale_model": [
+    "m",
+    0
+   ],
+   "image": [
+    "l3",
+    0
+   ]
+  }
+ },
+ "s3": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "u3",
+    0
+   ],
+   "filename_prefix": "iki/initial/boiled-egg-seller_x4"
+  }
+ }
+}
