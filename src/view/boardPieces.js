@@ -48,8 +48,8 @@ export function renderBoardPieces(board, game, { targets = [] } = {}) {
   stackAt.seen = {};
   game.turnOrder.forEach((pi) => {
     const player = game.players[pi];
-    const style = `--player-color:${color(pi)}`;
-    if (player.iki < 30) put(`<div class="tok tok-lap" style="${style}">30</div>`, 'score-lap', '3', { du: stackAt('lap') * 0.012 - 0.006, title: 'Ficha 30/60 IKI' });
+    const style = `--flower:url(/tokens/score/${boardId(pi)}.webp)`;
+    if (player.iki < 30) put(`<div class="tok tok-lap" style="${style}">30</div>`, 'score-lap', '3', { du: stackAt('lap') * 0.017 - 0.008, title: 'Ficha 30/60 IKI' });
     const cell = player.iki % 30;
     const k = stackAt(`score-${cell}`);
     const laps = Math.floor(player.iki / 30) * 30;

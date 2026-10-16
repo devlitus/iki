@@ -41,13 +41,15 @@ export function createPlayerModal() {
           <button type="button" class="btn close" aria-label="Cerrar">×</button>
         </span>
       </header>
-      <div class="board-strip"><img src="${board.image}" alt="Tablero de jugador ${board.name}" draggable="false"></div>
+      <div class="board-strip"><img src="${board.image}" alt="Tablero de jugador ${board.name}" draggable="false">
+        ${board.kobunSlots.slice(0, st.kobunFree).map(([x, y]) =>
+          `<img class="kobun-free" src="/pawns/kobun-${board.id}.webp" alt="Kobun libre" style="left: ${x * 100}%; top: ${y * 100}%" draggable="false">`).join('')}</div>
       <div class="cols">
         <section>
           <h3>Recursos y peones</h3>
           <dl>
             ${RESOURCES.map(([res, label]) => row(`<span class="ic ic-${res}"></span>${label}`, st.resources[res])).join('')}
-            ${row('<span class="ic ic-special">★</span>Especiales', st.specials.length ? st.specials.join(', ') : '—')}
+            ${row('<span class="ic ic-special"></span>Especiales', st.specials.length ? st.specials.join(', ') : '—')}
           </dl>
           <dl>
             ${row('Kobun libres', `${st.kobunFree}/${st.kobunTotal}`, 'Hace falta uno libre para contratar o construir')}

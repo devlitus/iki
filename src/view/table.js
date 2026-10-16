@@ -85,7 +85,7 @@ export function renderSupply(el, game) {
         <span class="res"><span class="ic ic-wood"></span>Madera</span>
         <span class="res"><span class="ic ic-sandal"></span>Sandalias</span>
         <span class="res"><span class="ic ic-koban"></span>Koban</span>
-        <span class="res" title="Mover +1, Evitar un incendio ×2, Comodín, Contratar −1"><span class="ic ic-special">★</span>Especiales</span>
+        <span class="res" title="Mover +1, Evitar un incendio ×2, Comodín, Contratar −1"><span class="ic ic-special"></span>Especiales</span>
       </div>
     </section>`;
 }
@@ -121,7 +121,7 @@ export function renderPlayers(el, game, { onOpenBoard }) {
           <button type="button" class="btn btn-sm open-board">Tablero</button>
         </header>
         <div class="chips">${resourceChips(p.resources)}${st.specials.length
-          ? `<span class="res" title="${st.specials.join(', ')}"><span class="ic ic-special">★</span>×${st.specials.length}</span>` : ''}</div>
+          ? `<span class="res" title="${st.specials.join(', ')}"><span class="ic ic-special"></span>×${st.specials.length}</span>` : ''}</div>
         <dl class="facts">
           <div title="Kobun libres para contratar o construir"><dt>Kobun</dt><dd>${st.kobunFree}/${st.kobunTotal}</dd></div>
           <div title="Puntos de IKI en el marcador"><dt>IKI</dt><dd>${st.iki}</dd></div>
