@@ -50,7 +50,7 @@ export function rollForStarter(rng, n) {
  * Crea una partida preparada hasta el paso 12. El paso 13 (personajes iniciales) lo hacen los jugadores
  * con placeInitialCard().
  *
- * @param {{ boardId: string }[]} players  en orden de asiento, en sentido horario.
+ * @param {{ boardId: string, ai?: boolean }[]} players  en orden de asiento, en sentido horario; `ai` = lo juega la IA.
  * @param {number} seed
  */
 export function createGame({ players, seed }) {
@@ -76,6 +76,7 @@ export function createGame({ players, seed }) {
     month: 1, // paso 2
     players: players.map((p, i) => ({
       boardId: p.boardId,
+      ai: Boolean(p.ai), // lo juega la IA (ver src/ai)
       rolls: rolls[i],
       resources: { ...STARTING_RESOURCES }, // paso 9
       kobun: KOBUN_PER_PLAYER, // Kobun libres en el tablero de jugador

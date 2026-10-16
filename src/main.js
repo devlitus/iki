@@ -7,6 +7,7 @@ import './players/players.css';
 import { createGame, freeOuterLots, MIN_PLAYERS, GAME_VERSION } from './game/setup.js';
 import { act, whoseTurn } from './game/engine.js';
 import { randomSeed } from './game/random.js';
+import { chooseAction, isAiTurn } from './ai/player.js';
 import { renderDecks, renderSupply, renderPlayers, createStepsDrawer } from './view/table.js';
 import { renderBoardPieces } from './view/boardPieces.js';
 import { renderTurnPanel, bindTurnPanel, boardTargets, hireableCards } from './view/turnPanel.js';
@@ -93,6 +94,39 @@ function render() {
   renderBoardPieces(board, game, { targets: targets() });
   btnReroll.disabled = Object.keys(game.lots).length > 0;
   steps.refresh();
+  scheduleAi();
+}
+
+// --- Jugadores de IA ---------------------------------------------------------------------------
+// Cuando le toca a una IA, tras una pausa (para que se vea lo que hace) elige y juega su acción. Espera mientras haya
+// un diálogo abierto (resumen del Evento, tabla final), la portada o el selector de tableros.
+const AI_DELAY = 700;
+const AI_RETRY = 400;
+let aiTimer = null;
+let aiStalled = false; // la IA falló: no reintenta hasta que la partida cambie por otro lado
+
+const aiBlocked = () => cover.visible || picker.isOpen || Boolean(document.querySelector('dialog[open]:not(#player-modal)'));
+
+function scheduleAi(delay = AI_DELAY) {
+  clearTimeout(aiTimer);
+  aiTimer = game && !aiStalled && isAiTurn(game) ? setTimeout(runAi, delay) : null;
+}
+
+function runAi() {
+  aiTimer = null;
+  if (!game || !isAiTurn(game)) return;
+  if (aiBlocked()) return scheduleAi(AI_RETRY);
+  const before = game;
+  try {
+    const action = chooseAction(game);
+    if (action) dispatch(action, { auto: true });
+  } catch (error) {
+    console.error('La IA no ha podido elegir jugada', error);
+  }
+  if (game === before) {
+    aiStalled = true;
+    clearTimeout(aiTimer);
+  }
 }
 
 /** Zonas del tablero que se pueden pulsar: los solares exteriores en el paso 13 y, en juego, lo que pida el turno. */
@@ -114,7 +148,7 @@ function set(patch) {
 const turnKey = (g) => [g.phase, whoseTurn(g), g.turn?.index, g.month, Boolean(g.pending)].join('|');
 
 /** Aplica una acción al motor; si no es válida, lo dice en el panel y deja la partida como estaba. */
-function dispatch(action) {
+function dispatch(action, { auto = false } = {}) {
   const before = game;
   let next;
   try {
@@ -123,7 +157,8 @@ function dispatch(action) {
     ui = { ...ui, error: error.message };
     return render();
   }
-  history = turnKey(before) === turnKey(next) ? [...history, before].slice(-MAX_UNDO) : [];
+  aiStalled = false;
+  history = !auto && turnKey(before) === turnKey(next) ? [...history, before].slice(-MAX_UNDO) : []; // lo que juega la IA no se deshace
   game = next;
   selectedCard = null;
   ui = {};
@@ -143,7 +178,8 @@ function undo() {
 }
 
 function newGame(players) {
-  game = createGame({ players: players.map(({ boardId }) => ({ boardId })), seed: randomSeed() });
+  aiStalled = false;
+  game = createGame({ players: players.map(({ boardId, ai }) => ({ boardId, ai })), seed: randomSeed() });
   selectedCard = null;
   ui = {};
   history = [];

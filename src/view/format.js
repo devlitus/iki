@@ -5,7 +5,7 @@ import { ZONES_BY_ID } from '../data/zones.js';
 
 /** Textos de la interfaz: nombres de jugadores, recursos, habilidades y entradas del registro. */
 
-export const playerName = (g, p) => PLAYER_BOARDS_BY_ID[g.players[p].boardId].name;
+export const playerName = (g, p) => `${PLAYER_BOARDS_BY_ID[g.players[p].boardId].name}${g.players[p].ai ? ' (IA)' : ''}`;
 export const playerColor = (g, p) => PLAYER_BOARDS_BY_ID[g.players[p].boardId].color;
 
 /** Nombre de jugador con su color, para frases y cabeceras. */

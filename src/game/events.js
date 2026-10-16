@@ -104,7 +104,7 @@ function paySalaries(g) {
  * Paso 2, Bonificación por Armonía: en cada grupo y por cada tipo con 2 o más cartas, cada jugador recibe
  * (sus cartas de ese tipo) × (todas las de ese tipo en el grupo) IKI. Las esquinas puntúan en dos grupos.
  */
-export function harmonyBonus(g) {
+export function harmonyGains(g) {
   const gains = g.players.map(() => 0);
   for (const group of HARMONY_GROUPS) {
     const byType = {};
@@ -121,7 +121,11 @@ export function harmonyBonus(g) {
       for (const [owner, n] of Object.entries(owners)) gains[owner] += n * total;
     }
   }
-  gains.forEach((iki, p) => {
+  return gains;
+}
+
+export function harmonyBonus(g) {
+  harmonyGains(g).forEach((iki, p) => {
     if (!iki) return;
     receive(g, p, { iki });
     log(g, { type: 'harmony', player: p, iki });
