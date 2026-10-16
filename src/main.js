@@ -4,6 +4,8 @@ import { ZONES_BY_ID, zoneCenter } from './data/zones.js';
 import { CHARACTERS_BY_ID } from './data/characters.js';
 import { createCharacterCard } from './cards/card.js';
 import './cards/card.css';
+import { createBoardPicker, createPlayerDock } from './players/boardPicker.js';
+import './players/players.css';
 
 const board = await createBoard({
   viewport: document.getElementById('viewport'),
@@ -47,5 +49,13 @@ for (const [i, charId] of initialCards.entries()) {
   board.place(card, u, v);
 }
 
+// Tableros de jugador: la tecla J abre el selector; si aún no hay jugadores, se abre al empezar.
+const renderDock = createPlayerDock(document.getElementById('player-dock'));
+const picker = createBoardPicker({ onChange: renderDock });
+if (picker.players.length < 2) picker.open();
+window.addEventListener('keydown', (e) => {
+  if ((e.key === 'j' || e.key === 'J') && !e.target.closest?.('#board-picker')) picker.open();
+});
+
 // Expuesto para depurar desde la consola.
-window.iki = { board, zones: ZONES_BY_ID };
+window.iki = { board, zones: ZONES_BY_ID, picker };

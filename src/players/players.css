@@ -1,0 +1,147 @@
+/* Selector de tableros de jugador (tecla J). */
+#board-picker {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(10, 6, 3, 0.72);
+}
+#board-picker[hidden] { display: none; }
+
+.picker-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 100%;
+  max-height: 100%;
+  padding: 16px 20px;
+  border-radius: 10px;
+  background: var(--table-dark);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+}
+.picker-panel header,
+.picker-panel footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.picker-panel h2 {
+  flex: 1;
+  margin: 0;
+  font: 400 24px/1.2 'Patrick Hand SC', system-ui, sans-serif;
+}
+.picker-panel footer { justify-content: flex-end; }
+
+.picker-panel button {
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+}
+.picker-panel footer button,
+.picker-close {
+  padding: 6px 14px;
+  border: 1px solid rgba(243, 233, 218, 0.35);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25);
+}
+.picker-close { padding: 2px 10px; font-size: 20px; }
+.picker-panel footer button:disabled { opacity: 0.4; cursor: default; }
+.picker-done:not(:disabled) { background: #3f7f4a; border-color: #6fb37a; }
+
+.picker-boards {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  overflow-x: auto;
+  min-height: 0;
+}
+
+.picker-board {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border: 3px solid transparent;
+  border-radius: 10px;
+  background: none;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.picker-board img {
+  display: block;
+  height: min(68vh, 900px);
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
+}
+.picker-board:not(:disabled):hover,
+.picker-board:not(:disabled):focus-visible {
+  transform: translateY(-4px);
+  border-color: var(--player-color);
+  outline: none;
+}
+.picker-name {
+  padding: 2px 12px;
+  border-radius: 999px;
+  background: var(--player-color);
+  color: #fff;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+.picker-board:disabled { cursor: default; }
+.picker-board.taken img { filter: grayscale(0.8) brightness(0.55); }
+.picker-owner {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-12deg);
+  padding: 4px 10px;
+  border: 2px solid var(--player-color);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.7);
+  font: 400 22px/1 'Patrick Hand SC', system-ui, sans-serif;
+  white-space: nowrap;
+}
+.picker-owner:empty { display: none; }
+
+/* Bandeja con los tableros elegidos, a la derecha; pulsar uno lo amplía. */
+#player-dock {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  bottom: 64px;
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  pointer-events: none;
+}
+.dock-board {
+  position: relative;
+  height: 40%;
+  padding: 0;
+  border: 2px solid var(--player-color);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: height 0.2s;
+}
+.dock-board.expanded { height: 100%; }
+.dock-board img { display: block; height: 100%; }
+.dock-label {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  padding: 0 6px;
+  border-radius: 6px 0 6px 0;
+  background: var(--player-color);
+  color: #fff;
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .picker-board img { height: 50vh; }
+  .picker-boards { justify-content: flex-start; }
+}
