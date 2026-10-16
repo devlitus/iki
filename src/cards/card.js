@@ -1,9 +1,9 @@
 import { CHARACTER_TYPES } from '../data/characters.js';
-import { icon, resources } from './icons.js';
+import { GLYPHS, resources } from './icons.js';
 
 const TYPE_SYMBOLS = {
   vendor: '✿',
-  artisan: '◒',
+  artisan: GLYPHS.artisan,
   special: '❂',
   builder: '⫽',
   merchant: '◓',
@@ -12,38 +12,50 @@ const TYPE_SYMBOLS = {
 /**
  * Crea el elemento DOM de una carta de Personaje. Todo el tamaño va en unidades relativas al ancho
  * de la carta (container queries), así que basta con fijar el ancho del elemento para escalarla.
+ *
+ * Maqueta (como la carta impresa): ilustración a sangre a la izquierda con el estandarte del coste,
+ * franja blanca inferior con nombre y habilidad, y columna del color del tipo a la derecha con el
+ * marcador de experiencia (retiro arriba, en círculo; espacio inicial del Kobun abajo, punteado).
  */
 export function createCharacterCard(character) {
   const type = CHARACTER_TYPES[character.type];
   const el = document.createElement('article');
-  el.className = 'card';
+  el.className = `card card-${character.type}`;
   el.dataset.id = character.id;
   el.style.setProperty('--type-color', type.color);
 
-  // Marcador de experiencia, de arriba (retiro) a abajo (inicio): el retiro va en círculo.
-  const levels = character.salary.map((s, i) => {
-    const retired = i === character.salary.length - 1;
-    return `<li class="xp ${retired ? 'xp-retired' : ''}" title="${retired ? 'Retirado' : `Nivel ${i + 1}`}">${resources(s)}</li>`;
-  }).reverse().join('');
+  // Con el escaneo de la carta impresa se muestra tal cual: coste, columna y pie ya vienen en la imagen.
+  if (character.scan) {
+    el.classList.add('card-scan');
+    el.innerHTML = `<img src="${character.scan}" alt="${character.name}" draggable="false">`;
+    return el;
+  }
+
+  const last = character.salary.length - 1;
+  const levels = character.salary.map((s, i) => (i === last
+    ? `<li class="xp xp-retired" title="Retirado">${resources(s)}</li>
+       <li class="xp-sep xp-retire-mark" aria-hidden="true">${GLYPHS.retire}</li>`
+    : `<li class="xp" title="Nivel ${i + 1}">${resources(s)}</li>
+       <li class="xp-sep" aria-hidden="true">↑</li>`)).reverse().join('');
 
   const ability = character.ability.pay.length
-    ? `${resources(character.ability.pay)}<span class="arrow">→</span>${resources(character.ability.gain)}`
+    ? `${resources(character.ability.pay)}<span class="arrow">➜</span>${resources(character.ability.gain)}`
     : resources(character.ability.gain);
 
   el.innerHTML = `
-    <div class="card-body">
-      <header class="card-top">
-        ${character.cost == null
-          ? '<span class="badge badge-initial" title="Personaje inicial">初</span>'
-          : `<span class="badge badge-cost" title="Coste">${character.cost}${icon('mon')}</span>`}
-        ${character.fire ? `<span class="badge badge-fire" title="Bonificación al contratar">${'🔥'.repeat(character.fire)}</span>` : ''}
-      </header>
-      <div class="card-art">${portrait(type.color)}</div>
+    <div class="card-art">${character.art
+      ? `<img src="${character.art}" alt="" draggable="false">`
+      : portrait(type.color)}</div>
+    <div class="card-banner" title="${character.cost == null ? 'Personaje inicial' : 'Coste'}">
+      <span>${character.cost ?? '初'}</span>
+    </div>
+    ${character.fire ? `<span class="card-fire" title="Bonificación al contratar">${'🔥'.repeat(character.fire)}</span>` : ''}
+    <div class="card-bottom">
       <h3 class="card-name">${character.name}</h3>
-      <footer class="card-ability" title="Habilidad">${ability}</footer>
+      <div class="card-ability" title="Habilidad">${ability}</div>
     </div>
     <aside class="card-track">
-      <ol>${levels}<li class="xp xp-start" title="Inicio (nivel 1)">1</li></ol>
+      <ol>${levels}<li class="xp xp-start" title="Inicio (Kobun)">${GLYPHS.kobun}</li></ol>
       <span class="card-type" title="${type.label}">${TYPE_SYMBOLS[character.type]}</span>
     </aside>`;
   return el;
