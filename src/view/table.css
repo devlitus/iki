@@ -72,7 +72,7 @@
 .ic-rice { background: #f1ede2; border-radius: 40% 40% 50% 50%; }
 .ic-wood { background: #8a5a2b; border-radius: 3px; border: 1px solid #5d3a18; }
 .ic-sandal { width: 11px; background: #c69a5b; border-radius: 40% 40% 30% 30%; }
-.ic-koban { width: 18px; background: url('/tokens/koban.webp') center / contain no-repeat; border-radius: 0; }
+.ic-koban { width: 18px; background: url('/tokens/money/koban.webp') center / contain no-repeat; border-radius: 0; }
 .ic-special { background: #2b2622; border-radius: 4px; color: #ffd27a; }
 
 /* Jugadores en la columna derecha: una ficha compacta cada uno, el activo arriba y resaltado */
