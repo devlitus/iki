@@ -10,7 +10,7 @@ import { seasonMarket } from '../data/market.js';
  */
 
 /** Asientos alrededor del tablero en sentido horario visto desde arriba. */
-export const GAME_VERSION = 3;
+export const GAME_VERSION = 4;
 export const MIN_PLAYERS = 3; // falta el lado de 2 jugadores del tablero
 export const MAX_PLAYERS = 4;
 
@@ -104,6 +104,7 @@ export function createGame({ players, seed }) {
     pickOrder,
     lots: {}, // lotId → { kind: 'character' | 'building', card, owner, xp }
     log: [],
+    logSeq: 0,
     pending: null, // decisión que espera a un jugador (ver events.js)
     event: null, // Evento del mes en curso
   };
@@ -119,7 +120,7 @@ export function currentPicker(game) {
  * Jugador que está jugando: durante el paso 13 el que elige personaje; después, el del turno.
  * Aún no hay turnos, así que tras la preparación es el jugador inicial.
  */
-export const activePlayer = (game) => currentPicker(game) ?? game.turn?.player ?? currentPlacer(game) ?? game.turnOrder[0];
+export const activePlayer = (game) => currentPicker(game) ?? game.pending?.player ?? game.turn?.player ?? currentPlacer(game) ?? game.turnOrder[0];
 
 /** Fase A: jugador al que le toca colocar su Ikizama, o null fuera de esa fase. */
 export function currentPlacer(game) {

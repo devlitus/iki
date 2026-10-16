@@ -189,6 +189,11 @@ Sustituye la estimación actual de `playerStats.js`.
    pescado, pipa, edificio, flor ×3 Koban, flor ×1 madera, flor ×1 cada 4 mons, =) y una columna por jugador; ganador
    resaltado.
 
+> **Hecho (fase 4)**: portada (`view/cover.js`), panel de turno con deshacer y registro (`view/turnPanel.js`), fila de
+> cartas con sus mons, objetivos pulsables en el tablero, piezas reales (`view/boardPieces.js`), diálogos de comida,
+> incendio y Comodín en el propio panel, resumen del Evento y tabla final (`view/dialogs.js`), ampliación de cartas al
+> pasar el ratón. Las elecciones previas a confirmar viven en `ui` (main.js); las acciones las valida el motor.
+
 **Verificación**: jugar en el navegador una partida de 3 jugadores hasta la tabla final, sin errores en consola, y
 revisar en apaisado móvil que no se rompe.
 

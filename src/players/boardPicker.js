@@ -11,7 +11,7 @@ const STORAGE_KEY = 'iki.playerBoards';
  * `onDone(players)` recibe, al pulsar Empezar, la lista `[{ player: 1, boardId: 'red' }, ...]` en orden de
  * elección, que es también el orden de los asientos alrededor de la mesa (sentido horario).
  */
-export function createBoardPicker({ onDone } = {}) {
+export function createBoardPicker({ onDone, onCancel } = {}) {
   let players = load();
 
   const overlay = document.createElement('div');
@@ -59,9 +59,9 @@ export function createBoardPicker({ onDone } = {}) {
   btnUndo.addEventListener('click', () => { players = players.slice(0, -1); update(); });
   btnReset.addEventListener('click', () => { players = []; update(); });
   btnDone.addEventListener('click', () => { close(); onDone?.(players); });
-  overlay.querySelector('.picker-close').addEventListener('click', close);
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
-  overlay.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+  overlay.querySelector('.picker-close').addEventListener('click', cancel);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) cancel(); });
+  overlay.addEventListener('keydown', (e) => { if (e.key === 'Escape') cancel(); });
 
   function ownerOf(boardId) {
     return players.find((p) => p.boardId === boardId);
@@ -91,6 +91,12 @@ export function createBoardPicker({ onDone } = {}) {
 
   function close() {
     overlay.hidden = true;
+  }
+
+  /** Cierra sin empezar partida. */
+  function cancel() {
+    close();
+    onCancel?.();
   }
 
   update();

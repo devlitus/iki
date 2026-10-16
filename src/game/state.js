@@ -23,7 +23,8 @@ export function toCost(list) {
 }
 
 export function log(g, entry) {
-  g.log.push({ month: g.month, ...entry });
+  g.logSeq = (g.logSeq ?? 0) + 1; // numera las entradas: la interfaz sabe cuáles son nuevas aunque el registro se recorte
+  g.log.push({ seq: g.logSeq, month: g.month, ...entry });
   if (g.log.length > 300) g.log.splice(0, g.log.length - 300);
 }
 

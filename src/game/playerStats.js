@@ -37,7 +37,7 @@ export function playerStats(game, index) {
     kobunFree: p.kobun,
     kobunTotal: KOBUN_PER_PLAYER,
     ikizama: p.ikizama ? ZONES_BY_ID[p.ikizama]?.label ?? p.ikizama : 'En su tablero',
-    oyakata: ZONES_BY_ID[p.oyakata]?.label ?? p.oyakata,
+    oyakata: p.oyakata ? ZONES_BY_ID[p.oyakata]?.label ?? p.oyakata : 'Recogido',
     iki: p.iki,
     fire: p.fire,
     fireStack: game.fireStack.indexOf(index) + 1,

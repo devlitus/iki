@@ -1,0 +1,112 @@
+import { EVENT_LOG_TYPES, logLine, playerColor, playerName, typeLabel } from './format.js';
+import { CHARACTERS_BY_ID } from '../data/characters.js';
+import { BUILDINGS_BY_ID } from '../data/decks.js';
+
+/** Diálogos a pantalla completa: resumen del Evento del mes, tabla de puntuación final y ampliación de cartas. */
+
+function makeDialog(id) {
+  const dialog = document.createElement('dialog');
+  dialog.id = id;
+  dialog.className = 'iki-dialog';
+  document.body.append(dialog);
+  dialog.addEventListener('click', (e) => { if (e.target === dialog || e.target.closest('.close')) dialog.close(); });
+  return dialog;
+}
+
+/** Lo ocurrido en el Evento (Día de Pago, Incendio): las entradas nuevas del registro, agrupadas. */
+export function createEventSummary() {
+  const dialog = makeDialog('event-summary');
+  return {
+    /** Muestra el resumen de las entradas `entries` si hay algo que contar. */
+    show(game, entries) {
+      const lines = entries.filter((e) => EVENT_LOG_TYPES.includes(e.type));
+      if (!lines.length) return;
+      const fire = lines.some((e) => e.type.startsWith('fire') || e.type === 'burned');
+      dialog.innerHTML = `
+        <h2>${fire ? 'Incendio' : 'Día de Pago'} · mes ${lines[0].month}</h2>
+        <ul>${lines.map((e) => `<li>${logLine(game, e)}</li>`).join('')}</ul>
+        <button type="button" class="btn close" autofocus>Continuar</button>`;
+      if (!dialog.open) dialog.showModal();
+    },
+  };
+}
+
+/** Filas de la tabla de puntuación, como la libreta del juego. */
+const ROWS = [
+  ['track', 'Marcador', 'IKI del marcador'],
+  ['variety', 'Variedad', 'Tipos de personaje distintos: 1, 4, 9, 16 o 25'],
+  ['fish', 'Pescado', 'Pescados de estaciones distintas, más los extras'],
+  ['tobacco', 'Tabaco', 'Bolsas de Tabaco (el doble con una Pipa)'],
+  ['buildings', 'Edificios', 'IKI de tus Edificios'],
+  ['resources', 'Recursos', '3 por Koban, 1 por madera, 1 por cada 4 mons'],
+];
+
+export function createFinalTable({ onNewGame }) {
+  const dialog = makeDialog('final-table');
+  dialog.addEventListener('click', (e) => { if (e.target.closest('.new-game')) { dialog.close(); onNewGame(); } });
+  return {
+    open(game) {
+      const { scores, ranking, winner } = game.final;
+      const order = game.turnOrder;
+      const place = (p) => ranking.indexOf(p) + 1;
+      dialog.innerHTML = `
+        <h2>Puntuación final</h2>
+        <p class="muted">Gana <b style="color:${playerColor(game, winner)}">${playerName(game, winner)}</b> con ${scores[winner].total} IKI.
+          Desempate: Extinción de Incendios y posición en la pila.</p>
+        <table class="score-table">
+          <thead><tr><th></th>${order.map((p) => `<th class="${p === winner ? 'winner' : ''}" style="--player-color:${playerColor(game, p)}">
+            ${playerName(game, p)}</th>`).join('')}</tr></thead>
+          <tbody>
+            ${ROWS.map(([key, label, hint]) => `<tr><th scope="row" title="${hint}">${label}</th>${order.map((p) =>
+              `<td class="${p === winner ? 'winner' : ''}">${scores[p][key]}</td>`).join('')}</tr>`).join('')}
+            <tr class="total"><th scope="row">Total</th>${order.map((p) => `<td class="${p === winner ? 'winner' : ''}">${scores[p].total}</td>`).join('')}</tr>
+            <tr><th scope="row">Puesto</th>${order.map((p) => `<td>${place(p)}.º</td>`).join('')}</tr>
+          </tbody>
+        </table>
+        <div class="final-detail">${order.map((p) => detail(game, p)).join('')}</div>
+        <footer><button type="button" class="btn close">Cerrar</button><button type="button" class="btn new-game">Nueva partida</button></footer>`;
+      if (!dialog.open) dialog.showModal();
+    },
+  };
+}
+
+/** Lo que tiene cada jugador al final: personajes recogidos, edificios, pescados y fichas. */
+function detail(game, p) {
+  const player = game.players[p];
+  const names = (ids, defs) => ids.map((id) => defs[id]?.name ?? id).join(', ') || '—';
+  return `<section style="--player-color:${playerColor(game, p)}"><h3>${playerName(game, p)}</h3>
+    <p><b>Personajes:</b> ${names(player.retired, CHARACTERS_BY_ID)}</p>
+    <p><b>Edificios:</b> ${names(player.buildings, BUILDINGS_BY_ID)}</p>
+    <p><b>Pescado:</b> ${player.fish.length} · <b>Pipas:</b> ${player.pipes.length} · <b>Tabaco:</b> ${player.tobacco.length}</p>
+    ${player.wildType ? `<p><b>Comodín:</b> ${typeLabel(player.wildType)}</p>` : ''}</section>`;
+}
+
+/** Al pasar el ratón por una carta o ficha con `data-zoom`, se ve grande junto al puntero. */
+export function initZoom() {
+  const zoom = document.createElement('img');
+  zoom.id = 'card-zoom';
+  zoom.hidden = true;
+  zoom.alt = '';
+  document.body.append(zoom);
+  let current = null;
+  const place = (e) => {
+    const w = zoom.offsetWidth || 300;
+    zoom.style.left = `${e.clientX + 24 + w > innerWidth ? e.clientX - 24 - w : e.clientX + 24}px`;
+    zoom.style.top = `${Math.max(8, Math.min(e.clientY - 40, innerHeight - zoom.offsetHeight - 8))}px`;
+  };
+  document.addEventListener('pointerover', (e) => {
+    const target = e.target.closest?.('[data-zoom]');
+    if (target === current) return;
+    current = target;
+    if (!target || e.pointerType === 'touch') { zoom.hidden = true; return; }
+    zoom.src = target.dataset.zoom;
+    zoom.hidden = false;
+    place(e);
+  });
+  document.addEventListener('pointermove', (e) => {
+    if (current && !current.isConnected) { zoom.hidden = true; current = null; } // la pieza se redibujó mientras estaba el puntero encima
+    if (current) place(e);
+  });
+  document.addEventListener('pointerdown', () => { zoom.hidden = true; current = null; });
+}
+

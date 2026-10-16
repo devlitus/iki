@@ -1,0 +1,26 @@
+/* Portada: la caja a la izquierda y el menú a la derecha, sobre la mesa de madera. */
+#cover {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(16px, 4vw, 56px);
+  padding: 16px;
+  background:
+    radial-gradient(ellipse at center, rgba(255, 220, 170, 0.2), transparent 70%),
+    linear-gradient(180deg, var(--table-light), var(--table-dark));
+}
+#cover[hidden] { display: none; }
+.cover-art { height: min(100%, 92vh); max-width: 60vw; object-fit: contain; border-radius: 6px; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6); }
+.cover-menu { display: flex; flex-direction: column; gap: 12px; min-width: 200px; }
+.cover-menu p { margin: 0; text-align: center; }
+.btn.cover-btn { padding: 12px 22px; font: 400 24px/1 'Patrick Hand SC', system-ui, sans-serif; }
+.btn.cover-btn[hidden] { display: none; }
+.btn.cover-new { background: #3f7f4a; border-color: #6fb37a; }
+
+@media (max-height: 560px) {
+  #cover { padding: 8px; }
+  .btn.cover-btn { padding: 8px 14px; font-size: 18px; }
+}
