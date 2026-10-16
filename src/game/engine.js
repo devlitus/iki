@@ -1,9 +1,10 @@
-import { CHARACTERS_BY_ID } from '../data/characters.js';
-import { ZONES_BY_ID, LOT_IDS, STREET_ENTRY, LAP_FROM } from '../data/zones.js';
+import { CHARACTERS_BY_ID, CHARACTER_TYPES } from '../data/characters.js';
+import { ZONES_BY_ID, LOT_IDS, STREET, STREET_ENTRY, LAP_FROM } from '../data/zones.js';
 import { placeInitialCard, currentPlacer } from './setup.js';
 import { activateCharacter, activateShop } from './abilities.js';
 import { startEvent, resolvePending } from './events.js';
-import { startMonth, seasonOf } from './month.js';
+import { startMonth, beginNewYearTurn, seasonOf } from './month.js';
+import { finishGame, resolveWild } from './ending.js';
 import { advanceFire, assertFreeLot, characterLots, gainXp, log, pay, receive, rule } from './state.js';
 
 /**
@@ -15,7 +16,8 @@ import { advanceFire, assertFreeLot, characterLots, gainXp, log, pay, receive, r
  *   'ikizama'            → fase A: se coloca el Ikizama en el marcador, por orden de Extinción de Incendios
  *   'actions'            → fase B: turnos por orden del Ikizama; `game.turn` es el turno en curso
  *   'event'              → fase C: Evento del mes (Día de Pago, Incendio); solo se ve cuando espera una decisión
- *   'newyear'            → mes 13, Día de Año Nuevo (aún sin implementar)
+ *   'newyear'            → mes 13, Día de Año Nuevo: cada jugador coloca su Oyakata donde quiera y hace negocios
+ *   'ended'              → partida terminada; `game.final` tiene la puntuación (scoring.js)
  *
  * Acciones (`{ type, … }`):
  *   placeInitial { card, lot }          paso 13 de la preparación
@@ -26,7 +28,8 @@ import { advanceFire, assertFreeLot, characterLots, gainXp, log, pay, receive, r
  *   shop { …elección }                  B2: la tienda de la casilla (ver abilities.js)
  *   character { lot, …elección }        B2: activa un personaje de los puestos de la casilla
  *   endTurn                             B3: recupera el Ikizama y pasa el turno
- *   resolve { drop? | use? }            fase C: contesta la decisión pendiente (`game.pending`, ver events.js)
+ *   place { zone }                      mes 13: coloca el Oyakata en cualquier casilla de la calle
+ *   resolve { drop? | use? | cardType? } contesta la decisión pendiente (`game.pending`: events.js, ending.js)
  */
 
 export const IKIZAMA_SLOTS = ['1-4', '1', '2', '3', '4'];
@@ -46,7 +49,7 @@ export function act(game, action) {
 export function whoseTurn(g) {
   if (g.pending) return g.pending.player;
   if (g.phase === 'ikizama') return currentPlacer(g);
-  if (g.phase === 'actions') return g.turn.player;
+  if (g.turn) return g.turn.player;
   return null;
 }
 
@@ -72,6 +75,10 @@ function beginTurn(g, index) {
 function endTurn(g) {
   const { index, player } = g.turn;
   g.players[player].ikizama = null; // B3
+  if (g.phase === 'newyear') {
+    if (index + 1 < g.turnList.length) return beginNewYearTurn(g, index + 1);
+    return finishGame(g);
+  }
   if (index + 1 < g.turnList.length) return beginTurn(g, index + 1);
   g.turn = null;
   startEvent(g);
@@ -82,7 +89,7 @@ function endTurn(g) {
 const inPhase = (g, phase) => rule(g.phase === phase, `No es la fase ${phase}`);
 
 function inStep(g, step) {
-  inPhase(g, 'actions');
+  rule(g.phase === 'actions' || g.phase === 'newyear', 'Ahora no se juegan acciones');
   rule(g.turn.step === step, `Ahora no toca ${step}`);
   return g.turn.player;
 }
@@ -161,6 +168,14 @@ const HANDLERS = {
     g.turn.step = 'business';
   },
 
+  place(g, a) {
+    const p = inStep(g, 'place');
+    rule(STREET.includes(a.zone), `${a.zone} no es una casilla de la calle`);
+    g.players[p].oyakata = a.zone;
+    log(g, { type: 'place', player: p, to: a.zone });
+    g.turn.step = 'business';
+  },
+
   shop(g, a) {
     const p = inStep(g, 'business');
     rule(!g.turn.didShop, 'Ya has usado la tienda este turno');
@@ -182,8 +197,9 @@ const HANDLERS = {
   },
 
   resolve(g, a) {
-    inPhase(g, 'event');
-    resolvePending(g, a);
+    rule(g.pending, 'No hay ninguna decisión pendiente');
+    if (g.pending.type === 'wildType') resolveWild(g, a);
+    else resolvePending(g, a);
   },
 };
 
@@ -205,10 +221,12 @@ export function legalActions(g) {
 }
 
 function candidates(g) {
+  if (g.pending?.type === 'wildType') return Object.keys(CHARACTER_TYPES).map((cardType) => ({ type: 'resolve', cardType }));
   if (g.pending?.type === 'avoidFire') return [{ type: 'resolve', use: true }, { type: 'resolve', use: false }];
   if (g.pending?.type === 'food') return combinations(characterLots(g, g.pending.player), g.pending.drop).map((drop) => ({ type: 'resolve', drop }));
   if (g.phase === 'ikizama') return IKIZAMA_SLOTS.map((slot) => ({ type: 'placeIkizama', slot }));
-  if (g.phase !== 'actions') return [];
+  if (g.phase !== 'actions' && g.phase !== 'newyear') return [];
+  if (g.turn.step === 'place') return STREET.map((zone) => ({ type: 'place', zone }));
   const p = g.turn.player;
   const player = g.players[p];
 

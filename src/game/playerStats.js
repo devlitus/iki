@@ -2,6 +2,7 @@ import { CHARACTERS_BY_ID, CHARACTER_TYPES } from '../data/characters.js';
 import { BUILDINGS_BY_ID } from '../data/decks.js';
 import { ZONES_BY_ID } from '../data/zones.js';
 import { KOBUN_PER_PLAYER } from './setup.js';
+import { scorePlayer } from './scoring.js';
 
 /**
  * Resumen de lo que un jugador necesita saber de su tablero (ver docs/reglas.md): recursos, peones,
@@ -15,9 +16,6 @@ export const SPECIALS = {
   hire: 'Contratar −1',
 };
 
-// Puntuación final: variedad de tipos de Personaje y tipos de Pescado diferentes.
-const VARIETY_IKI = [0, 1, 4, 9, 16, 25];
-const FISH_IKI = [0, 3, 6, 10, 15];
 export const MAX_FISH = 4;
 export const MAX_TYPES = Object.keys(CHARACTER_TYPES).length;
 
@@ -26,19 +24,12 @@ const characterName = (id) => CHARACTERS_BY_ID[id]?.name ?? id;
 export function playerStats(game, index) {
   const p = game.players[index];
   const hired = Object.entries(game.lots)
-    .filter(([, l]) => l.owner === index)
+    .filter(([, l]) => l.kind === 'character' && l.owner === index)
     .map(([lotId, l]) => ({ lotId, card: l.card, name: characterName(l.card), type: CHARACTERS_BY_ID[l.card]?.type, xp: l.xp }));
   const retired = p.retired.map((card) => ({ card, name: characterName(card), type: CHARACTERS_BY_ID[card]?.type }));
   const types = new Set([...hired, ...retired].map((c) => c.type).filter(Boolean));
 
-  const { mon, wood, koban } = p.resources;
-  const score = {
-    track: p.iki,
-    variety: VARIETY_IKI[types.size],
-    fish: FISH_IKI[Math.min(p.fish.length, MAX_FISH)], // falta el extra del pescado más caro de cada estación
-    resources: koban * 3 + wood + Math.floor(mon / 4),
-  };
-  score.total = Object.values(score).reduce((a, b) => a + b, 0);
+  const score = scorePlayer(game, index); // estimación mientras la partida sigue
 
   return {
     resources: p.resources,

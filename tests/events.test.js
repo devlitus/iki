@@ -249,7 +249,7 @@ test('Evitar un incendio: el dueño decide, la ficha se gasta y el fuego sigue',
   assert.equal(declined.lots['lot-top-left-1'], undefined);
   assert.equal(declined.players[0].specials.length, 2);
   assert.throws(() => act(g, { type: 'resolve' }), /Elige/);
-  assert.throws(() => act(g, { type: 'income' }), /fase/);
+  assert.throws(() => act(g, { type: 'income' }), /Ahora no/);
 });
 
 test('Evitar un incendio no protege edificios ni se ofrece si el personaje ya está a salvo', () => {

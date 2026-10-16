@@ -441,7 +441,7 @@ test('partidas al azar con jugadas legales: llegan al Día de Año Nuevo con el 
     const n = 3 + (seed % 2);
     let g = newGame(n, seed);
     let steps = 0;
-    while (g.phase !== 'newyear' && steps++ < 20000) {
+    while (g.phase !== 'newyear' && g.phase !== 'ended' && steps++ < 20000) {
       const options = legalActions(g);
       assert.ok(options.length > 0, `sin jugadas en ${g.phase}/${g.turn?.step} (semilla ${seed})`);
       g = act(g, options[Math.floor(rng.next() * options.length)]);

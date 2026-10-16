@@ -15,3 +15,16 @@ export function startMonth(g) {
   g.turn = null;
   log(g, { type: 'month', month: g.month });
 }
+
+/** Mes 13, Día de Año Nuevo: juegan por orden de Extinción (el más adelantado primero) y no hay fase A ni B1. */
+export function startNewYear(g) {
+  g.phase = 'newyear';
+  g.order = [...g.fireStack];
+  g.turnList = [...g.order];
+  beginNewYearTurn(g, 0);
+  log(g, { type: 'month', month: g.month });
+}
+
+export function beginNewYearTurn(g, index) {
+  g.turn = { index, player: g.turnList[index], slot: null, step: 'place', didShop: false, didChar: false };
+}

@@ -142,7 +142,7 @@ Luego: recoger cartas, elegir tipo del Marionetista (Comodín) y puntuación fin
 > que surgen en mitad de un evento (comida, incendio, Marionetista):
 
 > **Hecho en la fase C**: `game.pending` (`{ type, player, … }`) y la acción `resolve`. Solo `food` y `avoidFire`;
-> el Marionetista se decidirá en la puntuación final.
+> el Marionetista se decide al final con `wildType` (`resolve { cardType }`).
 
 El motor se para y pide una elección cuando hace falta:
 - solar donde colocar la carta contratada / el edificio;

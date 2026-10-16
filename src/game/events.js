@@ -1,6 +1,6 @@
 import { CHARACTERS_BY_ID } from '../data/characters.js';
 import { NAGAYAS, HARMONY_GROUPS, ZONES_BY_ID } from '../data/zones.js';
-import { startMonth, seasonOf } from './month.js';
+import { startMonth, startNewYear, seasonOf } from './month.js';
 import { createRng } from './random.js';
 import { characterLots, log, receive, removeLot, rule, salaryOf, toCost } from './state.js';
 
@@ -38,10 +38,8 @@ function finishEvent(g) {
   g.event = null;
   g.pending = null;
   g.month += 1;
-  if (g.month <= 12) return startMonth(g);
-  g.phase = 'newyear'; // mes 13: ver docs/plan-logica.md §2.3
-  g.order = [...g.fireStack];
-  log(g, { type: 'month', month: g.month });
+  if (g.month <= 12) startMonth(g);
+  else startNewYear(g);
 }
 
 /** +1 mon en cada carta que quede junto al tablero. */
