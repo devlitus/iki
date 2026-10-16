@@ -16,18 +16,12 @@ html, body {
   background: var(--table-dark);
 }
 
-/* La mesa: vetas de madera hechas con gradientes. */
+/* Celda del tablero (la mesa con vetas de madera está en view/table.css). */
 #viewport {
-  position: fixed;
-  inset: 0;
   overflow: hidden;
   cursor: grab;
   touch-action: none;
-  background:
-    radial-gradient(ellipse at center, rgba(255, 220, 170, 0.18), transparent 70%),
-    repeating-linear-gradient(0deg, transparent 0 22px, rgba(0, 0, 0, 0.08) 22px 23px, transparent 23px 61px),
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.03) 0 3px, transparent 3px 9px),
-    linear-gradient(180deg, var(--table-light), var(--table-dark));
+  background: rgba(0, 0, 0, 0.12);
 }
 #viewport.dragging { cursor: grabbing; }
 
@@ -69,18 +63,15 @@ html, body {
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.5);
 }
 
-#hint, #toast {
-  position: fixed;
+#toast {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
   padding: 8px 12px;
   border-radius: 6px;
   background: var(--panel);
   pointer-events: none;
-}
-#hint { left: 16px; bottom: 16px; }
-#toast { right: 16px; bottom: 16px; font-family: ui-monospace, monospace; }
-
-@media (max-width: 600px) {
-  #hint { display: none; }
+  font-family: ui-monospace, monospace;
 }
 
 /* Capa de depuración de zonas (tecla Z). */

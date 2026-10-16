@@ -1,11 +1,14 @@
 import { createBoard } from './board.js';
 import { createZonesOverlay } from './zonesOverlay.js';
-import { ZONES_BY_ID, zoneCenter } from './data/zones.js';
-import { CHARACTERS_BY_ID } from './data/characters.js';
-import { createCharacterCard } from './cards/card.js';
+import { ZONES_BY_ID } from './data/zones.js';
 import './cards/card.css';
-import { createBoardPicker, createPlayerDock } from './players/boardPicker.js';
+import { createBoardPicker } from './players/boardPicker.js';
 import './players/players.css';
+import { createGame, placeInitialCard, MIN_PLAYERS } from './game/setup.js';
+import { randomSeed } from './game/random.js';
+import { renderDecks, renderSide, renderSeats, createStepsDrawer } from './view/table.js';
+import { renderBoardPieces } from './view/boardPieces.js';
+import './view/table.css';
 
 const board = await createBoard({
   viewport: document.getElementById('viewport'),
@@ -38,24 +41,73 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'z' || e.key === 'Z') zonesOverlay.toggle();
 });
 
-// Prueba: los cuatro personajes iniciales en los solares superiores izquierdos.
-const initialCards = ['boiled-egg-seller', 'salt-seller', 'cotton-seller', 'glasses-seller'];
-for (const [i, charId] of initialCards.entries()) {
-  const lotId = `lot-top-left-${i + 1}`;
-  const lot = ZONES_BY_ID[lotId];
-  const card = createCharacterCard(CHARACTERS_BY_ID[charId]);
-  card.style.width = `${lot.w * 100 * 0.92}%`;
-  const { u, v } = zoneCenter(lot);
-  board.place(card, u, v);
+// --- Partida ---------------------------------------------------------------------------------
+const GAME_KEY = 'iki.game';
+let game = loadGame();
+let selectedCard = null;
+
+const seats = Object.fromEntries(['top', 'left', 'right', 'bottom'].map((s) => [s, document.getElementById(`seat-${s}`)]));
+const steps = createStepsDrawer({
+  drawer: document.getElementById('steps'),
+  toggle: document.getElementById('open-steps'),
+  root: document.getElementById('app'),
+});
+const btnReroll = document.getElementById('reroll');
+
+function render() {
+  if (!game) return;
+  renderDecks(document.getElementById('decks'), game, { selectedCard, onSelectCard: (id) => { selectedCard = id; render(); } });
+  renderSide(document.getElementById('side'), game);
+  renderSeats(seats, game);
+  renderBoardPieces(board, game, { selectedCard, onPlace });
+  btnReroll.disabled = Object.keys(game.lots).length > 0;
+  steps.refresh();
 }
 
-// Tableros de jugador: la tecla J abre el selector; si aún no hay jugadores, se abre al empezar.
-const renderDock = createPlayerDock(document.getElementById('player-dock'));
-const picker = createBoardPicker({ onChange: renderDock });
-if (picker.players.length < 2) picker.open();
+function onPlace(lotId) {
+  if (!selectedCard) return;
+  game = placeInitialCard(game, selectedCard, lotId);
+  selectedCard = null;
+  saveGame(game);
+  render();
+}
+
+function newGame(players) {
+  game = createGame({ players: players.map(({ boardId }) => ({ boardId })), seed: randomSeed() });
+  selectedCard = null;
+  saveGame(game);
+  render();
+}
+
+btnReroll.addEventListener('click', () => newGame(game.players));
+
+// Tableros de jugador: la tecla J abre el selector; al pulsar Empezar se prepara una partida nueva.
+const picker = createBoardPicker({ onDone: (players) => { if (players.length >= MIN_PLAYERS) newGame(players); } });
+const openPicker = () => picker.open();
+document.getElementById('open-picker').addEventListener('click', openPicker);
 window.addEventListener('keydown', (e) => {
-  if ((e.key === 'j' || e.key === 'J') && !e.target.closest?.('#board-picker')) picker.open();
+  if ((e.key === 'j' || e.key === 'J') && !e.target.closest?.('#board-picker')) openPicker();
 });
+if (game) render();
+else if (picker.players.length >= MIN_PLAYERS) newGame(picker.players);
+else openPicker();
+
+function loadGame() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(GAME_KEY) ?? 'null');
+    return saved?.version === 1 ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveGame(state) {
+  try {
+    localStorage.setItem(GAME_KEY, JSON.stringify(state));
+  } catch {
+    // Sin almacenamiento: la partida dura lo que la pestaña.
+  }
+}
 
 // Expuesto para depurar desde la consola.
-window.iki = { board, zones: ZONES_BY_ID, picker };
+window.iki = { board, zones: ZONES_BY_ID, picker, get game() { return game; } };

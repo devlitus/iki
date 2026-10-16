@@ -494,7 +494,7 @@ acción de la misma tienda en el mismo mes.
 | **Casa de Empeños** | Elige uno: gasta 1 arroz → gana 4 mons, o gasta 1 sandalia → gana 4 mons. | `shop-pawn` |
 | **Lugar de Construcción** | Elige uno: gasta 1 mon → gana 1 arroz, o gasta 1 mon → construye un Edificio. | `shop-construction` |
 | **Mercado de Pescado** | Elige una ficha de Pescado de la estación actual, paga sus mons y colócala en el espacio libre más a la izquierda de tu tablero de jugador. Solo **un pescado por estación**. | `shop-fish` |
-| **Tienda de Cambio** | Elige uno: gasta 6 mons → 1 Koban, o gasta 10 mons → 2 Koban, o **gana mons de la reserva** (sin pagar nada). **[duda: la cantidad (probablemente 2) no se lee; el texto está cortado en el borde de la foto]** | `shop-exchange` |
+| **Tienda de Cambio** | Elige uno: gasta 6 mons → 1 Koban, o gasta 10 mons → 2 Koban, o **gana 2 mons de la reserva** (sin pagar nada). | `shop-exchange` |
 
 - Si tu nivel de Extinción de Incendios ya está al máximo (espacio 10) y lo vuelves a incrementar, tu ficha se pone
   en lo alto de la pila (si hay más fichas en ese espacio).
@@ -706,7 +706,6 @@ Diseño: Koota Yamada · Arte: David Sitbon · Desarrollo: Koota Yamada y Sorry 
 ---
 
 ## Dudas pendientes
-1. **Tienda de Cambio**: la tercera opción es ganar mons gratis, pero falta la cantidad (texto cortado; probablemente 2).
-2. **Ejemplo de incendio** (p. 9): foto movida; reconstruido. No cambia las reglas.
-3. **Experiencia de los Especiales con retiro** (Monje, Carro de Bueyes, Yamabushi, Sirvienta del Templo, Marionetista): solo viene en la carta.
-4. **Costes de Edificios, Pescados, Pipas y Tabaco**: vienen en las cartas y fichas, no en el reglamento.
+1. **Ejemplo de incendio** (p. 9): foto movida; reconstruido. No cambia las reglas.
+2. **Experiencia de los Especiales con retiro** (Monje, Carro de Bueyes, Yamabushi, Sirvienta del Templo, Marionetista): solo viene en la carta.
+3. **Costes de Edificios, Pescados, Pipas y Tabaco**: vienen en las cartas y fichas, no en el reglamento.

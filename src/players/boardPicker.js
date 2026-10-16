@@ -1,17 +1,17 @@
 import { PLAYER_BOARDS, PLAYER_BOARDS_BY_ID } from '../data/playerBoards.js';
+import { MIN_PLAYERS, MAX_PLAYERS } from '../game/setup.js';
 
-const MAX_PLAYERS = 4;
-const MIN_PLAYERS = 2;
 const STORAGE_KEY = 'iki.playerBoards';
 
 /**
  * Selector de tableros de jugador: por turnos, cada jugador pulsa el tablero (color) que quiere.
- * Los ya elegidos quedan bloqueados con el nombre de su jugador. Con 2-4 jugadores se puede confirmar;
- * la elección se muestra en una bandeja lateral (`#player-dock`) y se guarda en localStorage.
+ * Los ya elegidos quedan bloqueados con el nombre de su jugador. Con 3-4 jugadores se puede empezar
+ * (falta el lado de 2 jugadores del tablero). La elección se guarda en localStorage.
  *
- * `onChange(players)` recibe la lista `[{ player: 1, boardId: 'red' }, ...]` en orden de elección.
+ * `onDone(players)` recibe, al pulsar Empezar, la lista `[{ player: 1, boardId: 'red' }, ...]` en orden de
+ * elección, que es también el orden de los asientos alrededor de la mesa (sentido horario).
  */
-export function createBoardPicker({ onChange } = {}) {
+export function createBoardPicker({ onDone } = {}) {
   let players = load();
 
   const overlay = document.createElement('div');
@@ -58,7 +58,7 @@ export function createBoardPicker({ onChange } = {}) {
 
   btnUndo.addEventListener('click', () => { players = players.slice(0, -1); update(); });
   btnReset.addEventListener('click', () => { players = []; update(); });
-  btnDone.addEventListener('click', close);
+  btnDone.addEventListener('click', () => { close(); onDone?.(players); });
   overlay.querySelector('.picker-close').addEventListener('click', close);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
   overlay.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
@@ -82,7 +82,6 @@ export function createBoardPicker({ onChange } = {}) {
     btnReset.disabled = players.length === 0;
     btnDone.disabled = players.length < MIN_PLAYERS;
     save(players);
-    onChange?.(players);
   }
 
   function open() {
@@ -96,30 +95,6 @@ export function createBoardPicker({ onChange } = {}) {
 
   update();
   return { open, close, get players() { return players; } };
-}
-
-/** Bandeja lateral con los tableros elegidos; al pulsar uno se amplía. */
-export function createPlayerDock(container) {
-  container.addEventListener('click', (e) => {
-    const item = e.target.closest('.dock-board');
-    if (!item) return;
-    const wasOpen = item.classList.contains('expanded');
-    for (const el of container.children) el.classList.remove('expanded');
-    item.classList.toggle('expanded', !wasOpen);
-  });
-
-  return function render(players) {
-    container.replaceChildren(...players.map(({ player, boardId }) => {
-      const board = PLAYER_BOARDS_BY_ID[boardId];
-      const item = document.createElement('button');
-      item.type = 'button';
-      item.className = 'dock-board';
-      item.style.setProperty('--player-color', board.color);
-      item.title = `Jugador ${player} · ${board.name}`;
-      item.innerHTML = `<span class="dock-label">J${player}</span><img src="${board.image}" alt="Tablero ${board.name}" draggable="false">`;
-      return item;
-    }));
-  };
 }
 
 function load() {

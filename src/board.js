@@ -86,7 +86,8 @@ export async function createBoard({ viewport, board, image, pieces }) {
   viewport.addEventListener('pointerup', release);
   viewport.addEventListener('pointercancel', release);
   viewport.addEventListener('dblclick', fit);
-  window.addEventListener('resize', fit);
+  // La celda del tablero cambia de tamaño con la ventana y con los asientos de alrededor.
+  new ResizeObserver(fit).observe(viewport);
 
   /** Posición de pantalla → coordenadas normalizadas del tablero, o null si cae fuera. */
   function clientToUV(clientX, clientY) {

@@ -105,42 +105,6 @@
 }
 .picker-owner:empty { display: none; }
 
-/* Bandeja con los tableros elegidos, a la derecha; pulsar uno lo amplía. */
-#player-dock {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  bottom: 64px;
-  z-index: 10;
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-  pointer-events: none;
-}
-.dock-board {
-  position: relative;
-  height: 40%;
-  padding: 0;
-  border: 2px solid var(--player-color);
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.25);
-  cursor: pointer;
-  pointer-events: auto;
-  transition: height 0.2s;
-}
-.dock-board.expanded { height: 100%; }
-.dock-board img { display: block; height: 100%; }
-.dock-label {
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  padding: 0 6px;
-  border-radius: 6px 0 6px 0;
-  background: var(--player-color);
-  color: #fff;
-  font-weight: 700;
-}
-
 @media (max-width: 600px) {
   .picker-board img { height: 50vh; }
   .picker-boards { justify-content: flex-start; }
