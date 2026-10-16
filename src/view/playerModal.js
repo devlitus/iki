@@ -1,4 +1,6 @@
 import { PLAYER_BOARDS_BY_ID } from '../data/playerBoards.js';
+import { MARKET_BY_ID, describeToken } from '../data/market.js';
+import { SEASONS } from '../data/decks.js';
 import { CHARACTER_TYPES } from '../data/characters.js';
 import { activePlayer } from '../game/setup.js';
 import { playerStats, MAX_FISH, MAX_TYPES } from '../game/playerStats.js';
@@ -12,6 +14,26 @@ const RESOURCES = [['mon', 'Mons'], ['rice', 'Arroz'], ['wood', 'Madera'], ['san
 
 const row = (label, value, hint = '') => `<div${hint ? ` title="${hint}"` : ''}><dt>${label}</dt><dd>${value}</dd></div>`;
 const list = (items, empty) => (items.length ? `<ul>${items.join('')}</ul>` : `<p class="muted">${empty}</p>`);
+/**
+ * Fichas de mercado compradas, sobre sus círculos del tablero: un Pescado por estación y las Pipas y Bolsas de Tabaco
+ * en su círculo (apiladas con un pequeño desplazamiento si hay varias).
+ */
+function marketPieces(board, player) {
+  const piece = (id, [x, y], k = 0) => {
+    const t = MARKET_BY_ID[id];
+    const style = `left: ${(x + k * 0.011) * 100}%; top: ${(y - k * 0.06) * 100}%; z-index: ${k + 1}`;
+    return t.image
+      ? `<img class="mkt-piece" src="${t.image}" alt="${describeToken(t)}" title="${describeToken(t)}" style="${style}" draggable="false">`
+      : `<span class="mkt-piece mkt-plain" title="${describeToken(t)}" style="${style}">${t.cost}</span>`;
+  };
+  const season = (id) => SEASONS.findIndex((s) => s.id === MARKET_BY_ID[id].season);
+  return [
+    ...player.fish.map((id) => piece(id, board.market.fish[season(id)])),
+    ...player.pipes.map((id, k) => piece(id, board.market.pipe, k)),
+    ...player.tobacco.map((id, k) => piece(id, board.market.bag, k)),
+  ].join('');
+}
+
 const typeDot = (type) => (type ? `<span class="type-dot" style="--type-color: ${CHARACTER_TYPES[type].color}" title="${CHARACTER_TYPES[type].label}"></span>` : '');
 
 export function createPlayerModal() {
@@ -43,7 +65,8 @@ export function createPlayerModal() {
       </header>
       <div class="board-strip"><img src="${board.image}" alt="Tablero de jugador ${board.name}" draggable="false">
         ${board.kobunSlots.slice(0, st.kobunFree).map(([x, y]) =>
-          `<img class="kobun-free" src="/pawns/kobun-${board.id}.webp" alt="Kobun libre" style="left: ${x * 100}%; top: ${y * 100}%" draggable="false">`).join('')}</div>
+          `<img class="kobun-free" src="/pawns/kobun-${board.id}.webp" alt="Kobun libre" style="left: ${x * 100}%; top: ${y * 100}%" draggable="false">`).join('')}
+        ${marketPieces(board, p)}</div>
       <div class="cols">
         <section>
           <h3>Recursos y peones</h3>

@@ -108,6 +108,9 @@
 .board-strip img { position: absolute; left: 50%; top: 50%; width: 100cqh; height: 100cqw; transform: translate(-50%, -50%) rotate(90deg); }
 /* Kobun libres sobre sus huecos del tablero de jugador */
 .board-strip img.kobun-free { width: auto; height: 17%; aspect-ratio: 1113 / 2048; transform: translate(-50%, -50%); filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5)); }
+/* Pescado, Pipas y Tabaco comprados, sobre sus círculos del tablero de jugador */
+.board-strip .mkt-piece { position: absolute; width: 4.8%; height: auto; aspect-ratio: 1; transform: translate(-50%, -50%); filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5)); }
+.board-strip .mkt-plain { display: grid; place-items: center; border-radius: 50%; background: #3e6b46; border: 2px solid #fff; color: #fff; font-weight: 700; rotate: none; }
 #player-modal .cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 16px; }
 #player-modal section { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 8px; background: var(--panel); }
 #player-modal h3 { margin: 0; font: 400 20px/1 'Patrick Hand SC', system-ui, sans-serif; }
