@@ -2,6 +2,7 @@ import { createRng } from './random.js';
 import { SEASONS, BUILDINGS } from '../data/decks.js';
 import { CHARACTERS } from '../data/characters.js';
 import { ZONES } from '../data/zones.js';
+import { seasonMarket } from '../data/market.js';
 
 /**
  * Preparación de la partida (docs/reglas.md, p. 2). Lógica pura: recibe datos y devuelve el estado como
@@ -9,7 +10,7 @@ import { ZONES } from '../data/zones.js';
  */
 
 /** Asientos alrededor del tablero en sentido horario visto desde arriba. */
-export const GAME_VERSION = 2;
+export const GAME_VERSION = 3;
 export const MIN_PLAYERS = 3; // falta el lado de 2 jugadores del tablero
 export const MAX_PLAYERS = 4;
 
@@ -24,12 +25,11 @@ export const OUTER_LOTS = ZONES.filter((z) => z.group === 'lots' && z.fire === 0
 /** Losetas de Incendio: una por Nagaya, identificadas por su solar exterior. */
 const FIRE_TILES = OUTER_LOTS;
 
-/** Fichas de mercado por estación (paso 5): 2 pescados, 2 pipas y 2 bolsas de tabaco. */
-const marketTokens = (season) => ({
-  fish: [`${season}-fish-a`, `${season}-fish-b`],
-  pipes: [`${season}-pipe-a`, `${season}-pipe-b`],
-  bags: [`${season}-bag-a`, `${season}-bag-b`],
-});
+/** Fichas de mercado por estación (paso 5): 2 pescados, 2 pipas y 2 bolsas de tabaco (ids de data/market.js). */
+const marketTokens = (season) => {
+  const { fish, pipe, bag } = seasonMarket(season);
+  return { fish, pipes: pipe, bags: bag };
+};
 
 /**
  * Tirada para decidir el jugador inicial: cada jugador tira un dado y empieza el más alto. Si varios
@@ -71,6 +71,7 @@ export function createGame({ players, seed }) {
   return {
     version: GAME_VERSION,
     seed,
+    rng: rng.state(), // estado del generador: el motor lo continúa desde aquí
     phase: 'initial-characters',
     month: 1, // paso 2
     players: players.map((p, i) => ({
@@ -101,7 +102,8 @@ export function createGame({ players, seed }) {
     row: [],
     initialCharacters: [...INITIAL_CHARACTERS], // paso 13A
     pickOrder,
-    lots: {}, // lotId → { card, owner, xp }
+    lots: {}, // lotId → { kind: 'character' | 'building', card, owner, xp }
+    log: [],
   };
 }
 
@@ -115,7 +117,13 @@ export function currentPicker(game) {
  * Jugador que está jugando: durante el paso 13 el que elige personaje; después, el del turno.
  * Aún no hay turnos, así que tras la preparación es el jugador inicial.
  */
-export const activePlayer = (game) => currentPicker(game) ?? game.turnOrder[0];
+export const activePlayer = (game) => currentPicker(game) ?? game.turn?.player ?? currentPlacer(game) ?? game.turnOrder[0];
+
+/** Fase A: jugador al que le toca colocar su Ikizama, o null fuera de esa fase. */
+export function currentPlacer(game) {
+  if (game.phase !== 'ikizama') return null;
+  return game.order.find((i) => game.players[i].ikizama == null) ?? null;
+}
 
 const pickedCount = (game) => Object.values(game.lots).filter((l) => l.initial).length;
 
@@ -133,7 +141,7 @@ export function placeInitialCard(game, cardId, lotId) {
   if (!freeOuterLots(game).includes(lotId)) throw new Error(`${lotId} no es un solar exterior libre`);
 
   const players = game.players.map((p, i) => (i === player ? { ...p, kobun: p.kobun - 1 } : p));
-  const lots = { ...game.lots, [lotId]: { card: cardId, owner: player, xp: 0, initial: true } };
+  const lots = { ...game.lots, [lotId]: { kind: 'character', card: cardId, owner: player, xp: 0, initial: true } };
   let initialCharacters = game.initialCharacters.filter((id) => id !== cardId);
   let phase = game.phase;
   if (Object.values(lots).filter((l) => l.initial).length === game.players.length) {

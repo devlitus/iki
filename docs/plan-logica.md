@@ -135,6 +135,12 @@ Por orden de Extinción, cada jugador pone su Oyakata en cualquier casilla y hac
 Luego: recoger cartas, elegir tipo del Marionetista (Comodín) y puntuación final.
 
 ### 2.4 Decisiones pendientes (`pending`)
+> **Hecho en fases A/B**: las elecciones (solar, personaje que gana experiencia, cartas a intercambiar, ficha de
+> mercado…) viajan como parámetros de la propia acción (`hire { card, lot }`, `character { lot, target }`…), así que
+> el motor nunca queda a medias. `legalActions(game)` enumera las jugadas válidas completas. El deshacer vive en la
+> interfaz (guarda los estados anteriores del turno), no en el motor. `pending` solo hará falta para las decisiones
+> que surgen en mitad de un evento (comida, incendio, Marionetista):
+
 El motor se para y pide una elección cuando hace falta:
 - solar donde colocar la carta contratada / el edificio;
 - qué personaje propio gana experiencia (Costurera, Pipa de Invierno…);
