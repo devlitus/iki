@@ -37,7 +37,6 @@ html, body {
   overflow: hidden;
   cursor: grab;
   touch-action: none;
-  background: rgba(0, 0, 0, 0.12);
 }
 #viewport.dragging { cursor: grabbing; }
 

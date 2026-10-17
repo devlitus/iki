@@ -8,11 +8,22 @@
   grid-template-columns: clamp(190px, 13vw, 260px) minmax(0, 1fr) clamp(260px, 18vw, 360px);
   grid-template-rows: minmax(0, 1fr);
   grid-template-areas: "side board players";
+  /* Mantel de algodón teñido en índigo con olas seigaiha, iluminado desde el centro como bajo una lámpara. */
   background:
-    radial-gradient(ellipse at center, rgba(255, 220, 170, 0.18), transparent 70%),
-    repeating-linear-gradient(0deg, transparent 0 22px, rgba(0, 0, 0, 0.08) 22px 23px, transparent 23px 61px),
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.03) 0 3px, transparent 3px 9px),
-    linear-gradient(180deg, var(--table-light), var(--table-dark));
+    radial-gradient(ellipse at center, rgba(255, 225, 180, 0.12), transparent 65%),
+    radial-gradient(ellipse at center, transparent 55%, rgba(5, 10, 25, 0.55)),
+    url('/textures/seigaiha.svg') 0 0 / 48px 24px,
+    url('/textures/mantel-indigo.webp') 0 0 / 512px 512px,
+    #1c3056;
+}
+/* Dobladillo del mantel: una costura sashiko blanca que recorre el borde. */
+#app::before {
+  content: '';
+  position: fixed;
+  inset: 4px;
+  border: 1.5px dashed rgba(230, 236, 245, 0.28);
+  border-radius: 4px;
+  pointer-events: none;
 }
 
 #toolbar { display: flex; flex-direction: column; gap: 6px; }
