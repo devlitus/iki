@@ -19,6 +19,7 @@ import { createDiceRoll } from './view/diceRoll.js';
 import './view/diceRoll.css';
 import { createMobileLayout } from './view/mobile.js';
 import { initFullscreen } from './view/fullscreen.js';
+import { initExit } from './view/exit.js';
 import { createTutorial } from './tutorial/tutorial.js';
 import { createTutorialGame } from './tutorial/game.js';
 import { createOnline } from './online/online.js';
@@ -384,6 +385,7 @@ function exitTutorial({ keep }) {
 // Portada y tableros de jugador: «Nueva partida» abre el selector; al pulsar Empezar se prepara una partida nueva.
 const cover = createCover({ onNew: () => openPicker({ fromCover: true }), onContinue: () => {}, onTutorial: startTutorial, onOnline: ONLINE_ENABLED ? () => hub.open() : undefined });
 initFullscreen({ button: document.querySelector('[data-rail="fullscreen"]'), tip: document.querySelector('.cover-install') });
+initExit({ button: cover.exitButton });
 let pickerFromCover = false;
 const picker = createBoardPicker({
   onDone: (players) => { if (players.length >= MIN_PLAYERS) newGame(players); },

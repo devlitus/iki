@@ -25,7 +25,7 @@ export async function enterFullscreen() {
   }
 }
 
-function exitFullscreen() {
+export function exitFullscreen() {
   (document.exitFullscreen ?? document.webkitExitFullscreen)?.call(document).catch?.(() => {});
 }
 
@@ -38,13 +38,15 @@ export function initFullscreen({ button, tip }) {
   const sync = () => {
     button.hidden = !canFullscreen || isInstalled();
     button.setAttribute('aria-pressed', String(isFullscreen()));
-    button.querySelector('span').textContent = isFullscreen() ? 'Salir' : 'Pantalla';
+    // «Reducir» y no «Salir», para que no se confunda con salir del juego (eso está en el Menú: exit.js).
+    button.querySelector('span').textContent = isFullscreen() ? 'Reducir' : 'Pantalla';
+    button.title = isFullscreen() ? 'Quitar la pantalla completa' : 'Pantalla completa';
     tip.hidden = canFullscreen || isInstalled() || !touch.matches;
   };
   button.addEventListener('click', () => (isFullscreen() ? exitFullscreen() : enterFullscreen()));
   // Cualquier botón de la portada es un toque del jugador: en el móvil se aprovecha para entrar en pantalla completa.
   document.addEventListener('click', (e) => {
-    if (touch.matches && !isInstalled() && e.target.closest?.('.cover-btn')) enterFullscreen();
+    if (touch.matches && !isInstalled() && e.target.closest?.('.cover-btn:not(.cover-exit)')) enterFullscreen();
   }, true);
   document.addEventListener('fullscreenchange', sync);
   document.addEventListener('webkitfullscreenchange', sync);
