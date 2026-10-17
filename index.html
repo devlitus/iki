@@ -9,6 +9,16 @@
   </head>
   <body>
     <div id="app">
+      <nav id="rail" aria-label="Paneles">
+        <button type="button" data-rail="side" aria-expanded="false" title="Mesa: mazos, fila de personajes, edificios y reserva">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="6" width="10" height="14" rx="1.5"/><path d="M8 3h10.5A1.5 1.5 0 0 1 20 4.5V17"/></svg><span>Mesa</span></button>
+        <button type="button" data-rail="players" aria-expanded="false" title="Jugadores">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.3c3 .1 5.5 2.4 5.5 5.7"/></svg><span>Jugad.</span></button>
+        <button type="button" data-rail="turn" aria-expanded="true" title="Mostrar u ocultar el panel de turno" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h9"/></svg><span>Turno</span></button>
+        <button type="button" data-rail="menu" title="Menú">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5.5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="18.5" r="1.5"/></svg><span>Menú</span></button>
+      </nav>
       <aside id="side">
         <header id="toolbar">
           <h1>IKI</h1>

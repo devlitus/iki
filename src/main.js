@@ -14,6 +14,7 @@ import { renderTurnPanel, bindTurnPanel, boardTargets, hireableCards } from './v
 import { createCover } from './view/cover.js';
 import { createEventSummary, createFinalTable, initZoom } from './view/dialogs.js';
 import { createPlayerModal } from './view/playerModal.js';
+import { createMobileLayout } from './view/mobile.js';
 import { createTutorial } from './tutorial/tutorial.js';
 import { createTutorialGame } from './tutorial/game.js';
 import { createOnline } from './online/online.js';
@@ -22,6 +23,7 @@ import { isWaiting } from './view/format.js';
 import { CHARACTERS_BY_ID } from './data/characters.js';
 import './view/table.css';
 import './view/turn.css';
+import './view/mobile.css';
 
 const board = await createBoard({
   viewport: document.getElementById('viewport'),
@@ -75,6 +77,7 @@ const btnReroll = document.getElementById('reroll');
 const btnSteps = document.getElementById('open-steps');
 const btnPicker = document.getElementById('open-picker');
 const playerModal = createPlayerModal();
+const mobile = createMobileLayout({ app, side: document.getElementById('side'), players: document.getElementById('players'), turn: turnEl });
 /** Nagaya cuya loseta de Incendio sigue boca arriba en el tablero mientras se lee el resumen del incendio. */
 let fireTileShown = null;
 const eventSummary = createEventSummary({ onClose: () => { if (fireTileShown) { fireTileShown = null; render(); } } });
@@ -88,6 +91,7 @@ bindTurnPanel(turnEl, turnCtx);
 /** Deja la mesa vacía, como antes de empezar ninguna partida. */
 function clearTable() {
   app.classList.remove('playing');
+  mobile.update(null);
   turnEl.hidden = true;
   ['decks', 'supply', 'players'].forEach((id) => document.getElementById(id).replaceChildren());
   board.pieces.replaceChildren();
@@ -113,6 +117,8 @@ function render() {
   const fireNagaya = game.event?.kind === 'fire' ? game.event.nagaya : fireTileShown;
   renderBoardPieces(board, game, { targets: targets(), fireNagaya });
   tutorial?.update(game);
+  if (tutorial) mobile.reveal(document.getElementById('coach').textContent);
+  mobile.update(game, { selectedCard, tutorialFocus: Boolean(tutorial) });
   btnReroll.disabled = Object.keys(game.lots).length > 0;
   steps.refresh();
   scheduleAi();
