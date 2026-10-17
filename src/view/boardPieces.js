@@ -2,7 +2,7 @@ import { NAGAYAS_BY_ID, ZONES_BY_ID, fireTileImage, zoneCenter } from '../data/z
 import { PLAYER_BOARDS_BY_ID } from '../data/playerBoards.js';
 import { CHARACTERS_BY_ID } from '../data/characters.js';
 import { BUILDINGS_BY_ID } from '../data/decks.js';
-import { MARKET_BY_ID, MARKET_BACKS, seasonMarket } from '../data/market.js';
+import { MARKET_BY_ID, MARKET_BACKS, describeToken, seasonMarket } from '../data/market.js';
 import { createCharacterCard } from '../cards/card.js';
 
 /**
@@ -88,7 +88,7 @@ export function renderBoardPieces(board, game, { targets = [], fireNagaya = null
     const t = MARKET_BY_ID[id];
     const slot = slotOf(seasonMarket(t.season)[kind].indexOf(id));
     const html = t.image ? img(t.image, `piece piece-market piece-${kind}`) : '<div class="tok tok-bag">5</div>';
-    put(html, slot, '5', { title: id });
+    put(html, slot, '5', { title: describeToken(t) });
   });
   market(game.market.fish, 'fish', (i) => `fish-${i + 1}`);
   market(game.market.pipes, 'pipe', (i) => `pipe-${i + 1}`);
