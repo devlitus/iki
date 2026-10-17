@@ -13,6 +13,7 @@ import { renderBoardPieces } from './view/boardPieces.js';
 import { renderTurnPanel, bindTurnPanel, boardTargets, hireableCards } from './view/turnPanel.js';
 import { createCover } from './view/cover.js';
 import { createEventSummary, createFinalTable, initZoom } from './view/dialogs.js';
+import { initTooltips } from './view/tooltip.js';
 import { createPlayerModal } from './view/playerModal.js';
 import { createMobileLayout } from './view/mobile.js';
 import { initFullscreen } from './view/fullscreen.js';
@@ -83,6 +84,7 @@ let fireTileShown = null;
 const eventSummary = createEventSummary({ onClose: () => { if (fireTileShown) { fireTileShown = null; render(); } } });
 const finalTable = createFinalTable({ onNewGame: () => openPicker() });
 initZoom();
+initTooltips();
 
 /** Todo lo que el panel de turno necesita para pintar y para actuar. */
 const turnCtx = () => ({ game, ui, set, dispatch, undo, canUndo: history.length > 0, openFinal: () => finalTable.open(game) });

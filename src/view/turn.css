@@ -57,6 +57,19 @@
 #card-zoom img { height: min(60vh, 520px); height: min(60dvh, 520px); border-radius: 8px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7); }
 #card-zoom .card-summary[hidden] { display: none; }
 
+/* Etiqueta al pasar el ratón (view/tooltip.js): sustituye a la del navegador */
+#tip { position: fixed; z-index: 50; max-width: 240px; display: flex; flex-direction: column; gap: 2px; padding: 7px 11px 8px; font-size: 12.5px; line-height: 1.35; color: var(--ink); border: 1px solid #ffd27a; border-radius: 7px; background: rgba(29, 18, 10, 0.95); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55); pointer-events: none; animation: tip-in 120ms ease-out; }
+#tip[hidden] { display: none; }
+#tip::after { content: ''; position: absolute; left: 50%; bottom: -6px; width: 10px; height: 10px; translate: -50% 0; rotate: 45deg; background: inherit; border: inherit; border-width: 0 1px 1px 0; }
+#tip.below::after { bottom: auto; top: -6px; border-width: 1px 0 0 1px; }
+#tip strong { font: 400 18px/1.1 'Patrick Hand SC', system-ui, sans-serif; color: #ffd27a; }
+#tip span { opacity: 0.92; }
+#tip .tip-mon { display: inline-flex; align-items: center; gap: 2px; font-weight: 700; opacity: 1; }
+#tip .ic { width: 16px; height: 16px; }
+#tip .tip-iki { color: #9be29b; }
+@keyframes tip-in { from { opacity: 0; transform: translateY(3px); } }
+@media (prefers-reduced-motion: reduce) { #tip { animation: none; } }
+
 /* Resumen de una carta junto a su ampliación (ratón en escritorio, toque en móvil) */
 .card-summary { width: 220px; display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; font-size: 13px; line-height: 1.4; color: var(--ink); border: 1px solid #ffd27a; border-radius: 8px; background: rgba(29, 18, 10, 0.95); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); }
 .card-summary h3 { margin: 0; font: 400 22px/1.05 'Patrick Hand SC', system-ui, sans-serif; color: #ffd27a; }
