@@ -3,8 +3,8 @@ import { act } from '../game/engine.js';
 
 /**
  * Partida del tutorial: tres jugadores, uno humano y dos de IA, con semilla fija. El humano es el jugador inicial
- * (coloca su Ikizama el primero y elige el último personaje). Las IA ya tienen su personaje inicial colocado, lejos
- * de la salida, para que al humano le queden dos solares cercanos a la calle y dos cartas entre las que elegir.
+ * (coloca su Ikizama el primero) pero, a diferencia de una partida normal, elige el último personaje: las IA ya
+ * tienen el suyo colocado, lejos de la salida, para que al humano le queden dos solares cercanos a la calle y dos cartas entre las que elegir.
  */
 
 export const TUTORIAL_SEED = 2026;
@@ -20,6 +20,7 @@ const AI_PICKS = [
 export function createTutorialGame() {
   let g = createGame({ players: BOARD_IDS.map((boardId) => ({ boardId, ai: true })), seed: TUTORIAL_SEED });
   g.players[g.starter].ai = false;
+  g.pickOrder = [...g.pickOrder.slice(1), g.starter]; // las IA ya han elegido cuando empieza el tutorial
   for (const pick of AI_PICKS) g = act(g, { type: 'placeInitial', ...pick });
   return g;
 }

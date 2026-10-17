@@ -89,8 +89,7 @@
 .seat h3 { margin: 0; font: 400 20px/1 'Patrick Hand SC', system-ui, sans-serif; color: var(--player-color); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6); }
 .seat .who { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .seat .who .open-board { margin-left: auto; }
-.seat .chips, .seat .dice { display: flex; gap: 5px 10px; align-items: center; flex-wrap: wrap; }
-.seat .dice { gap: 3px; }
+.seat .chips { display: flex; gap: 5px 10px; align-items: center; flex-wrap: wrap; }
 .seat .status { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 0; }
 .facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 8px; margin: 0; }
 .facts div { min-width: 0; }
@@ -130,11 +129,6 @@
 #player-modal footer { display: flex; align-items: baseline; gap: 6px 16px; flex-wrap: wrap; padding: 0 16px 16px; }
 #player-modal footer b { margin-left: auto; font-size: 16px; color: #ffd27a; }
 
-.die { display: inline-grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); width: 24px; height: 24px; padding: 3px; border-radius: 5px; background: #fbfaf6; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); }
-.die i { width: 4px; height: 4px; border-radius: 50%; place-self: center; }
-.die i.pip { background: #1c2230; }
-.die.win { box-shadow: 0 0 0 2px #ffd27a; }
-.die.tied { opacity: 0.45; }
 
 /* Panel de pasos (ocultable) */
 #steps {
@@ -217,8 +211,6 @@
   .seat { gap: 4px; padding: 5px 7px; }
   .seat h3 { font-size: 16px; }
   .facts dt { font-size: 9px; }
-  .die { width: 18px; height: 18px; padding: 2px; }
-  .die i { width: 3px; height: 3px; }
   #player-modal { width: calc(100vw - 16px); max-height: calc(100vh - 16px); max-height: calc(100dvh - 16px); }
   #player-modal header { padding: 8px 10px; }
   #player-modal h2 { font-size: 22px; }

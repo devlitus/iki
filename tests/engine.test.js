@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { OUTER_LOTS, KOBUN_PER_PLAYER } from '../src/game/setup.js';
+import { OUTER_LOTS, KOBUN_PER_PLAYER, createGame, currentPicker } from '../src/game/setup.js';
 import { newGame, tweak, placeAll, turnOf } from './helpers.js';
 import { createRng } from '../src/game/random.js';
 import { act, legalActions, whoseTurn } from '../src/game/engine.js';
@@ -23,6 +23,17 @@ test('al colocar el último personaje inicial empieza el mes 1 con 4 cartas', ()
   assert.deepEqual(g.order, g.fireStack);
   assert.equal(g.decks.spring.length, 10);
   for (const r of g.row) assert.equal(CHARACTERS_BY_ID[r.card].season, 'spring');
+});
+
+test('el ganador de los dados elige primero personaje inicial y coloca primero su Ikizama en el mes 1', () => {
+  for (const seed of [1, 2, 3, 4, 5]) {
+    const g = createGame({ players: ['yellow', 'blue', 'red', 'purple'].map((boardId) => ({ boardId })), seed });
+    const { starter, turnOrder } = g;
+    assert.equal(currentPicker(g), starter);
+    assert.deepEqual(g.pickOrder, [starter, ...turnOrder.slice(1).reverse()]);
+    const started = newGame(4, seed);
+    assert.equal(whoseTurn(started), started.starter);
+  }
 });
 
 test('el estado del motor es JSON puro y act no modifica el original', () => {

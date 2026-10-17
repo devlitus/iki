@@ -12,11 +12,6 @@ import { playerStats, MAX_FISH, MAX_TYPES } from '../game/playerStats.js';
  * panel de pasos lo pueda resaltar.
  */
 
-const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
-
-export const die = (value, cls = '') => `<span class="die ${cls}" role="img" aria-label="Dado: ${value}">${
-  Array.from({ length: 9 }, (_, i) => `<i class="${PIPS[value].includes(i) ? 'pip' : ''}"></i>`).join('')}</span>`;
-
 export const resourceChips = ({ mon, rice, sandal, wood, koban }) => [
   ['mon', mon, 'Mons'], ['rice', rice, 'Arroz'], ['sandal', sandal, 'Sandalias'], ['wood', wood, 'Madera'], ['koban', koban, 'Koban'],
 ].filter(([, n], i) => n > 0 || i < 3)
@@ -123,9 +118,6 @@ export function renderPlayers(el, game, { onOpenBoard }) {
           ${p.userName ? `<span class="badge user" title="Jugador">${esc(p.userName)}${index === game.viewer ? ' (tú)' : ''}</span>` : ''}
           ${index === active && game.phase !== 'ended' ? '<span class="badge playing">jugando</span>' : ''}
           ${index === game.starter ? '<span class="badge">inicial</span>' : ''}
-          <span class="dice" title="${p.rolls.length > 1 ? 'Tirada y desempates' : 'Tirada'}">
-            ${p.rolls.map((r, i) => die(r, i < p.rolls.length - 1 ? 'tied' : (index === game.starter ? 'win' : ''))).join('')}
-          </span>
           <button type="button" class="btn btn-sm open-board">Tablero</button>
         </header>
         <div class="chips">${resourceChips(p.resources)}${st.specials.length
@@ -163,10 +155,10 @@ export const SETUP_STEPS = [
   [7, 'Reserva', 'Mons, sandalias, arroz, madera, Koban y fichas especiales.'],
   [8, 'Mazos de Personaje', 'Separados por estación.'],
   [9, 'Material del jugador', 'Tablero, peones, 8 mons, 1 arroz y 1 sandalia.'],
-  [10, 'Jugador inicial y Oyakatas', 'Dados: el más alto empieza; los empatados repiten. Oyakatas en la zona inicial.'],
+  [10, 'Jugador inicial y Oyakatas', 'Dados: el más alto empieza y elige primero personaje inicial; los empatados repiten. Oyakatas en la zona inicial.'],
   [11, 'Extinción de Incendios', 'Fichas apiladas en el 0, la del inicial arriba.'],
   [12, 'Puntuación', 'Fichas en el 0 del marcador de IKI.'],
-  [13, 'Personaje inicial', 'En sentido antihorario, cada uno pone uno en un solar exterior con un Kobun.'],
+  [13, 'Personaje inicial', 'Empieza el inicial y sigue en sentido antihorario; cada uno pone uno en un solar exterior con un Kobun.'],
 ];
 
 export function createStepsDrawer({ drawer, toggle, root }) {

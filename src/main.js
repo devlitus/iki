@@ -74,7 +74,6 @@ const steps = createStepsDrawer({
   toggle: document.getElementById('open-steps'),
   root: app,
 });
-const btnReroll = document.getElementById('reroll');
 const btnSteps = document.getElementById('open-steps');
 const btnPicker = document.getElementById('open-picker');
 const playerModal = createPlayerModal();
@@ -104,7 +103,6 @@ function render() {
   app.classList.toggle('playing', playing);
   turnEl.hidden = !playing;
   btnSteps.hidden = playing || Boolean(tutorial) || Boolean(online);
-  btnReroll.hidden = playing || Boolean(tutorial) || Boolean(online);
   btnPicker.hidden = Boolean(tutorial) || Boolean(online);
   if (playing) renderTurnPanel(turnEl, game, turnCtx());
 
@@ -120,7 +118,6 @@ function render() {
   tutorial?.update(game);
   if (tutorial) mobile.reveal(document.getElementById('coach').textContent);
   mobile.update(game, { selectedCard, tutorialFocus: Boolean(tutorial) });
-  btnReroll.disabled = Object.keys(game.lots).length > 0;
   steps.refresh();
   scheduleAi();
 }
@@ -374,8 +371,6 @@ function exitTutorial({ keep }) {
   render();
   if (!keep) cover.show(Boolean(game));
 }
-
-btnReroll.addEventListener('click', () => newGame(game.players));
 
 // Portada y tableros de jugador: «Nueva partida» abre el selector; al pulsar Empezar se prepara una partida nueva.
 const cover = createCover({ onNew: () => openPicker({ fromCover: true }), onContinue: () => {}, onTutorial: startTutorial, onOnline: ONLINE_ENABLED ? () => hub.open() : undefined });

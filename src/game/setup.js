@@ -62,9 +62,8 @@ export function createGame({ players, seed }) {
   // Paso 10: jugador inicial. Orden horario desde él.
   const { rolls, starter } = rollForStarter(rng, n);
   const turnOrder = Array.from({ length: n }, (_, k) => (starter + k) % n);
-  // Paso 13: se elige en sentido antihorario, empezando por el jugador a la derecha del inicial,
-  // así que el inicial elige el último. [pendiente de confirmar en el reglamento]
-  const pickOrder = [...turnOrder.slice(1).reverse(), starter];
+  // Paso 13: el inicial elige el primero y después el resto en sentido antihorario (el de su derecha).
+  const pickOrder = [starter, ...turnOrder.slice(1).reverse()];
 
   const buildings = rng.shuffle(BUILDINGS.map((b) => b.id));
   const [, ...laterSeasons] = SEASONS;
