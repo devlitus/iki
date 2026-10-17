@@ -7,6 +7,20 @@
 
 * { box-sizing: border-box; }
 
+/* Barras de scroll finas y casi invisibles: madera translúcida que solo se aviva al pasar por encima.
+   Firefox usa las propiedades estándar; Chrome y Safari, los pseudoelementos (sin flechas y con el tirador redondeado). */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(243, 233, 218, 0.16) transparent;
+  }
+  *:hover { scrollbar-color: rgba(217, 178, 92, 0.45) transparent; }
+}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(243, 233, 218, 0.16); border-radius: 6px; }
+:hover::-webkit-scrollbar-thumb { background: rgba(217, 178, 92, 0.45); }
+
 html, body {
   margin: 0;
   height: 100%;
