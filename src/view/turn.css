@@ -70,6 +70,8 @@
 .iki-dialog::backdrop { background: rgba(10, 6, 3, 0.72); }
 .iki-dialog h2 { margin: 0 0 8px; font: 400 28px/1 'Patrick Hand SC', system-ui, sans-serif; }
 .iki-dialog ul { margin: 0 0 12px; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }
+.payday-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.payday-columns h3 { margin: 0 0 4px; font: 400 20px/1 'Patrick Hand SC', system-ui, sans-serif; color: #ffd27a; }
 .fire-tile-drawn { margin: 0 0 12px; display: flex; align-items: center; gap: 14px; }
 .fire-tile-drawn img { width: 160px; aspect-ratio: 7 / 4; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); animation: fire-tile-flip 0.6s ease-out; }
 @keyframes fire-tile-flip { from { transform: perspective(400px) rotateY(90deg); } }
