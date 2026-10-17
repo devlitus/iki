@@ -52,7 +52,7 @@ export function createMobileLayout({ app, side, players, turn }) {
 
   rail.addEventListener('click', (e) => {
     const b = e.target.closest('[data-rail]');
-    if (!b) return;
+    if (!b || !(b.dataset.rail in drawers || b.dataset.rail === 'turn' || b.dataset.rail === 'menu')) return; // pantalla completa: fullscreen.js
     if (b.dataset.rail === 'turn') { closeDrawer(); setCollapsed(!collapsed); } else if (b.dataset.rail === 'menu') { closeDrawer(); document.getElementById('open-menu').click(); } else toggleDrawer(b.dataset.rail);
   });
   // El velo detrás del panel abierto es un ::after de #app: tocarlo cierra el panel.
