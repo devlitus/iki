@@ -2,6 +2,7 @@ import { PLAYER_BOARDS_BY_ID } from '../data/playerBoards.js';
 import { SEASONS, BUILDINGS_BY_ID, BUILDING_BACK } from '../data/decks.js';
 import { CHARACTERS_BY_ID } from '../data/characters.js';
 import { currentPicker, activePlayer } from '../game/setup.js';
+import { seasonOf } from '../game/engine.js';
 import { esc, isWaiting, playerName } from './format.js';
 import { playerStats, MAX_FISH, MAX_TYPES } from '../game/playerStats.js';
 
@@ -28,8 +29,11 @@ export const resourceChips = ({ mon, rice, sandal, wood, koban }) => [
 export function renderDecks(el, game, { selectedCard, onSelectCard, hireable = new Set(), hiring = null, onSelectHire }) {
   const picker = currentPicker(game);
   const humanPicker = picker != null && !isWaiting(game); // cuando elige la IA u otra persona, las cartas no se pueden pulsar
-  const decks = SEASONS.map((s) => `
-    <div class="deck" data-steps="8" title="Mazo de ${s.name}: ${game.decks[s.id].length} cartas">
+  // La estación en curso se resalta y las ya pasadas se apagan.
+  const current = SEASONS.indexOf(seasonOf(game.month));
+  const decks = SEASONS.map((s, i) => `
+    <div class="deck${i === current ? ' current' : i < current ? ' past' : ''}" data-steps="8"
+      title="Mazo de ${s.name}: ${game.decks[s.id].length} cartas${i === current ? ' · estación en curso' : ''}">
       <div class="pile"><img src="${s.back}" alt=""><img src="${s.back}" alt=""><img src="${s.back}" alt="Mazo de ${s.name}"></div>
       <span>${s.name}<br>${game.decks[s.id].length}</span>
     </div>`).join('');
