@@ -3,6 +3,7 @@ import './cover.css';
 /**
  * Portada: la caja del juego con «Nueva partida» y, si hay una guardada, «Continuar». Se muestra al entrar y se
  * puede volver a ella desde el menú. `onNew`, `onContinue`, `onTutorial` y `onOnline` los decide quien la crea; la portada solo se oculta.
+ * Sin `onOnline` no se ofrece jugar en línea.
  */
 export function createCover({ onNew, onContinue, onTutorial, onOnline }) {
   const el = document.createElement('div');
@@ -12,16 +13,21 @@ export function createCover({ onNew, onContinue, onTutorial, onOnline }) {
     <nav class="cover-menu" aria-label="Menú principal">
       <button type="button" class="btn cover-btn cover-continue">Continuar</button>
       <button type="button" class="btn cover-btn cover-new">Nueva partida</button>
-      <button type="button" class="btn cover-btn cover-online">Jugar en línea</button>
+      <button type="button" class="btn cover-btn cover-online" hidden>Jugar en línea</button>
       <button type="button" class="btn cover-btn cover-tutorial">Aprender a jugar</button>
-      <p class="muted">3-4 jugadores en la misma pantalla o en línea</p>
+      <p class="muted"><span class="cover-players">3-4 jugadores en la misma pantalla</span></p>
     </nav>`;
   document.body.append(el);
 
   const btnContinue = el.querySelector('.cover-continue');
   const hide = () => { el.hidden = true; };
   el.querySelector('.cover-new').addEventListener('click', () => { hide(); onNew(); });
-  el.querySelector('.cover-online').addEventListener('click', () => { hide(); onOnline(); });
+  if (onOnline) {
+    const btnOnline = el.querySelector('.cover-online');
+    btnOnline.hidden = false;
+    btnOnline.addEventListener('click', () => { hide(); onOnline(); });
+    el.querySelector('.cover-players').textContent += ' o en línea';
+  }
   el.querySelector('.cover-tutorial').addEventListener('click', () => { hide(); onTutorial(); });
   btnContinue.addEventListener('click', () => { hide(); onContinue(); });
 

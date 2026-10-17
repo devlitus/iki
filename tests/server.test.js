@@ -102,17 +102,30 @@ test('login: contraseña errónea, usuario inexistente y bloqueo tras 5 fallos',
 test('la cookie no se puede falsificar ni cambiar de usuario ni alargar', async () => {
   const victim = await signUp('victima');
   const attacker = await signUp('atacante');
-  const [id, exp] = attacker.b.cookie.split('=')[1].split('.');
+  const [id, ver, exp, mac] = attacker.b.cookie.split('=')[1].split('.');
 
   const forge = async (cookie) => { const b = browser(); b.cookie = cookie; return (await b.call('GET', '/me')).body.user; };
   assert.equal((await forge(attacker.b.cookie)).name, attacker.name, 'la propia sí vale');
   assert.equal(await forge(`iki_session=${victim.id}.${exp}.${attacker.b.cookie.split('.')[2]}`), null, 'cambiar el id');
-  assert.equal(await forge(`iki_session=${id}.${Number(exp) + 9e9}.${attacker.b.cookie.split('.')[2]}`), null, 'alargar la caducidad');
-  assert.equal(await forge(`iki_session=${victim.id}.${exp}.`), null, 'sin firma');
+  assert.equal(await forge(`iki_session=${id}.${ver}.${Number(exp) + 9e9}.${mac}`), null, 'alargar la caducidad');
+  assert.equal(await forge(`iki_session=${victim.id}.${ver}.${exp}.`), null, 'sin firma');
   assert.equal(await forge('iki_session=1'), null);
   clock += 31 * 86400 * 1000;
   assert.equal(await forge(attacker.b.cookie), null, 'caducada');
   clock -= 31 * 86400 * 1000;
+});
+
+test('cerrar sesión invalida también una copia de la cookie', async () => {
+  const { b, name } = await signUp('copia');
+  const stolen = browser();
+  stolen.cookie = b.cookie;
+  assert.equal((await stolen.call('GET', '/me')).body.user.name, name);
+  await b.call('POST', '/logout', {});
+  assert.equal((await stolen.call('GET', '/me')).body.user, null, 'la cookie copiada ya no vale');
+  const again = await b.call('POST', '/login', { name, password: 'contraseña-larga' });
+  assert.equal(again.status, 200);
+  assert.equal((await b.call('GET', '/me')).body.user.name, name, 'volver a entrar da una sesión nueva');
+  assert.equal((await stolen.call('GET', '/me')).body.user, null);
 });
 
 test('CSRF: origen ajeno, sin origen o cuerpo que no es JSON se rechazan', async () => {
@@ -253,6 +266,14 @@ test('sondeo: con la versión al día no se manda la partida', async () => {
   const same = await players[0].b.call('GET', `/games/${id}?since=${full.version}`);
   assert.deepEqual(Object.keys(same.body).sort(), ['status', 'unchanged', 'version']);
   assert.ok((await players[0].b.call('GET', `/games/${id}?since=${full.version - 1}`)).body.view);
+});
+
+test('sondeo: quien no juega en la partida no averigua su versión', async () => {
+  const { id, players } = await startedGame(3);
+  const { body: full } = await players[0].b.call('GET', `/games/${id}`);
+  const outsider = await signUp('ajeno');
+  assert.equal((await outsider.b.call('GET', `/games/${id}?since=${full.version}`)).status, 403);
+  assert.equal((await outsider.b.call('GET', `/games/${id}?since=${full.version - 1}`)).status, 403);
 });
 
 test('una persona y dos IA: las IA juegan solas hasta que vuelve a tocar a la persona', async () => {

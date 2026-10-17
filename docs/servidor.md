@@ -35,7 +35,7 @@ sobrescribe.
 - **Estado y semilla solo en el servidor.** Con una semilla de 32 bits bastaría ver las primeras cartas para probar las
   2³² semillas y deducir los mazos; por eso las partidas del servidor usan 128 bits.
 - **Identidad:** cookie `HttpOnly`, `SameSite=Lax`, firmada con `SESSION_SECRET`: no se puede cambiar de usuario ni
-  alargar. Contraseñas con scrypt; 5 fallos bloquean la cuenta 15 minutos; el mensaje no delata qué nombres existen.
+  alargar. Cerrar sesión sube la `session_version` de la cuenta y anula cualquier copia de la cookie. Contraseñas con scrypt; 5 fallos bloquean la cuenta 15 minutos; el mensaje no delata qué nombres existen.
 - **CSRF:** las peticiones que cambian algo exigen `Origin` igual al host y cuerpo `application/json`.
 - **Acciones:** lista blanca de tipos y campos, valores simples, tope de tamaño. El motor rechaza lo demás con
   `RuleError` (el servidor solo enseña esos mensajes; cualquier otro fallo es un 500 genérico).

@@ -172,6 +172,7 @@ test('Comodín: al final se pregunta el tipo del Marionetista y cuenta en la pun
   assert.equal(whoseTurn(g), 1);
   assert.equal(legalActions(g).length, 5);
   assert.throws(() => act(g, { type: 'resolve', cardType: 'ninja' }), /tipo/);
+  for (const cardType of ['constructor', '__proto__', 'toString']) assert.throws(() => act(g, { type: 'resolve', cardType }), /tipo/, cardType);
   g = act(g, { type: 'resolve', cardType: 'artisan' });
   assert.equal(g.phase, 'ended');
   assert.equal(g.players[1].wildType, 'artisan');

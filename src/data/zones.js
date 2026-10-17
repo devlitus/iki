@@ -123,7 +123,7 @@ score.push(circle('score-lap', 'score', 'Vuelta (+30)', 0.0704, 0.9359, 0.008));
 
 export const ZONES = [...calendar, ...lots, ...street, ...queue, ...shops, ...fishSlots, ...pipeSlots, ...fireTrack, ...turnOrder, ...score];
 
-export const ZONES_BY_ID = Object.fromEntries(ZONES.map((z) => [z.id, z]));
+export const ZONES_BY_ID = Object.assign(Object.create(null), Object.fromEntries(ZONES.map((z) => [z.id, z]))); // sin prototipo: «constructor» o «__proto__» no son ids
 
 /** Centro de una zona en coordenadas normalizadas, para colocar piezas con board.place(). */
 export function zoneCenter(zone) {
@@ -152,7 +152,7 @@ export const NAGAYAS = [
   { id: 'bottom-left', pattern: 'red', lots: ['lot-bottom-left-1', 'lot-bottom-left-2', 'lot-bottom-left-3', 'lot-bottom-left-4'] },
   { id: 'bottom-right', pattern: 'purple', lots: ['lot-bottom-right-4', 'lot-bottom-right-3', 'lot-bottom-right-2', 'lot-bottom-right-1'] },
 ];
-export const NAGAYAS_BY_ID = Object.fromEntries(NAGAYAS.map((n) => [n.id, n]));
+export const NAGAYAS_BY_ID = Object.assign(Object.create(null), Object.fromEntries(NAGAYAS.map((n) => [n.id, n]))); // sin prototipo: «constructor» o «__proto__» no son ids
 
 /** Grupos de la Bonificación por Armonía: los 4 Nagayas y el 5.º grupo de las esquinas. */
 export const HARMONY_GROUPS = [

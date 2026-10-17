@@ -32,7 +32,7 @@ function continueEnding(g) {
 
 /** resolve { cardType }: el Marionetista retirado pasa a ser del tipo elegido. */
 export function resolveWild(g, a) {
-  rule(CHARACTER_TYPES[a.cardType], 'Elige un tipo de personaje');
+  rule(Object.hasOwn(CHARACTER_TYPES, a.cardType), 'Elige un tipo de personaje');
   g.players[g.pending.player].wildType = a.cardType;
   log(g, { type: 'wild', player: g.pending.player, cardType: a.cardType });
   continueEnding(g);

@@ -20,8 +20,10 @@ const SCHEMA = [
     wins          INTEGER NOT NULL DEFAULT 0,
     failed_logins INTEGER NOT NULL DEFAULT 0,
     locked_until  TIMESTAMPTZ,
+    session_version INTEGER NOT NULL DEFAULT 0,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
   )`,
+  `ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version INTEGER NOT NULL DEFAULT 0`, // bases creadas antes de las sesiones revocables
   // Un registro por partida. `state` es el estado COMPLETO (con la semilla y los mazos): no sale nunca del servidor.
   `CREATE TABLE IF NOT EXISTS games (
     id         TEXT PRIMARY KEY,

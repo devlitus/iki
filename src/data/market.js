@@ -49,7 +49,7 @@ export const MARKET_TOKENS = [
   token('winter', 'bag', null, 5, { score: { iki: 5 }, provisional: true }), // sin foto: coste provisional
 ];
 
-export const MARKET_BY_ID = Object.fromEntries(MARKET_TOKENS.map((t) => [t.id, t]));
+export const MARKET_BY_ID = Object.assign(Object.create(null), Object.fromEntries(MARKET_TOKENS.map((t) => [t.id, t]))); // sin prototipo: «constructor» o «__proto__» no son ids
 
 /** Fichas de una estación, agrupadas: { fish: [id, id], pipe: [...], bag: [...] }. */
 export function seasonMarket(season) {

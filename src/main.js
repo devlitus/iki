@@ -311,6 +311,8 @@ async function dispatchOnline(action) {
   }
 }
 
+// Jugar en línea queda oculto hasta lanzarlo; el servidor y el cliente siguen en el código.
+const ONLINE_ENABLED = false;
 const hub = createOnline({
   onPlay: playOnline,
   onClose: () => cover.show(Boolean(game)),
@@ -357,7 +359,7 @@ function exitTutorial({ keep }) {
 btnReroll.addEventListener('click', () => newGame(game.players));
 
 // Portada y tableros de jugador: «Nueva partida» abre el selector; al pulsar Empezar se prepara una partida nueva.
-const cover = createCover({ onNew: () => openPicker({ fromCover: true }), onContinue: () => {}, onTutorial: startTutorial, onOnline: () => hub.open() });
+const cover = createCover({ onNew: () => openPicker({ fromCover: true }), onContinue: () => {}, onTutorial: startTutorial, onOnline: ONLINE_ENABLED ? () => hub.open() : undefined });
 let pickerFromCover = false;
 const picker = createBoardPicker({
   onDone: (players) => { if (players.length >= MIN_PLAYERS) newGame(players); },

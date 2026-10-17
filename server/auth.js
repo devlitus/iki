@@ -13,6 +13,7 @@ const KEY_LENGTH = 32;
 export const COOKIE = 'iki_session';
 export const SESSION_DAYS = 30;
 export const MAX_FAILED_LOGINS = 5;
+export const LOCK_MINUTES = 15;
 
 export async function hashPassword(password) {
   const salt = randomBytes(16);
@@ -53,20 +54,21 @@ export function cleanPassword(raw) {
 
 const sign = (secret, body) => createHmac('sha256', secret).update(body).digest('base64url');
 
-export function makeSession(secret, userId, nowMs) {
-  const body = `${userId}.${Math.floor(nowMs / 1000) + SESSION_DAYS * 86400}`;
+/** `version` es la `session_version` de la cuenta: al cerrar sesión se sube y deja de valer cualquier cookie anterior. */
+export function makeSession(secret, userId, version, nowMs) {
+  const body = `${userId}.${version}.${Math.floor(nowMs / 1000) + SESSION_DAYS * 86400}`;
   return `${body}.${sign(secret, body)}`;
 }
 
-/** Id del usuario de una sesión válida y sin caducar, o null. */
+/** `{ id, version }` de una sesión con firma válida y sin caducar, o null. */
 export function readSession(secret, token, nowMs) {
-  const [id, exp, mac] = String(token ?? '').split('.');
+  const [id, version, exp, mac] = String(token ?? '').split('.');
   if (!mac) return null;
-  const expected = Buffer.from(sign(secret, `${id}.${exp}`));
+  const expected = Buffer.from(sign(secret, `${id}.${version}.${exp}`));
   const given = Buffer.from(mac);
   if (given.length !== expected.length || !timingSafeEqual(given, expected)) return null;
   if (Number(exp) * 1000 < nowMs) return null;
-  return Number.isInteger(Number(id)) ? Number(id) : null;
+  return Number.isInteger(Number(id)) && Number.isInteger(Number(version)) ? { id: Number(id), version: Number(version) } : null;
 }
 
 export function cookieValue(request, name) {

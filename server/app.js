@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { migrate } from './db.js';
 import { HttpError, fail, json, readJson } from './http.js';
 import {
-  COOKIE, MAX_FAILED_LOGINS, checkOrigin, cleanName, cleanPassword, cookieValue, dummyHash, hashPassword, makeSession,
+  COOKIE, LOCK_MINUTES, MAX_FAILED_LOGINS, checkOrigin, cleanName, cleanPassword, cookieValue, dummyHash, hashPassword, makeSession,
   readSession, sessionCookie, verifyPassword,
 } from './auth.js';
 import { createLobby, getGame, joinGame, leaveGame, listGames, playAction, ranking, setAi, startGame } from './games.js';
@@ -27,14 +27,14 @@ export function createApp({ db, secret, now = Date.now }) {
   const publicUser = (u) => ({ id: u.id, name: u.name, rating: u.rating, games: u.games, wins: u.wins });
 
   async function currentUser(request) {
-    const id = readSession(secret, cookieValue(request, COOKIE), now());
-    if (id == null) return null;
-    const [user] = await db.query('SELECT id, name, rating, games, wins FROM users WHERE id = $1', [id]);
+    const session = readSession(secret, cookieValue(request, COOKIE), now());
+    if (!session) return null;
+    const [user] = await db.query('SELECT id, name, rating, games, wins FROM users WHERE id = $1 AND session_version = $2', [session.id, session.version]);
     return user ?? null;
   }
 
   const secure = (request) => new URL(request.url).protocol === 'https:' || request.headers.get('x-forwarded-proto') === 'https';
-  const withSession = (body, request, userId) => json(body, 200, { 'set-cookie': sessionCookie(makeSession(secret, userId, now()), { secure: secure(request) }) });
+  const withSession = (body, request, userId, version = 0) => json(body, 200, { 'set-cookie': sessionCookie(makeSession(secret, userId, version, now()), { secure: secure(request) }) });
 
   async function register(request) {
     const body = await readJson(request);
@@ -60,20 +60,23 @@ export function createApp({ db, secret, now = Date.now }) {
     if (!(await verifyPassword(password, user.pass_hash))) {
       await db.query( // al llegar al máximo se bloquea la cuenta 15 minutos y el contador empieza de cero
         `UPDATE users SET
-           locked_until = CASE WHEN failed_logins + 1 >= $2 THEN now() + interval '15 minutes' ELSE locked_until END,
+           locked_until = CASE WHEN failed_logins + 1 >= $2 THEN $3::timestamptz ELSE locked_until END,
            failed_logins = CASE WHEN failed_logins + 1 >= $2 THEN 0 ELSE failed_logins + 1 END
-         WHERE id = $1`, [user.id, MAX_FAILED_LOGINS]);
+         WHERE id = $1`, [user.id, MAX_FAILED_LOGINS, new Date(now() + LOCK_MINUTES * 60_000).toISOString()]);
       fail(401, 'Nombre o contraseña incorrectos');
     }
     await db.query('UPDATE users SET failed_logins = 0, locked_until = NULL WHERE id = $1', [user.id]);
-    return withSession({ user: publicUser(user) }, request, user.id);
+    return withSession({ user: publicUser(user) }, request, user.id, user.session_version);
   }
 
   // [método, patrón, necesita sesión, función]. `m` son los grupos del patrón.
   const ROUTES = [
     ['POST', /^\/register$/, false, (ctx) => register(ctx.request)],
     ['POST', /^\/login$/, false, (ctx) => login(ctx.request)],
-    ['POST', /^\/logout$/, false, (ctx) => json({ ok: true }, 200, { 'set-cookie': sessionCookie('', { secure: secure(ctx.request), clear: true }) })],
+    ['POST', /^\/logout$/, false, async (ctx) => {
+      if (ctx.user) await db.query('UPDATE users SET session_version = session_version + 1 WHERE id = $1', [ctx.user.id]); // invalida también la cookie copiada
+      return json({ ok: true }, 200, { 'set-cookie': sessionCookie('', { secure: secure(ctx.request), clear: true }) });
+    }],
     ['GET', /^\/me$/, false, (ctx) => json({ user: ctx.user ? publicUser(ctx.user) : null })],
     ['GET', /^\/ranking$/, false, async () => json({ ranking: await ranking(db) })],
     ['GET', /^\/games$/, true, async (ctx) => json(await listGames(db, ctx.user))],

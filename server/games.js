@@ -136,9 +136,9 @@ export async function listGames(db, user) {
 export async function getGame(db, user, id, since = null) {
   if (since != null) {
     if (!GAME_ID.test(String(id))) fail(404, 'Partida no encontrada');
-    const [v] = await db.query('SELECT version, status FROM games WHERE id = $1', [id]);
+    const [v] = await db.query('SELECT version, status, seats FROM games WHERE id = $1', [id]);
     if (!v) fail(404, 'Partida no encontrada');
-    if (v.version === since) return { unchanged: true, version: v.version, status: v.status };
+    if (v.version === since && (v.status === 'lobby' || seatOf(v, user.id) >= 0)) return { unchanged: true, version: v.version, status: v.status };
   }
   const row = await load(db, id);
   if (row.status !== 'lobby' && seatOf(row, user.id) < 0) fail(403, 'No juegas en esta partida');

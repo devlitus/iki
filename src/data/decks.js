@@ -26,7 +26,7 @@ export const SEASONS = [
   },
 ];
 
-export const SEASONS_BY_ID = Object.fromEntries(SEASONS.map((s) => [s.id, s]));
+export const SEASONS_BY_ID = Object.assign(Object.create(null), Object.fromEntries(SEASONS.map((s) => [s.id, s]))); // sin prototipo: «constructor» o «__proto__» no son ids
 
 /** Imagen de una carta de estación. */
 export const seasonCardImage = (seasonId, cardId) => `/cards/${seasonId}/${cardId}.jpg`;
@@ -53,5 +53,5 @@ export const BUILDINGS = [
   { id: 'well', name: 'Pozo', cost: { wood: 4 }, iki: 0, score: 'fire' },
 ].map((b) => ({ ...b, image: `/cards/buildings/${b.id}.jpg` }));
 
-export const BUILDINGS_BY_ID = Object.fromEntries(BUILDINGS.map((b) => [b.id, b]));
+export const BUILDINGS_BY_ID = Object.assign(Object.create(null), Object.fromEntries(BUILDINGS.map((b) => [b.id, b]))); // sin prototipo: «constructor» o «__proto__» no son ids
 export const BUILDING_BACK = '/cards/buildings/building-back.jpg';
