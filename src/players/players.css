@@ -16,6 +16,7 @@
   gap: 16px;
   max-width: 100%;
   max-height: 100%;
+  overflow-y: auto; /* si aun así no cabe, el pie (Empezar, IA/Humano) sigue a mano */
   padding: 16px 20px;
   border-radius: 10px;
   background: var(--table-dark);
@@ -33,6 +34,8 @@
   font: 400 24px/1.2 'Patrick Hand SC', system-ui, sans-serif;
 }
 .picker-panel footer { justify-content: flex-end; }
+.picker-actions { display: flex; gap: 8px; }
+.picker-col { display: none; margin: 0; }
 
 .picker-panel button {
   font: inherit;
@@ -76,6 +79,7 @@
 .picker-board img {
   display: block;
   height: min(68vh, 900px);
+  height: min(68dvh, 900px);
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
 }
 .picker-board:not(:disabled):hover,
@@ -109,17 +113,48 @@
 .picker-owner:empty { display: none; }
 
 @media (max-width: 600px) {
-  .picker-board img { height: 50vh; }
+  .picker-board img { height: 50vh; height: 50dvh; }
   .picker-boards { justify-content: flex-start; }
 }
 
-/* Pantallas bajas (móvil en horizontal): los tableros se ajustan al alto que dejan cabecera y botones. */
+/* Pantallas bajas (móvil en horizontal): sin imágenes de los tableros. Dos columnas: a la izquierda el color de cada
+   jugador, por orden de elección; a la derecha, quién lo juega (humano o IA). Los botones, debajo de las dos. */
 @media (max-height: 560px) {
   #board-picker { padding: 8px; }
-  .picker-panel { gap: 6px; padding: 8px 12px; }
+  .picker-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-areas: "head head" "col-boards col-seats" "boards seats" "actions actions";
+    gap: 6px 16px;
+    width: min(640px, 100%);
+    padding: 8px 12px;
+    overflow-y: auto;
+  }
+  .picker-panel header { grid-area: head; }
   .picker-panel h2 { font-size: 18px; }
-  .picker-board { gap: 4px; padding: 4px; }
-  .picker-board img { height: calc(100vh - 150px); }
-  .picker-owner { font-size: 16px; }
-  .picker-panel footer button { padding: 3px 10px; }
+  .picker-panel footer { display: contents; }
+  .picker-col { display: block; }
+  .picker-col-boards { grid-area: col-boards; }
+  .picker-col-seats { grid-area: col-seats; }
+
+  .picker-boards { grid-area: boards; display: flex; flex-direction: column; gap: 6px; overflow: visible; }
+  .picker-board {
+    flex-direction: row; justify-content: flex-start; gap: 10px;
+    min-height: 44px; padding: 4px 10px;
+    border: 2px solid rgba(243, 233, 218, 0.25); border-left: 8px solid var(--player-color); border-radius: 8px;
+    background: rgba(0, 0, 0, 0.25);
+  }
+  .picker-board img { display: none; }
+  .picker-board:not(:disabled):hover, .picker-board:not(:disabled):focus-visible { transform: none; }
+  .picker-board.taken { opacity: 0.55; }
+  .picker-name { min-width: 84px; text-align: center; }
+  .picker-owner { position: static; transform: none; padding: 0; border: 0; background: none; font-size: 16px; }
+
+  .picker-seats { grid-area: seats; flex-direction: column; flex-wrap: nowrap; gap: 6px; }
+  .picker-panel .picker-seat { min-height: 44px; padding: 4px 12px; border-radius: 8px; font-size: 14px; text-align: left; }
+  .picker-seats:empty::after { content: 'Elige primero los colores.'; opacity: 0.6; font-size: 12px; }
+
+  .picker-actions { grid-area: actions; justify-content: flex-end; }
+  .picker-panel footer button { min-height: 44px; padding: 4px 14px; }
 }
