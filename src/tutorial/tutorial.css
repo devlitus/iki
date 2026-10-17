@@ -118,7 +118,7 @@
   border-radius: 50%;
   background: radial-gradient(ellipse at 30% 50%, rgba(43, 26, 12, 0.7), rgba(43, 26, 12, 0.12) 65%, transparent 72%);
 }
-.tut-text { display: flex; flex-direction: column; gap: 6px; min-height: 0; overflow-y: auto; font-size: 14px; line-height: 1.38; scrollbar-width: thin; }
+.tut-text { display: flex; flex-direction: column; gap: 6px; min-height: 0; overflow-y: auto; font-size: 14px; line-height: 1.38; }
 .tut-text p, .tut-text ul { margin: 0; }
 .tut-text ul { padding-left: 16px; display: flex; flex-direction: column; gap: 2px; }
 .tut-text ul li::marker { content: '◆ '; color: var(--vermilion); font-size: 0.7em; }
@@ -231,7 +231,18 @@
     inset 10px 0 0 #8c2a1e, inset 13px 0 0 #d9b25c,
     inset -10px 0 0 #8c2a1e, inset -13px 0 0 #d9b25c,
     inset 0 0 40px rgba(120, 70, 20, 0.35);
-  scrollbar-width: thin;
+}
+/* En el pergamino de entrada la barra cae sobre la franja laca del borde: va en dorado, como los remates de las varillas.
+   Dentro del papel de los pasos va en tinta parda. */
+.scroll-paper::-webkit-scrollbar-thumb { background: rgba(217, 178, 92, 0.5); }
+.scroll-paper:hover::-webkit-scrollbar-thumb { background: rgba(240, 205, 120, 0.95); }
+.tut-text::-webkit-scrollbar-thumb { background: rgba(90, 55, 20, 0.2); }
+.tut-text:hover::-webkit-scrollbar-thumb { background: rgba(90, 55, 20, 0.45); }
+@supports not selector(::-webkit-scrollbar) {
+  .scroll-paper { scrollbar-color: rgba(217, 178, 92, 0.5) transparent; }
+  .scroll-paper:hover { scrollbar-color: rgba(240, 205, 120, 0.95) transparent; }
+  .tut-text { scrollbar-color: rgba(90, 55, 20, 0.2) transparent; }
+  .tut-text:hover { scrollbar-color: rgba(90, 55, 20, 0.45) transparent; }
 }
 .scroll-paper > * { margin: 0; }
 
