@@ -1,0 +1,25 @@
+/* Diálogo «Jugar en línea» */
+.online { width: min(560px, calc(100vw - 32px)); }
+.online h2 { margin: 0 0 4px; font: 400 26px/1.1 'Patrick Hand SC', system-ui, sans-serif; }
+.online h3 { margin: 14px 0 4px; font: 400 18px/1.1 'Patrick Hand SC', system-ui, sans-serif; }
+.online p { margin: 4px 0; }
+.online form { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.online label { display: flex; flex-direction: column; gap: 3px; font-size: 13px; }
+.online input { font: inherit; padding: 7px 9px; color: inherit; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 5px; background: rgba(0, 0, 0, 0.3); }
+.online input:focus-visible { outline: 2px solid #ffd27a; outline-offset: 1px; }
+.online .tabs, .online .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.online footer { display: flex; justify-content: space-between; gap: 8px; margin-top: 14px; }
+.online ul.games, .online ol.seats { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.online .game-row { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 6px; background: rgba(0, 0, 0, 0.22); }
+.online .game-seats { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.online ol.seats { margin-top: 10px; }
+.online ol.seats li { padding: 7px 10px; border-radius: 6px; background: rgba(0, 0, 0, 0.22); }
+.online ol.seats li.free { color: rgba(255, 255, 255, 0.45); border: 1px dashed rgba(255, 255, 255, 0.25); background: none; }
+.online .rank-table { width: 100%; margin-top: 8px; border-collapse: collapse; }
+.online .rank-table th, .online .rank-table td { padding: 5px 8px; text-align: right; }
+.online .rank-table th:nth-child(2), .online .rank-table td:nth-child(2) { text-align: left; }
+.online .rank-table tbody tr:nth-child(odd) { background: rgba(0, 0, 0, 0.18); }
+.badge.user { background: rgba(255, 210, 122, 0.25); }
+
+/* Mientras se envía una jugada al servidor, el panel de turno no admite más pulsaciones. */
+body.sending #turn { opacity: 0.6; pointer-events: none; }

@@ -38,8 +38,8 @@ export { seasonOf };
 
 /** Aplica una acción. Devuelve el estado nuevo; lanza un Error si no es válida. */
 export function act(game, action) {
-  const handler = HANDLERS[action.type];
-  rule(handler, `Acción desconocida: ${action.type}`);
+  const handler = Object.hasOwn(HANDLERS, action?.type) ? HANDLERS[action.type] : null; // sin claves heredadas («constructor»…)
+  rule(handler, `Acción desconocida: ${action?.type}`);
   const g = structuredClone(game);
   handler(g, action);
   return g;
@@ -90,6 +90,7 @@ const inPhase = (g, phase) => rule(g.phase === phase, `No es la fase ${phase}`);
 
 function inStep(g, step) {
   rule(g.phase === 'actions' || g.phase === 'newyear', 'Ahora no se juegan acciones');
+  rule(g.turn && !g.pending, 'Ahora no se juegan acciones'); // al final de la partida hay una decisión pendiente y ya no hay turno
   rule(g.turn.step === step, `Ahora no toca ${step}`);
   return g.turn.player;
 }

@@ -10,9 +10,12 @@ import { ZONES_BY_ID, LOT_IDS } from '../data/zones.js';
 export const MAX_FIRE = 10;
 export const RESOURCES = ['mon', 'rice', 'sandal', 'wood', 'koban'];
 
+/** Jugada no válida. Su mensaje es para el jugador; cualquier otro error del motor es un fallo y no se enseña. */
+export class RuleError extends Error {}
+
 /** Lanza un error de jugada no válida. */
 export function rule(ok, message) {
-  if (!ok) throw new Error(message);
+  if (!ok) throw new RuleError(message);
 }
 
 /** [{ res, n }] → { res: n } (suma las repetidas). */
