@@ -9,6 +9,7 @@ const STORAGE_KEY = 'iki.playerBoards';
  * (falta el lado de 2 jugadores del tablero). La elección se guarda en localStorage.
  *
  * Cada jugador elegido se puede marcar como IA con el interruptor del pie (por defecto, humano).
+ * En el móvil no caben las imágenes: se elige en dos columnas, color a la izquierda y humano/IA a la derecha (players.css).
  *
  * `onDone(players)` recibe, al pulsar Empezar, la lista `[{ player: 1, boardId: 'red', ai: false }, ...]` en orden de
  * elección, que es también el orden de los asientos alrededor de la mesa (sentido horario).
@@ -25,12 +26,16 @@ export function createBoardPicker({ onDone, onCancel } = {}) {
         <h2 id="picker-title"></h2>
         <button type="button" class="picker-close" aria-label="Cerrar">×</button>
       </header>
+      <p class="label picker-col picker-col-boards">Color</p>
       <div class="picker-boards"></div>
       <footer>
+        <p class="label picker-col picker-col-seats">Humano o IA</p>
         <div class="picker-seats" aria-label="Quién juega cada asiento"></div>
-        <button type="button" class="picker-undo">Deshacer</button>
-        <button type="button" class="picker-reset">Reiniciar</button>
-        <button type="button" class="picker-done">Empezar</button>
+        <div class="picker-actions">
+          <button type="button" class="picker-undo">Deshacer</button>
+          <button type="button" class="picker-reset">Reiniciar</button>
+          <button type="button" class="picker-done">Empezar</button>
+        </div>
       </footer>
     </div>`;
   document.body.append(overlay);
