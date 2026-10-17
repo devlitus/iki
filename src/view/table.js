@@ -73,7 +73,7 @@ export function renderSupply(el, game) {
     <section class="panel" data-steps="6">
       <span class="label">Edificios · ${game.buildings.length} al azar</span>
       <div class="buildings">${game.buildings.map((id) =>
-        `<img src="${BUILDINGS_BY_ID[id].image}" alt="${BUILDINGS_BY_ID[id].name}" title="${BUILDINGS_BY_ID[id].name}" draggable="false">`).join('')}</div>
+        `<img src="${BUILDINGS_BY_ID[id].image}" alt="${BUILDINGS_BY_ID[id].name}" title="${BUILDINGS_BY_ID[id].name}" data-zoom="${BUILDINGS_BY_ID[id].image}" draggable="false">`).join('')}</div>
       <div class="box" title="${game.buildingsBox.map((id) => BUILDINGS_BY_ID[id].name).join(', ')}">
         <img src="${BUILDING_BACK}" alt="">Los otros ${game.buildingsBox.length} vuelven a la caja
       </div>

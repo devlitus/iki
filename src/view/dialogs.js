@@ -1,4 +1,4 @@
-import { EVENT_LOG_TYPES, logLine, playerColor, playerName, typeLabel } from './format.js';
+import { EVENT_LOG_TYPES, cardSummary, logLine, playerColor, playerName, typeLabel } from './format.js';
 import { CHARACTERS_BY_ID } from '../data/characters.js';
 import { BUILDINGS_BY_ID } from '../data/decks.js';
 import { NAGAYAS_BY_ID, fireTileImage } from '../data/zones.js';
@@ -90,13 +90,18 @@ function detail(game, p) {
     ${player.wildType ? `<p><b>Comodín:</b> ${typeLabel(player.wildType)}</p>` : ''}</section>`;
 }
 
-/** Al pasar el ratón por una carta o ficha con `data-zoom`, se ve grande junto al puntero. */
+/**
+ * Al pasar el ratón por una carta o ficha con `data-zoom`, se ve grande junto al puntero; si es una carta de
+ * personaje o de edificio, con el resumen de lo que hace al lado.
+ */
 export function initZoom() {
-  const zoom = document.createElement('img');
+  const zoom = document.createElement('div');
   zoom.id = 'card-zoom';
   zoom.hidden = true;
-  zoom.alt = '';
+  zoom.innerHTML = '<img alt=""><aside class="card-summary"></aside>';
   document.body.append(zoom);
+  const img = zoom.querySelector('img');
+  const summary = zoom.querySelector('aside');
   let current = null;
   const place = (e) => {
     const w = zoom.offsetWidth || 300;
@@ -108,7 +113,9 @@ export function initZoom() {
     if (target === current) return;
     current = target;
     if (!target || e.pointerType === 'touch') { zoom.hidden = true; return; }
-    zoom.src = target.dataset.zoom;
+    img.src = target.dataset.zoom;
+    summary.innerHTML = cardSummary(target.dataset.zoom);
+    summary.hidden = !summary.innerHTML;
     zoom.hidden = false;
     place(e);
   });
