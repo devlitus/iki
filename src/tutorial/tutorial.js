@@ -2,8 +2,9 @@ import './tutorial.css';
 import { ZONES_BY_ID, zoneCenter } from '../data/zones.js';
 import { STEPS, currentStep, stepAllows, stepZones } from './script.js';
 import { isMobileLayout } from '../view/mobile.js';
+import { openIntro } from './intro.js';
 
-const GAP = 16;    // separación entre la burbuja y lo que señala (aquí cabe el rabito)
+const GAP = 22;    // separación entre la burbuja y lo que señala (aquí caben el rabito y las varillas del rollo)
 const MARGIN = 10; // separación mínima con el borde de la ventana
 const BIG = 0.3;   // fracción de la ventana a partir de la cual lo señalado es demasiado grande para apuntarlo
 
@@ -22,6 +23,10 @@ function anchorRect() {
 
 const clamp = (n, min, max) => Math.max(min, Math.min(n, max));
 
+/** Número del paso en kanji, para el sello del pergamino (1 → 一, 12 → 十二, 20 → 二十). */
+const KANJI = '〇一二三四五六七八九';
+const kanjiNumber = (n) => n < 10 ? KANJI[n] : `${n >= 20 ? KANJI[Math.floor(n / 10)] : ''}十${n % 10 ? KANJI[n % 10] : ''}`;
+
 /**
  * Tutorial: una burbuja de ayuda junto a lo que explica (con rabito), marcas sobre el tablero y un filtro para que el
  * humano solo pueda hacer lo que pide el paso en curso. No tiene estado de partida: el paso se deduce de la partida
@@ -33,7 +38,12 @@ const clamp = (n, min, max) => Math.max(min, Math.min(n, max));
  */
 export function createTutorial({ coach, board, onChange, onExit }) {
   const acked = new Set();
+  // La burbuja es un pequeño pergamino: las varillas quedan fijas y cada paso reescribe solo el papel.
+  coach.innerHTML = '<div class="coach-rod top"></div><div class="coach-paper"></div><div class="coach-rod bottom"></div>';
+  const paper = coach.querySelector('.coach-paper');
   const stepOf = (game) => currentStep(game, acked);
+  // Antes de la primera burbuja, el pergamino con el objetivo del juego; mientras se lee, ni burbuja ni IA.
+  let intro = openIntro({ onClose: () => { intro = null; onChange(); } });
 
   coach.addEventListener('click', (e) => {
     const b = e.target.closest('[data-tut]');
@@ -61,11 +71,12 @@ export function createTutorial({ coach, board, onChange, onExit }) {
 
   function renderCoach(step, game) {
     const total = STEPS.length;
+    const n = STEPS.indexOf(step) + 1;
     const actions = step.last
       ? '<button type="button" class="btn primary" data-tut="keep">Seguir jugando</button><button type="button" class="btn" data-tut="exit">Volver al menú</button>'
       : step.kind === 'info' ? `<button type="button" class="btn primary" data-tut="next" data-step="${step.id}">Siguiente</button>` : '';
-    coach.innerHTML = `
-      <header title="Arrastra para mover la burbuja"><span class="label">Tutorial · ${STEPS.indexOf(step) + 1} de ${total}</span>
+    paper.innerHTML = `
+      <header title="Arrastra para mover la burbuja"><span class="tut-seal" lang="ja" aria-hidden="true">${kanjiNumber(n)}</span><span class="label">Tutorial · ${n} de ${total}</span>
         ${step.last ? '' : '<button type="button" class="tut-close" data-tut="exit" aria-label="Salir del tutorial" title="Volver al menú; tu partida guardada no cambia">×</button>'}</header>
       <h2>${step.title}</h2>
       <div class="tut-text">${step.text(game, { mobile: isMobileLayout() })}</div>
@@ -148,6 +159,15 @@ export function createTutorial({ coach, board, onChange, onExit }) {
     coach.style.top = `${Math.round(top)}px`;
   }
 
+  // Cada paso nuevo se desenrolla: el papel se descubre de arriba abajo y la varilla de abajo baja con él.
+  function unroll() {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const h = paper.offsetHeight;
+    const timing = { duration: 480, easing: 'cubic-bezier(0.3, 0.7, 0.2, 1)' };
+    paper.animate([{ clipPath: 'inset(0 0 100% 0)' }, { clipPath: 'inset(0 0 0 0)' }], timing);
+    coach.querySelector('.coach-rod.bottom').animate([{ transform: `translateY(${-h}px)` }, { transform: 'none' }], timing);
+  }
+
   const track = () => {
     place();
     raf = requestAnimationFrame(track);
@@ -155,7 +175,7 @@ export function createTutorial({ coach, board, onChange, onExit }) {
 
   return {
     /** ¿Hay que parar a la IA? Mientras se lee un paso informativo, el tablero no cambia. */
-    blocking: (game) => stepOf(game)?.kind === 'info',
+    blocking: (game) => Boolean(intro) || stepOf(game)?.kind === 'info',
 
     /** Motivo por el que se rechaza una jugada del humano, o null si el paso en curso la acepta. */
     refuse(game, action) {
@@ -174,26 +194,30 @@ export function createTutorial({ coach, board, onChange, onExit }) {
     /** Redibuja la tarjeta y las marcas; hay que llamarlo después de pintar el tablero (que borra las marcas). */
     update(game) {
       const step = stepOf(game);
-      if (!step) return;
+      if (!step || intro) return;
       renderCoach(step, game);
       step.spots?.(game).forEach(spot);
       document.querySelectorAll('.tut-focus').forEach((el) => el.classList.remove('tut-focus'));
       step.focus?.(game).forEach((selector) => document.querySelectorAll(selector).forEach((el) => el.classList.add('tut-focus')));
-      if (step.id !== shownStep) moved = false;
+      const fresh = step.id !== shownStep;
+      if (fresh) moved = false;
       shownStep = step.id;
       placedKey = null;
       place();
+      if (fresh) unroll();
       if (!raf) raf = requestAnimationFrame(track);
     },
 
     /** Quita la burbuja y las marcas. */
     close() {
+      intro?.remove();
+      intro = null;
       cancelAnimationFrame(raf);
       raf = 0;
       moved = false;
       shownStep = null;
       coach.hidden = true;
-      coach.replaceChildren();
+      paper.replaceChildren();
       document.querySelectorAll('.tut-focus').forEach((el) => el.classList.remove('tut-focus'));
     },
   };
