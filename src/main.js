@@ -15,6 +15,8 @@ import { createCover } from './view/cover.js';
 import { createEventSummary, createFinalTable, initZoom } from './view/dialogs.js';
 import { initTooltips } from './view/tooltip.js';
 import { createPlayerModal } from './view/playerModal.js';
+import { createDiceRoll } from './view/diceRoll.js';
+import './view/diceRoll.css';
 import { createMobileLayout } from './view/mobile.js';
 import { initFullscreen } from './view/fullscreen.js';
 import { createTutorial } from './tutorial/tutorial.js';
@@ -78,6 +80,7 @@ const steps = createStepsDrawer({
 const btnSteps = document.getElementById('open-steps');
 const btnPicker = document.getElementById('open-picker');
 const playerModal = createPlayerModal();
+const diceRoll = createDiceRoll();
 const mobile = createMobileLayout({ app, side: document.getElementById('side'), players: document.getElementById('players'), turn: turnEl });
 /** Nagaya cuya loseta de Incendio sigue boca arriba en el tablero mientras se lee el resumen del incendio. */
 let fireTileShown = null;
@@ -132,7 +135,7 @@ const AI_RETRY = 400;
 let aiTimer = null;
 let aiStalled = false; // la IA falló: no reintenta hasta que la partida cambie por otro lado
 
-const aiBlocked = () => cover.visible || picker.isOpen || Boolean(tutorial?.blocking(game)) || Boolean(document.querySelector('dialog[open]:not(#player-modal)'));
+const aiBlocked = () => cover.visible || picker.isOpen || diceRoll.isOpen || Boolean(tutorial?.blocking(game)) || Boolean(document.querySelector('dialog[open]:not(#player-modal)'));
 
 function scheduleAi(delay = AI_DELAY) {
   clearTimeout(aiTimer);
@@ -235,6 +238,8 @@ function newGame(players) {
   history = [];
   persist();
   render();
+  // Solo en una partida nueva: se enseña cómo salió el jugador inicial; la IA espera a que se cierre.
+  diceRoll.show(game).then(() => scheduleAi());
 }
 
 /** Guarda la partida salvo en el tutorial, que no debe pisar la que hubiera guardada. */

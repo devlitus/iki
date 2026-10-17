@@ -1,0 +1,94 @@
+/* Tirada de dados para el jugador inicial (ver diceRoll.js): una fila por jugador con sus dados, ronda a ronda. */
+#dice-roll {
+  position: fixed;
+  inset: 0;
+  z-index: 21;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(10, 6, 3, 0.72);
+}
+#dice-roll[hidden] { display: none; }
+
+.dice-panel {
+  width: min(520px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 16px 20px 18px;
+  border: 2px solid #ffd27a;
+  border-radius: 10px;
+  background: var(--table-dark);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  color: var(--ink);
+}
+.dice-panel h2 { margin: 0 0 4px; font: 400 26px/1.2 'Patrick Hand SC', system-ui, sans-serif; }
+.dice-help { margin: 0 0 12px; opacity: 0.8; }
+
+.dice-rows { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.dice-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 6px 10px;
+  border-left: 6px solid var(--player-color);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.28);
+  transition: opacity 0.3s, background 0.3s, box-shadow 0.3s;
+}
+.dice-name { flex: 1; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dice-tray { display: flex; gap: 6px; }
+.dice-row.out { opacity: 0.45; }
+.dice-row.tied { box-shadow: 0 0 0 2px #ffd27a inset; }
+.dice-row.winner { background: rgba(255, 210, 122, 0.18); box-shadow: 0 0 0 2px #ffd27a inset; }
+
+.die {
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  width: 38px;
+  height: 38px;
+  padding: 5px;
+  border-radius: 7px;
+  background: #f6efe2;
+  box-shadow: inset -2px -3px 0 rgba(0, 0, 0, 0.18), 0 2px 4px rgba(0, 0, 0, 0.45);
+}
+.die span { display: grid; place-items: center; }
+.die .pip::after { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #2a1a10; }
+.die[data-value='1'] .pip::after { width: 9px; height: 9px; background: #b3261e; } /* el uno rojo, como en los dados japoneses */
+.die.old { width: 28px; height: 28px; padding: 4px; opacity: 0.55; }
+.die.old .pip::after { width: 5px; height: 5px; }
+.die.rolling { animation: die-tumble 0.3s linear infinite; }
+
+@keyframes die-tumble {
+  0% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-6px) rotate(90deg); }
+  50% { transform: translateY(0) rotate(180deg); }
+  75% { transform: translateY(-4px) rotate(270deg); }
+  100% { transform: translateY(0) rotate(360deg); }
+}
+
+.dice-status { min-height: 2.8em; margin: 12px 0 0; font-size: 15px; }
+.dice-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.dice-actions button {
+  padding: 6px 16px;
+  border: 1px solid #ffd27a;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.dice-actions .dice-done { background: #ffd27a; color: #2a1a10; font-weight: 600; }
+.dice-actions button[hidden] { display: none; }
+
+/* Móvil en horizontal: poca altura, todo más apretado. */
+@media (max-height: 500px) {
+  .dice-panel { padding: 10px 14px 12px; }
+  .dice-panel h2 { font-size: 20px; }
+  .dice-help { margin-bottom: 6px; font-size: 12px; }
+  .dice-row { min-height: 40px; padding: 4px 8px; }
+  .die { width: 30px; height: 30px; padding: 4px; }
+  .die .pip::after { width: 5px; height: 5px; }
+  .dice-status { margin-top: 6px; }
+  .dice-actions { margin-top: 6px; }
+}
