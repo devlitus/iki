@@ -2,9 +2,9 @@ import './cover.css';
 
 /**
  * Portada: la caja del juego con «Nueva partida» y, si hay una guardada, «Continuar». Se muestra al entrar y se
- * puede volver a ella desde el menú. `onNew` y `onContinue` los decide quien la crea; la portada solo se oculta.
+ * puede volver a ella desde el menú. `onNew`, `onContinue` y `onTutorial` los decide quien la crea; la portada solo se oculta.
  */
-export function createCover({ onNew, onContinue }) {
+export function createCover({ onNew, onContinue, onTutorial }) {
   const el = document.createElement('div');
   el.id = 'cover';
   el.innerHTML = `
@@ -12,6 +12,7 @@ export function createCover({ onNew, onContinue }) {
     <nav class="cover-menu" aria-label="Menú principal">
       <button type="button" class="btn cover-btn cover-continue">Continuar</button>
       <button type="button" class="btn cover-btn cover-new">Nueva partida</button>
+      <button type="button" class="btn cover-btn cover-tutorial">Aprender a jugar</button>
       <p class="muted">3-4 jugadores en la misma pantalla</p>
     </nav>`;
   document.body.append(el);
@@ -19,6 +20,7 @@ export function createCover({ onNew, onContinue }) {
   const btnContinue = el.querySelector('.cover-continue');
   const hide = () => { el.hidden = true; };
   el.querySelector('.cover-new').addEventListener('click', () => { hide(); onNew(); });
+  el.querySelector('.cover-tutorial').addEventListener('click', () => { hide(); onTutorial(); });
   btnContinue.addEventListener('click', () => { hide(); onContinue(); });
 
   return {
