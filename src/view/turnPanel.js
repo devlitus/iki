@@ -152,6 +152,7 @@ function b1Body(game, { ui }) {
     <p>Tu Ikizama te deja elegir una de las dos acciones:</p>
     ${btn(`Ingresos ${chips([{ res: 'mon', n: 4 }])}`, 'data-do="income"', { cls: 'wide' })}
     <p class="muted">${hint}</p>
+    ${def ? '' : '<button type="button" class="btn mobile-only" data-open-drawer="side">Ver la fila de personajes</button>'}
     ${ui.hire ? btn('Cancelar contratación', 'data-do="cancel"', { cls: 'btn-sm' }) : ''}`;
 }
 

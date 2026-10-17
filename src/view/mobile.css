@@ -1,0 +1,75 @@
+/* Distribución para móvil en horizontal (ver mobile.js): barra de iconos, tablero a todo el alto, paneles que se
+   abren encima y el panel de turno plegable a la derecha. En escritorio solo existe la ampliación de cartas. */
+#rail, .mobile-only { display: none; }
+
+@media (max-height: 560px) {
+  #app, #app.playing {
+    gap: 6px;
+    padding: 6px max(6px, env(safe-area-inset-right)) 6px max(6px, env(safe-area-inset-left));
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    grid-template-areas: "rail board turn";
+  }
+
+  #rail { grid-area: rail; display: flex; flex-direction: column; gap: 6px; z-index: 26; }
+  #rail button {
+    position: relative;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    width: 48px; min-height: 48px; padding: 4px 0;
+    font: inherit; font-size: 10px; color: var(--ink);
+    border: 1px solid rgba(243, 233, 218, 0.35); border-radius: 8px; background: rgba(0, 0, 0, 0.3);
+  }
+  #rail button[hidden] { display: none; }
+  #rail button[aria-expanded="true"] { border-color: #ffd27a; background: rgba(255, 210, 122, 0.22); }
+  #rail svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  #rail button[data-rail="menu"] svg { fill: currentColor; stroke: none; }
+  #rail button.attn::after {
+    content: ''; position: absolute; top: 4px; right: 4px; width: 9px; height: 9px; border-radius: 50%;
+    background: #ffd27a; box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.5); animation: rail-attn 1.2s ease-in-out infinite alternate;
+  }
+  @keyframes rail-attn { to { opacity: 0.35; } }
+
+  /* Por debajo de la portada, el tutorial y los diálogos (z-index 20-30). Mesa y Jugadores: paneles sobre el tablero, uno cada vez; el velo de detrás los cierra al tocarlo. */
+  #side, #players {
+    position: fixed; z-index: 25; top: 6px; bottom: 6px; left: calc(max(6px, env(safe-area-inset-left)) + 54px);
+    width: min(340px, 48vw); padding: 8px; border-radius: 8px;
+    background: linear-gradient(180deg, var(--table-light), var(--table-dark));
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+    overflow-y: auto; overscroll-behavior: contain;
+    display: none;
+  }
+  #app[data-drawer="side"] #side, #app[data-drawer="players"] #players { display: flex; }
+  #app[data-drawer]::after { content: ''; position: fixed; inset: 0; z-index: 24; background: rgba(0, 0, 0, 0.35); }
+  #side #toolbar h1, #side #open-menu { display: none; }
+  #side #toolbar { flex-direction: row; flex-wrap: wrap; }
+  #side #toolbar .btn { flex: 1 1 auto; }
+  .decks { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .pile { max-width: 46px; }
+
+  /* Panel de turno: columna derecha que se pliega desde la barra. */
+  #app > #turn {
+    grid-area: turn; display: flex; flex-direction: column; gap: 8px;
+    width: clamp(200px, 30vw, 270px); min-height: 0; padding: 8px; border-radius: 8px; background: var(--panel);
+    overflow-y: auto; overscroll-behavior: contain;
+  }
+  #app > #turn[hidden], #app.turn-collapsed > #turn { display: none; }
+  .turn-log ol { font-size: 11px; }
+  .mobile-only { display: inline-block; }
+
+  /* Objetivos de toque de al menos 44 px de alto */
+  .btn, #side #toolbar .btn { min-height: 44px; padding: 6px 10px; font-size: 13px; }
+  .btn-sm { min-height: 36px; }
+  .pick { width: 52px; }
+  #card-zoom { display: none; }
+}
+
+/* Carta en grande al tocarla (solo en móvil; ver mobile.js) */
+#card-preview { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 10px; background: rgba(0, 0, 0, 0.7); }
+#card-preview[hidden] { display: none; }
+#card-preview figure { display: flex; align-items: center; gap: 14px; margin: 0; max-height: 100%; }
+#card-preview img { height: min(88vh, 520px); max-width: 60vw; object-fit: contain; border-radius: 8px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7); }
+#card-preview figcaption { display: none; }
+#card-preview .actions { display: flex; flex-direction: column; gap: 10px; min-width: 130px; }
+#card-preview .actions .btn { min-height: 48px; font-size: 15px; }
+#card-preview .actions .btn[hidden] { display: none; }
+
+@media (prefers-reduced-motion: reduce) { #rail button.attn::after { animation: none; } }
