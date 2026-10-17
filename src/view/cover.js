@@ -15,6 +15,7 @@ export function createCover({ onNew, onContinue, onTutorial, onOnline }) {
       <button type="button" class="btn cover-btn cover-new">Nueva partida</button>
       <button type="button" class="btn cover-btn cover-online" hidden>Jugar en línea</button>
       <button type="button" class="btn cover-btn cover-tutorial">Aprender a jugar</button>
+      <button type="button" class="btn cover-btn cover-exit" hidden>Salir</button>
       <p class="muted"><span class="cover-players">3-4 jugadores en la misma pantalla</span></p>
       <p class="muted cover-install" hidden>Para jugar sin las barras del navegador: <b>Compartir → Añadir a pantalla de inicio</b>
         y abre IKI desde su icono.</p>
@@ -42,5 +43,7 @@ export function createCover({ onNew, onContinue, onTutorial, onOnline }) {
     },
     hide,
     get visible() { return !el.hidden; },
+    /** Botón «Salir» (solo en el móvil; lo gestiona exit.js). */
+    exitButton: el.querySelector('.cover-exit'),
   };
 }

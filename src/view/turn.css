@@ -90,6 +90,9 @@
 @keyframes fire-tile-flip { from { transform: perspective(400px) rotateY(90deg); } }
 @media (prefers-reduced-motion: reduce) { .fire-tile-drawn img { animation: none; } }
 .iki-dialog footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+#exit-dialog { max-width: min(420px, calc(100vw - 32px)); }
+#exit-dialog .btn { min-height: 44px; padding: 8px 18px; }
+#exit-dialog .exit-leave { background: #8a2e22; border-color: #d0705f; }
 #final-table { width: min(980px, calc(100vw - 32px)); }
 .score-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
 .score-table th, .score-table td { padding: 6px 10px; text-align: center; border-bottom: 1px solid rgba(243, 233, 218, 0.15); }
