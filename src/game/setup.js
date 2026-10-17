@@ -3,6 +3,7 @@ import { SEASONS, BUILDINGS } from '../data/decks.js';
 import { CHARACTERS } from '../data/characters.js';
 import { ZONES } from '../data/zones.js';
 import { seasonMarket } from '../data/market.js';
+import { rule } from './state.js';
 
 /**
  * Preparación de la partida (docs/reglas.md, p. 2). Lógica pura: recibe datos y devuelve el estado como
@@ -140,9 +141,9 @@ export const freeOuterLots = (game) => OUTER_LOTS.filter((id) => !game.lots[id])
  */
 export function placeInitialCard(game, cardId, lotId) {
   const player = currentPicker(game);
-  if (player == null) throw new Error('Ya se han colocado todos los personajes iniciales');
-  if (!game.initialCharacters.includes(cardId)) throw new Error(`${cardId} no está disponible`);
-  if (!freeOuterLots(game).includes(lotId)) throw new Error(`${lotId} no es un solar exterior libre`);
+  rule(player != null, 'Ya se han colocado todos los personajes iniciales');
+  rule(game.initialCharacters.includes(cardId), `${cardId} no está disponible`);
+  rule(freeOuterLots(game).includes(lotId), `${lotId} no es un solar exterior libre`);
 
   const players = game.players.map((p, i) => (i === player ? { ...p, kobun: p.kobun - 1 } : p));
   const lots = { ...game.lots, [lotId]: { kind: 'character', card: cardId, owner: player, xp: 0, initial: true } };

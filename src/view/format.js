@@ -2,10 +2,28 @@ import { CHARACTERS_BY_ID, CHARACTER_TYPES } from '../data/characters.js';
 import { BUILDINGS_BY_ID } from '../data/decks.js';
 import { PLAYER_BOARDS_BY_ID } from '../data/playerBoards.js';
 import { ZONES_BY_ID } from '../data/zones.js';
+import { deciderOf, isAiTurn } from '../ai/player.js';
 
 /** Textos de la interfaz: nombres de jugadores, recursos, habilidades y entradas del registro. */
 
-export const playerName = (g, p) => `${PLAYER_BOARDS_BY_ID[g.players[p].boardId].name}${g.players[p].ai ? ' (IA)' : ''}`;
+/** Texto seguro para meter en HTML (los nombres de usuario vienen del servidor). */
+export const esc = (text) => String(text).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+/** «Amarillo (IA)», o «Amarillo (Ana)» en una partida en línea. */
+export const playerName = (g, p) => {
+  const { boardId, ai, userName } = g.players[p];
+  const board = PLAYER_BOARDS_BY_ID[boardId].name;
+  return ai ? `${board} (IA)` : userName ? `${board} (${esc(userName)})` : board;
+};
+
+/**
+ * ¿Hay que esperar a otro? Juega una IA o, en una partida en línea (`g.viewer` = mi asiento), otra persona. En local no
+ * hay `viewer` y quien tiene el turno lo juega cualquiera de los que están ante la pantalla.
+ */
+export const isWaiting = (g) => isAiTurn(g) || (g.viewer != null && deciderOf(g) != null && deciderOf(g) !== g.viewer);
+
+/** Lo que dice el panel mientras se espera: la IA «piensa», una persona «juega». */
+export const waitingText = (g, p) => (g.players[p].ai ? `${who(g, p)} está pensando…` : `Esperando a ${who(g, p)}…`);
 export const playerColor = (g, p) => PLAYER_BOARDS_BY_ID[g.players[p].boardId].color;
 
 /** Nombre de jugador con su color, para frases y cabeceras. */

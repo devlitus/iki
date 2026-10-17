@@ -16,6 +16,9 @@ import { createEventSummary, createFinalTable, initZoom } from './view/dialogs.j
 import { createPlayerModal } from './view/playerModal.js';
 import { createTutorial } from './tutorial/tutorial.js';
 import { createTutorialGame } from './tutorial/game.js';
+import { createOnline } from './online/online.js';
+import { api } from './online/api.js';
+import { isWaiting } from './view/format.js';
 import { CHARACTERS_BY_ID } from './data/characters.js';
 import './view/table.css';
 import './view/turn.css';
@@ -59,6 +62,7 @@ let selectedCard = null; // paso 13: carta inicial elegida, a la espera del sola
 let ui = {}; // lo que el jugador va eligiendo en su turno antes de confirmar (ver view/turnPanel.js)
 let history = []; // estados anteriores del turno en curso, para deshacer
 let tutorial = null; // el tutorial en marcha: guía el turno del humano y no toca la partida guardada
+let online = null; // partida alojada en el servidor ({ id, version, me, seats, status }): allí se validan las jugadas y se juegan las IA
 
 const app = document.getElementById('app');
 const turnEl = document.getElementById('turn');
@@ -92,9 +96,9 @@ function render() {
   const playing = game.phase !== 'initial-characters';
   app.classList.toggle('playing', playing);
   turnEl.hidden = !playing;
-  btnSteps.hidden = playing || Boolean(tutorial);
-  btnReroll.hidden = playing || Boolean(tutorial);
-  btnPicker.hidden = Boolean(tutorial);
+  btnSteps.hidden = playing || Boolean(tutorial) || Boolean(online);
+  btnReroll.hidden = playing || Boolean(tutorial) || Boolean(online);
+  btnPicker.hidden = Boolean(tutorial) || Boolean(online);
   if (playing) renderTurnPanel(turnEl, game, turnCtx());
 
   renderDecks(document.getElementById('decks'), game, {
@@ -123,7 +127,7 @@ const aiBlocked = () => cover.visible || picker.isOpen || Boolean(tutorial?.bloc
 
 function scheduleAi(delay = AI_DELAY) {
   clearTimeout(aiTimer);
-  aiTimer = game && !aiStalled && isAiTurn(game) ? setTimeout(runAi, delay) : null;
+  aiTimer = game && !online && !aiStalled && isAiTurn(game) ? setTimeout(runAi, delay) : null; // en línea las IA juegan en el servidor
 }
 
 function runAi() {
@@ -147,7 +151,7 @@ function runAi() {
 function targets() {
   let list;
   if (game.phase !== 'initial-characters') list = boardTargets(game, turnCtx());
-  else if (!selectedCard) list = [];
+  else if (!selectedCard || isWaiting(game)) list = [];
   else {
     list = freeOuterLots(game).map((lot) => ({
       zone: lot, title: `Colocar ${CHARACTERS_BY_ID[selectedCard].name} aquí`, onClick: () => dispatch({ type: 'placeInitial', card: selectedCard, lot }),
@@ -167,6 +171,7 @@ const turnKey = (g) => [g.phase, whoseTurn(g), g.turn?.index, g.month, Boolean(g
 
 /** Aplica una acción al motor; si no es válida, lo dice en el panel y deja la partida como estaba. */
 function dispatch(action, { auto = false } = {}) {
+  if (online) return void dispatchOnline(action);
   const before = game;
   const refusal = !auto && tutorial?.refuse(game, action);
   if (refusal) {
@@ -202,6 +207,7 @@ function undo() {
 
 function newGame(players) {
   endTutorial();
+  leaveOnline();
   aiStalled = false;
   game = createGame({ players: players.map(({ boardId, ai }) => ({ boardId, ai })), seed: randomSeed() });
   selectedCard = null;
@@ -213,8 +219,102 @@ function newGame(players) {
 
 /** Guarda la partida salvo en el tutorial, que no debe pisar la que hubiera guardada. */
 function persist() {
-  if (!tutorial) saveGame(game);
+  if (!tutorial && !online) saveGame(game);
 }
+
+// --- Partida en línea --------------------------------------------------------------------------
+// El servidor guarda la partida y decide qué jugadas valen: aquí solo se pinta lo que manda (la vista pública, sin
+// semilla ni mazos) y se le envían las acciones. Si no es tu turno, se pregunta cada poco si ha cambiado.
+
+const POLL_MS = 2500;
+let onlineBusy = false;
+let pollTimer = null;
+
+/** Adopta la partida que manda el servidor: la vista pública más quién soy y cómo se llama cada jugador. */
+function adoptOnline(res) {
+  online = { id: res.id, version: res.version, me: res.me, seats: res.seats, status: res.status };
+  game = { ...res.view, viewer: res.me };
+  game.players = game.players.map((p, i) => ({ ...p, userName: p.ai ? undefined : res.seats[i]?.name }));
+}
+
+/** Tras un cambio llegado del servidor: redibuja, cuenta el Evento si lo hubo y abre la tabla final al terminar. */
+function showOnlineChange(before) {
+  selectedCard = null;
+  ui = {};
+  render();
+  eventSummary.show(game, game.log.filter((e) => e.seq > (before.logSeq ?? 0)));
+  if (game.phase === 'ended' && before.phase !== 'ended') finalTable.open(game);
+}
+
+async function playOnline(id) {
+  try {
+    const res = await api('GET', `/games/${id}`);
+    endTutorial();
+    leaveOnline();
+    adoptOnline(res);
+    selectedCard = null;
+    ui = {};
+    history = [];
+    cover.hide();
+    render();
+    pollTimer = setInterval(pollOnline, POLL_MS);
+    if (game.phase === 'ended') finalTable.open(game);
+  } catch (error) {
+    cover.show(Boolean(game));
+    toast.textContent = error.message;
+    toast.hidden = false;
+    setTimeout(() => { toast.hidden = true; }, 4000);
+  }
+}
+
+function leaveOnline() {
+  clearInterval(pollTimer);
+  pollTimer = null;
+  online = null;
+  document.body.classList.remove('sending');
+}
+
+async function pollOnline() {
+  if (!online || onlineBusy || document.hidden) return;
+  const id = online.id;
+  try {
+    const res = await api('GET', `/games/${id}?since=${online.version}`);
+    if (res.unchanged || !online || online.id !== id || onlineBusy) return;
+    const before = game;
+    adoptOnline(res);
+    showOnlineChange(before);
+  } catch {
+    // Sin conexión o error del servidor: se vuelve a intentar en el siguiente sondeo.
+  }
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) pollOnline(); });
+
+/** Manda la acción al servidor y pinta el estado que devuelve (o el motivo del rechazo). */
+async function dispatchOnline(action) {
+  if (onlineBusy || !online) return;
+  const before = game;
+  onlineBusy = true;
+  document.body.classList.add('sending');
+  try {
+    adoptOnline(await api('POST', `/games/${online.id}/action`, { action, version: online.version }));
+    showOnlineChange(before);
+  } catch (error) {
+    if (error.data?.game) { // la partida había cambiado: se actualiza y se avisa
+      adoptOnline(error.data.game);
+      showOnlineChange(before);
+      ui = { error: 'La partida había cambiado: revisa la mesa y vuelve a intentarlo.' };
+    } else ui = { ...ui, error: error.message };
+    render();
+  } finally {
+    onlineBusy = false;
+    document.body.classList.remove('sending');
+  }
+}
+
+const hub = createOnline({
+  onPlay: playOnline,
+  onClose: () => cover.show(Boolean(game)),
+});
 
 // --- Tutorial ----------------------------------------------------------------------------------
 // Una partida de tutorial es una partida normal con un guion por encima (src/tutorial). Al salir se vuelve a la partida
@@ -222,6 +322,7 @@ function persist() {
 
 function startTutorial() {
   endTutorial();
+  leaveOnline();
   tutorial = createTutorial({
     coach: document.getElementById('coach'),
     board,
@@ -256,7 +357,7 @@ function exitTutorial({ keep }) {
 btnReroll.addEventListener('click', () => newGame(game.players));
 
 // Portada y tableros de jugador: «Nueva partida» abre el selector; al pulsar Empezar se prepara una partida nueva.
-const cover = createCover({ onNew: () => openPicker({ fromCover: true }), onContinue: () => {}, onTutorial: startTutorial });
+const cover = createCover({ onNew: () => openPicker({ fromCover: true }), onContinue: () => {}, onTutorial: startTutorial, onOnline: () => hub.open() });
 let pickerFromCover = false;
 const picker = createBoardPicker({
   onDone: (players) => { if (players.length >= MIN_PLAYERS) newGame(players); },
@@ -269,7 +370,7 @@ function openPicker({ fromCover = false } = {}) {
 btnPicker.addEventListener('click', () => openPicker());
 document.getElementById('open-menu').addEventListener('click', () => cover.show(Boolean(game)));
 window.addEventListener('keydown', (e) => {
-  if ((e.key === 'j' || e.key === 'J') && !tutorial && !e.target.closest?.('#board-picker, #player-modal, #cover, select, input')) openPicker();
+  if ((e.key === 'j' || e.key === 'J') && !tutorial && !online && !e.target.closest?.('#board-picker, #player-modal, #cover, select, input')) openPicker();
 });
 if (game) render();
 cover.show(Boolean(game));
