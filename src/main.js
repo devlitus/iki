@@ -228,6 +228,8 @@ function newGame(players) {
   leaveOnline();
   aiStalled = false;
   game = createGame({ players: players.map(({ boardId, ai }) => ({ boardId, ai })), seed: randomSeed() });
+  // Nombres del selector: los de las personas, si los escribieron, y los de la IA.
+  game.players = game.players.map((p, i) => ({ ...p, userName: players[i].name || undefined }));
   selectedCard = null;
   ui = {};
   history = [];

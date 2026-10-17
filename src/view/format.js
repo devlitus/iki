@@ -9,11 +9,12 @@ import { deciderOf, isAiTurn } from '../ai/player.js';
 /** Texto seguro para meter en HTML (los nombres de usuario vienen del servidor). */
 export const esc = (text) => String(text).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-/** «Amarillo (IA)», o «Amarillo (Ana)» en una partida en línea. */
+/** «Amarillo (Ana)», «Amarillo (Hanzō · IA)»; sin nombre, «Amarillo» o «Amarillo (IA)». */
 export const playerName = (g, p) => {
   const { boardId, ai, userName } = g.players[p];
   const board = PLAYER_BOARDS_BY_ID[boardId].name;
-  return ai ? `${board} (IA)` : userName ? `${board} (${esc(userName)})` : board;
+  const name = [userName && esc(userName), ai && 'IA'].filter(Boolean).join(' · ');
+  return name ? `${board} (${name})` : board;
 };
 
 /**
