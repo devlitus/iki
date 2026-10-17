@@ -14,6 +14,13 @@ function makeDialog(id) {
   return dialog;
 }
 
+/** Entradas del Día de Pago que son cobros (columna Salario); el resto es el pago en arroz. */
+const PAYDAY_INCOME = ['salary', 'harmony'];
+
+const list = (game, lines) => lines.length
+  ? `<ul>${lines.map((e) => `<li>${logLine(game, e)}</li>`).join('')}</ul>`
+  : '<p class="muted">Nada</p>';
+
 /** Lo ocurrido en el Evento (Día de Pago, Incendio): las entradas nuevas del registro, agrupadas. */
 export function createEventSummary({ onClose = () => {} } = {}) {
   const dialog = makeDialog('event-summary');
@@ -32,7 +39,10 @@ export function createEventSummary({ onClose = () => {} } = {}) {
           <img src="${fireTileImage(start.nagaya)}" alt="Loseta de Incendio del Nagaya ${NAGAYAS_BY_ID[start.nagaya].name}">
           <figcaption>${playerName(game, start.player)} roba la loseta: arde el Nagaya ${NAGAYAS_BY_ID[start.nagaya].name}</figcaption>
         </figure>` : ''}
-        <ul>${lines.map((e) => `<li>${logLine(game, e)}</li>`).join('')}</ul>
+        ${fire ? list(game, lines) : `<div class="payday-columns">
+          <section><h3>Salario</h3>${list(game, lines.filter((e) => PAYDAY_INCOME.includes(e.type)))}</section>
+          <section><h3>Pago</h3>${list(game, lines.filter((e) => !PAYDAY_INCOME.includes(e.type)))}</section>
+        </div>`}
         <button type="button" class="btn close" autofocus>Continuar</button>`;
       if (!dialog.open) dialog.showModal();
       return start?.nagaya ?? null;
