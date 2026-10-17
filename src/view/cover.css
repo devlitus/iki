@@ -19,6 +19,8 @@
 .btn.cover-btn { padding: 12px 22px; font: 400 24px/1 'Patrick Hand SC', system-ui, sans-serif; }
 .btn.cover-btn[hidden] { display: none; }
 .btn.cover-new { background: #3f7f4a; border-color: #6fb37a; }
+.cover-menu .cover-install { max-width: 240px; font-size: 12px; }
+.cover-install[hidden] { display: none; }
 
 @media (max-height: 560px) {
   #cover { padding: 8px; }
