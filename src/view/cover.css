@@ -85,20 +85,10 @@
   text-shadow: 0 0 1px #c8323a;
 }
 
-.btn.cover-btn { transition: translate 0.2s, box-shadow 0.2s; }
-.btn.cover-btn:hover, .btn.cover-btn:focus-visible { translate: 4px 0; box-shadow: -4px 0 0 #c8323a; }
-
-/* Entrada: la caja cae sobre la mesa, el barniz destella, el sello se estampa y el menú aparece. */
+/* Entrada: la caja cae sobre la mesa, el barniz destella y el sello se estampa. */
 .cover-enter .cover-stage { animation: cover-drop 1s cubic-bezier(0.25, 0.9, 0.3, 1.15) both, cover-float 8s 1.2s ease-in-out infinite; }
 .cover-enter .cover-sheen { animation: cover-sheen 1.6s 0.6s ease-out both; }
 .cover-enter .cover-seal { animation: cover-stamp 0.45s 1s cubic-bezier(0.3, 1.6, 0.5, 1) both; }
-.cover-enter .cover-menu > .cover-btn, .cover-enter .cover-menu > p { animation: cover-in 0.5s ease-out both; }
-.cover-enter .cover-menu > :nth-child(2) { animation-delay: 1.2s; }
-.cover-enter .cover-menu > :nth-child(3) { animation-delay: 1.28s; }
-.cover-enter .cover-menu > :nth-child(4) { animation-delay: 1.36s; }
-.cover-enter .cover-menu > :nth-child(5) { animation-delay: 1.44s; }
-.cover-enter .cover-menu > :nth-child(6) { animation-delay: 1.52s; }
-.cover-enter .cover-menu > :nth-child(n + 7) { animation-delay: 1.6s; }
 
 @keyframes cover-drop {
   0% { opacity: 0; transform: translateY(-70px) rotateX(28deg) scale(1.08); }
@@ -117,14 +107,9 @@
   0% { opacity: 0; scale: 2.6; rotate: -24deg; }
   100% { opacity: 1; scale: 1; rotate: -8deg; }
 }
-@keyframes cover-in {
-  from { opacity: 0; translate: 24px 0; }
-  to { opacity: 1; translate: 0 0; }
-}
 
 @media (prefers-reduced-motion: reduce) {
-  .cover-enter .cover-stage, .cover-enter .cover-sheen, .cover-enter .cover-seal,
-  .cover-enter .cover-menu > *, .cover-sun { animation: none; }
+  .cover-enter .cover-stage, .cover-enter .cover-sheen, .cover-enter .cover-seal, .cover-sun { animation: none; }
   .cover-box { transition: none; }
 }
 .cover-menu p { margin: 0; text-align: center; }
