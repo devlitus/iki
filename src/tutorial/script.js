@@ -14,7 +14,8 @@ import { abilityText, cardName, shopName, typeLabel, who } from '../view/format.
  *           'wait'   espera a que terminen los demás
  *   done    ¿ya está superado? Se deduce del estado (no hay puntero): el paso en curso es el primero que no lo está,
  *           así deshacer una jugada vuelve solo al paso que toca.
- *   text    HTML de la burbuja, según el estado.
+ *   text    HTML de la burbuja, según el estado y el dispositivo: text(g, { mobile }), con `mobile` = distribución para
+ *           móvil (mesa y jugadores en paneles que se abren desde la barra; ver view/mobile.js).
  *   allow   (action) ¿acepta esta jugada?
  *   deny    (action, opcional) qué decir cuando se rechaza una jugada; por defecto, que toca otra cosa.
  *   zones   (action) zonas del tablero que se pueden pulsar; null = las que ofrezca el panel.
@@ -112,8 +113,9 @@ export const STEPS = [
   {
     id: 'you', kind: 'info', title: 'Tus recursos', done: ack('you'),
     focus: (g) => [`.seat[data-player="${humanOf(g)}"]`],
-    text: () => `<p>Esta es tu ficha, a la derecha. Empiezas con <b>8 mons</b> (el dinero), <b>1 de arroz</b> (para alimentar a tus
-      personajes) y <b>1 sandalia</b> (te deja avanzar un paso más). También tienes 4 Kobun libres y 0 IKI.</p>
+    text: (g, { mobile } = {}) => `<p>Esta es tu ficha, ${mobile ? 'en el panel <b>Jugadores</b> (botón «Jugad.» de la barra)' : 'a la derecha'}.
+      Empiezas con <b>8 mons</b> (el dinero), <b>1 de arroz</b> (para alimentar a tus personajes) y <b>1 sandalia</b> (te deja
+      avanzar un paso más). También tienes 4 Kobun libres y 0 IKI.</p>
       <p>Pulsa «Tablero» en tu ficha cuando quieras ver tu tablero entero.</p>`,
   },
   {
@@ -121,8 +123,9 @@ export const STEPS = [
     allow: (g, a) => a.type === 'placeInitial',
     zones: () => null,
     focus: () => ['.initial-cards'],
-    text: (g) => `<p>Los otros dos jugadores ya han colocado el suyo. <b>Elige una carta</b> de la izquierda (pasa el ratón para verla
-      grande) y después pulsa un <b>solar exterior libre</b> del tablero.</p>
+    text: (g, { mobile } = {}) => `<p>Los otros dos jugadores ya han colocado el suyo. <b>Elige una carta</b> ${mobile
+      ? 'del panel <b>Mesa</b> (al tocarla se ve en grande: pulsa «Elegir»)'
+      : 'de la izquierda (pasa el ratón para verla grande)'} y después pulsa un <b>solar exterior libre</b> del tablero.</p>
       <ul>${g.initialCharacters.map((id) => `<li><b>${cardName(id)}</b>: ${abilityText(CHARACTERS_BY_ID[id])}</li>`).join('')}</ul>`,
   },
   {
@@ -140,11 +143,12 @@ export const STEPS = [
     id: 'month', kind: 'info', title: 'Empieza el mes 1', done: ack('month'),
     spots: () => ['month-1'],
     focus: () => ['.row-cards'],
-    text: () => `<p>El calendario marca el <b>mes 1</b> (Primavera). Cada mes tiene tres fases:</p>
+    text: (g, { mobile } = {}) => `<p>El calendario marca el <b>mes 1</b> (Primavera). Cada mes tiene tres fases:</p>
       <ul><li><b>A · Camino de la vida:</b> decides el orden de juego y cuánto te moverás.</li>
       <li><b>B · Acciones:</b> el turno de cada jugador.</li>
       <li><b>C · Evento:</b> cierra el mes.</li></ul>
-      <p>A la izquierda están las 4 cartas del mes, que podrás contratar; el coste va impreso en cada una.</p>`,
+      <p>${mobile ? 'En el panel <b>Mesa</b> (botón de la barra de la izquierda)' : 'A la izquierda'} están las 4 cartas del mes, que
+      podrás contratar; el coste va impreso en cada una.</p>`,
   },
   {
     id: 'ikizama', kind: 'action', title: 'A · Coloca tu Ikizama', done: (g) => g.month > 1 || g.phase !== 'ikizama',
@@ -176,7 +180,7 @@ export const STEPS = [
     allow: (g, a) => ['income', 'hire'].includes(a.type),
     zones: () => null,
     focus: () => ['[data-do="income"]', '.row-cards'],
-    text: (g) => {
+    text: (g, { mobile } = {}) => {
       if (progress(g) === 'before') return '<p>Esperando a que terminen los turnos anteriores… Mira el registro para ver qué hacen.</p>';
       const options = hireable(g);
       const dest = destination(g);
@@ -186,7 +190,7 @@ export const STEPS = [
         : '<p>No puedes contratar a nadie ahora: elige <b>Ingresos</b>.</p>';
       return `<p>Es tu turno. Elige <b>una</b> opción:</p>
         <ul><li><b>Ingresos:</b> cobras 4 mons sin más.</li>
-        <li><b>Contratar:</b> pulsa una carta de la fila y luego un solar libre. Pagas su coste en mons (los que tenga encima son para ti)
+        <li><b>Contratar:</b> ${mobile ? 'pulsa «Ver la fila de personajes», toca una carta, pulsa «Elegir»' : 'pulsa una carta de la fila'} y luego un solar libre. Pagas su coste en mons (los que tenga encima son para ti)
         y gastas un Kobun. Algunos personajes también suben tu Extinción de Incendios.</li></ul>${tip}`;
     },
   },

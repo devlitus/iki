@@ -3,6 +3,8 @@ import { isWaiting } from './format.js';
 
 /** Pantallas bajas (móvil en horizontal): el tablero a todo el alto y lo demás en paneles. Igual que en mobile.css. */
 const MOBILE = matchMedia('(max-height: 560px)');
+/** ¿Está activa la distribución para móvil? */
+export const isMobileLayout = () => MOBILE.matches;
 const TAP_SLOP = 10; // px que puede moverse el dedo y seguir siendo un toque
 
 /**

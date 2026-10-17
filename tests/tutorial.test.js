@@ -23,7 +23,7 @@ function playThrough(choose = (options) => options[0]) {
     assert.ok(step, 'el tutorial se queda sin pasos');
     if (seen.at(-1) !== step.id) seen.push(step.id);
     if (step.last) return { g, seen };
-    assert.doesNotThrow(() => step.text(g), `el texto de «${step.id}» falla`);
+    for (const mobile of [false, true]) assert.doesNotThrow(() => step.text(g, { mobile }), `el texto de «${step.id}» falla`);
     if (step.kind === 'info') acked.add(step.id);
     else if (isAiTurn(g)) g = act(g, chooseAction(g, { effort: 'fast' }));
     else {
