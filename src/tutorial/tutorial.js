@@ -1,6 +1,7 @@
 import './tutorial.css';
 import { ZONES_BY_ID, zoneCenter } from '../data/zones.js';
 import { STEPS, currentStep, stepAllows, stepZones } from './script.js';
+import { isMobileLayout } from '../view/mobile.js';
 
 const GAP = 16;    // separación entre la burbuja y lo que señala (aquí cabe el rabito)
 const MARGIN = 10; // separación mínima con el borde de la ventana
@@ -67,7 +68,7 @@ export function createTutorial({ coach, board, onChange, onExit }) {
       <header title="Arrastra para mover la burbuja"><span class="label">Tutorial · ${STEPS.indexOf(step) + 1} de ${total}</span>
         ${step.last ? '' : '<button type="button" class="tut-close" data-tut="exit" aria-label="Salir del tutorial" title="Volver al menú; tu partida guardada no cambia">×</button>'}</header>
       <h2>${step.title}</h2>
-      <div class="tut-text">${step.text(game)}</div>
+      <div class="tut-text">${step.text(game, { mobile: isMobileLayout() })}</div>
       ${actions ? `<footer>${actions}</footer>` : ''}`;
     coach.hidden = false;
   }
