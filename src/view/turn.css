@@ -60,6 +60,10 @@
 .iki-dialog::backdrop { background: rgba(10, 6, 3, 0.72); }
 .iki-dialog h2 { margin: 0 0 8px; font: 400 28px/1 'Patrick Hand SC', system-ui, sans-serif; }
 .iki-dialog ul { margin: 0 0 12px; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }
+.fire-tile-drawn { margin: 0 0 12px; display: flex; align-items: center; gap: 14px; }
+.fire-tile-drawn img { width: 160px; aspect-ratio: 7 / 4; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); animation: fire-tile-flip 0.6s ease-out; }
+@keyframes fire-tile-flip { from { transform: perspective(400px) rotateY(90deg); } }
+@media (prefers-reduced-motion: reduce) { .fire-tile-drawn img { animation: none; } }
 .iki-dialog footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 #final-table { width: min(980px, calc(100vw - 32px)); }
 .score-table { width: 100%; border-collapse: collapse; margin: 10px 0; }

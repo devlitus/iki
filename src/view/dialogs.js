@@ -1,6 +1,7 @@
 import { EVENT_LOG_TYPES, logLine, playerColor, playerName, typeLabel } from './format.js';
 import { CHARACTERS_BY_ID } from '../data/characters.js';
 import { BUILDINGS_BY_ID } from '../data/decks.js';
+import { NAGAYAS_BY_ID, fireTileImage } from '../data/zones.js';
 
 /** Diálogos a pantalla completa: resumen del Evento del mes, tabla de puntuación final y ampliación de cartas. */
 
@@ -14,19 +15,27 @@ function makeDialog(id) {
 }
 
 /** Lo ocurrido en el Evento (Día de Pago, Incendio): las entradas nuevas del registro, agrupadas. */
-export function createEventSummary() {
+export function createEventSummary({ onClose = () => {} } = {}) {
   const dialog = makeDialog('event-summary');
+  dialog.addEventListener('close', () => onClose());
   return {
-    /** Muestra el resumen de las entradas `entries` si hay algo que contar. */
+    /** Muestra el resumen de las entradas `entries` si hay algo que contar. Devuelve el Nagaya que arde, si hubo Incendio. */
     show(game, entries) {
       const lines = entries.filter((e) => EVENT_LOG_TYPES.includes(e.type));
-      if (!lines.length) return;
+      if (!lines.length) return null;
       const fire = lines.some((e) => e.type.startsWith('fire') || e.type === 'burned');
+      // Si el incendio se paró a esperar una decisión, su inicio quedó en un registro anterior.
+      const start = fire ? game.log.findLast((e) => e.type === 'fire-start') : null;
       dialog.innerHTML = `
         <h2>${fire ? 'Incendio' : 'Día de Pago'} · mes ${lines[0].month}</h2>
+        ${start ? `<figure class="fire-tile-drawn">
+          <img src="${fireTileImage(start.nagaya)}" alt="Loseta de Incendio del Nagaya ${NAGAYAS_BY_ID[start.nagaya].name}">
+          <figcaption>${playerName(game, start.player)} roba la loseta: arde el Nagaya ${NAGAYAS_BY_ID[start.nagaya].name}</figcaption>
+        </figure>` : ''}
         <ul>${lines.map((e) => `<li>${logLine(game, e)}</li>`).join('')}</ul>
         <button type="button" class="btn close" autofocus>Continuar</button>`;
       if (!dialog.open) dialog.showModal();
+      return start?.nagaya ?? null;
     },
   };
 }

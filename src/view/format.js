@@ -1,7 +1,7 @@
 import { CHARACTERS_BY_ID, CHARACTER_TYPES } from '../data/characters.js';
 import { BUILDINGS_BY_ID } from '../data/decks.js';
 import { PLAYER_BOARDS_BY_ID } from '../data/playerBoards.js';
-import { ZONES_BY_ID } from '../data/zones.js';
+import { NAGAYAS_BY_ID, ZONES_BY_ID } from '../data/zones.js';
 import { deciderOf, isAiTurn } from '../ai/player.js';
 
 /** Textos de la interfaz: nombres de jugadores, recursos, habilidades y entradas del registro. */
@@ -87,7 +87,7 @@ export function logLine(g, e) {
     case 'harmony': return `${p} gana ${e.iki} IKI por Armonía`;
     case 'food': return `${p} alimenta a ${e.fed} personaje(s)${e.dropped ? ` y pierde ${e.dropped}` : ''}`;
     case 'starve': return `${p} pierde a ${name(e.card)} por falta de arroz`;
-    case 'fire-start': return `Incendio de fuerza ${e.strength} en el Nagaya ${e.nagaya}`;
+    case 'fire-start': return `Incendio de fuerza ${e.strength} en el Nagaya ${NAGAYAS_BY_ID[e.nagaya].name}`;
     case 'fire-stopped': return `El fuego se detiene en el solar de ${p}`;
     case 'fire-avoided': return `${p} evita el incendio`;
     case 'burned': return `Arde ${name(e.card)} de ${p}`;

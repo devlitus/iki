@@ -1,4 +1,4 @@
-import { ZONES_BY_ID, zoneCenter } from '../data/zones.js';
+import { NAGAYAS_BY_ID, ZONES_BY_ID, fireTileImage, zoneCenter } from '../data/zones.js';
 import { PLAYER_BOARDS_BY_ID } from '../data/playerBoards.js';
 import { CHARACTERS_BY_ID } from '../data/characters.js';
 import { BUILDINGS_BY_ID } from '../data/decks.js';
@@ -10,7 +10,62 @@ import { createCharacterCard } from '../cards/card.js';
  * jugador y las cartas de los solares. Su tamaño va en % del ancho del tablero para que escale con el zoom.
  * Lo que se puede pulsar ahora llega en `targets` ([{ zone, title, onClick }]); todo lo demás es solo para mirar.
  */
-export function renderBoardPieces(board, game, { targets = [] } = {}) {
+const FIRE_STEP_MS = 700;
+const FIRE_FLIP_MS = 600;
+/**
+ * Recorrido de la loseta del último incendio: desde qué pestaña (−1 = sale de la pila), hasta cuál y cuándo empezó. Si
+ * se redibuja el tablero a mitad, la animación sigue por donde iba en vez de empezar otra vez.
+ */
+let fireShown = { key: null, from: -1, end: -1, t0: 0 };
+
+/**
+ * Solares que recorre el fuego en el incendio en curso o recién resuelto: del exterior hacia dentro, hasta el que lo
+ * detiene (o el que espera la decisión de «Evitar un incendio»); si nadie lo para, hasta el último.
+ */
+function firePath(game, nagaya) {
+  const lots = NAGAYAS_BY_ID[nagaya].lots;
+  const start = game.log.findLast((e) => e.type === 'fire-start');
+  if (game.event?.kind === 'fire') return { key: start?.seq, lots: lots.slice(0, Math.min(game.event.index, lots.length - 1) + 1) };
+  const stopped = game.log.find((e) => e.seq > (start?.seq ?? 0) && e.type === 'fire-stopped');
+  return { key: start?.seq, lots: lots.slice(0, stopped ? lots.indexOf(stopped.lot) + 1 : lots.length) };
+}
+
+/**
+ * Loseta robada, boca arriba en las pestañas de modificador de los solares: entra por la del exterior y avanza una a una
+ * (−1, −2, −3) mientras el fuego se propaga y pierde fuerza.
+ */
+function placeFireTile(board, game, nagaya, put, img) {
+  const { key, lots } = firePath(game, nagaya);
+  const end = lots.length - 1;
+  if (fireShown.key !== key || fireShown.end !== end) {
+    // Sigue desde donde se vio por última vez; si es un incendio nuevo, sale de la pila desde la pestaña exterior.
+    fireShown = { key, from: fireShown.key === key ? Math.min(fireShown.end, end) : -1, end, t0: performance.now() };
+  }
+  // En los Nagayas de la izquierda las pestañas están impresas del revés (el fuego avanza hacia la derecha).
+  const inwardRight = nagaya.endsWith('left');
+  const cls = `piece piece-fire-tile${inwardRight ? ' inward-right' : ''}`;
+  const placed = `translate(-50%, -50%)${inwardRight ? ' rotate(180deg)' : ''}`;
+  const el = put(img(fireTileImage(nagaya), cls), `fire-tab-${lots[end]}`, null,
+    { title: `Loseta de Incendio: arde el Nagaya ${NAGAYAS_BY_ID[nagaya].name}` });
+  const { from, t0 } = fireShown;
+  if (from === end || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const elapsed = performance.now() - t0;
+  const flip = from < 0 ? FIRE_FLIP_MS : 0;
+  const path = lots.slice(Math.max(from, 0)).map((lot) => zoneCenter(ZONES_BY_ID[`fire-tab-${lot}`]));
+  if (elapsed >= flip + FIRE_STEP_MS * (path.length - 1)) return; // ya terminó: se queda en su sitio
+  if (flip) {
+    el.animate([{ transform: `${placed} perspective(400px) rotateY(90deg)` }, { transform: placed }],
+      { duration: flip, easing: 'ease-out' }).currentTime = elapsed;
+  }
+  if (path.length > 1) {
+    // Cada tramo frena en su pestaña: se ve la fuerza bajar de una en una.
+    const frames = path.map(({ u, v }) => ({ left: `${u * 100}%`, top: `${v * 100}%`, easing: 'ease-in-out' }));
+    el.animate(frames, { duration: FIRE_STEP_MS * (path.length - 1), delay: flip, fill: 'backwards' }).currentTime = elapsed;
+  }
+}
+
+/** `fireNagaya`: Nagaya cuya loseta de Incendio está boca arriba en el tablero (el incendio en curso o recién contado). */
+export function renderBoardPieces(board, game, { targets = [], fireNagaya = null } = {}) {
   board.pieces.replaceChildren();
   const boardId = (i) => game.players[i].boardId;
   const color = (i) => PLAYER_BOARDS_BY_ID[boardId(i)].color;
@@ -41,7 +96,9 @@ export function renderBoardPieces(board, game, { targets = [] } = {}) {
   Object.keys(game.marketFaceDown).forEach((season) =>
     put(img(MARKET_BACKS[season], 'piece piece-facedown'), `season-${season}`, '5', { title: 'Pescado, Pipas y Tabaco de la estación, boca abajo' }));
 
-  put(`<div class="tok tok-fire-tiles"><i></i><i></i><i></i><i>${game.fireTiles.length}</i></div>`, 'fire-tiles', '4', { title: 'Losetas de Incendio' });
+  const pile = game.fireTiles.length - (fireNagaya ? 1 : 0); // la robada está en el Nagaya hasta que acaba el incendio
+  put(`<div class="tok tok-fire-tiles">${'<i></i>'.repeat(pile)}<b>${pile}</b></div>`,
+    'fire-tiles', '4', { title: 'Losetas de Incendio, boca abajo' });
 
   // Marcadores: los que comparten casilla se reparten un poco para verse todos.
   const stackAt = (key) => (stackAt.seen[key] = (stackAt.seen[key] ?? -1) + 1);
@@ -94,6 +151,8 @@ export function renderBoardPieces(board, game, { targets = [] } = {}) {
     const { u, v } = zoneCenter(zone);
     board.place(card, u, v);
   }
+
+  if (fireNagaya) placeFireTile(board, game, fireNagaya, put, img);
 
   // Zonas pulsables: un botón encima de la zona, con su mismo tamaño.
   for (const { zone: id, title, onClick } of targets) {

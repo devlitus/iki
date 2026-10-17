@@ -75,7 +75,9 @@ const btnReroll = document.getElementById('reroll');
 const btnSteps = document.getElementById('open-steps');
 const btnPicker = document.getElementById('open-picker');
 const playerModal = createPlayerModal();
-const eventSummary = createEventSummary();
+/** Nagaya cuya loseta de Incendio sigue boca arriba en el tablero mientras se lee el resumen del incendio. */
+let fireTileShown = null;
+const eventSummary = createEventSummary({ onClose: () => { if (fireTileShown) { fireTileShown = null; render(); } } });
 const finalTable = createFinalTable({ onNewGame: () => openPicker() });
 initZoom();
 
@@ -108,7 +110,8 @@ function render() {
   renderSupply(document.getElementById('supply'), game);
   renderPlayers(document.getElementById('players'), game, { onOpenBoard: (i) => playerModal.open(game, i) });
   playerModal.update(game);
-  renderBoardPieces(board, game, { targets: targets() });
+  const fireNagaya = game.event?.kind === 'fire' ? game.event.nagaya : fireTileShown;
+  renderBoardPieces(board, game, { targets: targets(), fireNagaya });
   tutorial?.update(game);
   btnReroll.disabled = Object.keys(game.lots).length > 0;
   steps.refresh();
@@ -192,8 +195,17 @@ function dispatch(action, { auto = false } = {}) {
   ui = {};
   persist();
   render();
-  eventSummary.show(game, game.log.filter((e) => e.seq > (before.logSeq ?? 0)));
+  showEvent(before);
   if (game.phase === 'ended' && before.phase !== 'ended') finalTable.open(game);
+}
+
+/** Cuenta el Evento ocurrido desde `before`; si fue un Incendio, su loseta queda en el Nagaya hasta cerrar el resumen. */
+function showEvent(before) {
+  const nagaya = eventSummary.show(game, game.log.filter((e) => e.seq > (before.logSeq ?? 0)));
+  if (nagaya) {
+    fireTileShown = nagaya;
+    render();
+  }
 }
 
 function undo() {
@@ -242,7 +254,7 @@ function showOnlineChange(before) {
   selectedCard = null;
   ui = {};
   render();
-  eventSummary.show(game, game.log.filter((e) => e.seq > (before.logSeq ?? 0)));
+  showEvent(before);
   if (game.phase === 'ended' && before.phase !== 'ended') finalTable.open(game);
 }
 

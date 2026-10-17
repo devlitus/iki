@@ -50,6 +50,18 @@ for (const [row, [y0, y1]] of Object.entries(LOT_ROWS)) {
   });
 }
 
+// Pestaña impresa junto a cada solar con su modificador de incendio (el «<» con el estampado en el exterior): por ellas
+// avanza la loseta de Incendio. Arriba quedan encima del solar y abajo debajo. Píxeles [x0, x1] de la textura.
+const FIRE_TAB_X = [[78, 180], [331, 391], [562, 622], [792, 854], [1199, 1259], [1428, 1488], [1660, 1720], [1870, 1970]];
+const FIRE_TAB_Y = { top: [273, 306], bottom: [1570, 1602] };
+const fireTabs = [];
+for (const [row, [y0, y1]] of Object.entries(FIRE_TAB_Y)) {
+  FIRE_TAB_X.forEach(([x0, x1], i) => {
+    const lot = lots.find((z) => z.id.startsWith(`lot-${row}-`) && z.x === LOT_COLUMNS[i][0]);
+    fireTabs.push(rect(`fire-tab-${lot.id}`, 'fire', `Incendio ${lot.fire || '<'} · ${lot.label}`, x0 / 2048, y0 / 1870, (x1 - x0) / 2048, (y1 - y0) / 1870, { lot: lot.id }));
+  });
+}
+
 // --- Calle: 8 casillas en circuito + cola de entrada ------------------------------------------
 // Flechas del tablero: fila superior hacia la izquierda, inferior hacia la derecha.
 const STREET_COLS = [[0.0240, 0.2256], [0.2495, 0.4512], [0.5490, 0.7500], [0.7744, 0.9761]];
@@ -121,7 +133,7 @@ const SCORE = [
 const score = SCORE.map(([cx, cy], n) => circle(`score-${n}`, 'score', `Puntos ${n}`, cx, cy, 0.0125, { value: n }));
 score.push(circle('score-lap', 'score', 'Vuelta (+30)', 0.0704, 0.9359, 0.008));
 
-export const ZONES = [...calendar, ...lots, ...street, ...queue, ...shops, ...fishSlots, ...pipeSlots, ...fireTrack, ...turnOrder, ...score];
+export const ZONES = [...calendar, ...lots, ...street, ...queue, ...shops, ...fishSlots, ...pipeSlots, ...fireTrack, ...fireTabs, ...turnOrder, ...score];
 
 export const ZONES_BY_ID = Object.assign(Object.create(null), Object.fromEntries(ZONES.map((z) => [z.id, z]))); // sin prototipo: «constructor» o «__proto__» no son ids
 
@@ -147,11 +159,14 @@ export const STREET_ENTRY = 'street-t2';
  * loseta de Incendio) hacia el cruce central.
  */
 export const NAGAYAS = [
-  { id: 'top-left', pattern: 'yellow', lots: ['lot-top-left-1', 'lot-top-left-2', 'lot-top-left-3', 'lot-top-left-4'] },
-  { id: 'top-right', pattern: 'blue', lots: ['lot-top-right-4', 'lot-top-right-3', 'lot-top-right-2', 'lot-top-right-1'] },
-  { id: 'bottom-left', pattern: 'red', lots: ['lot-bottom-left-1', 'lot-bottom-left-2', 'lot-bottom-left-3', 'lot-bottom-left-4'] },
-  { id: 'bottom-right', pattern: 'purple', lots: ['lot-bottom-right-4', 'lot-bottom-right-3', 'lot-bottom-right-2', 'lot-bottom-right-1'] },
+  { id: 'top-left', pattern: 'yellow', name: 'amarillo', lots: ['lot-top-left-1', 'lot-top-left-2', 'lot-top-left-3', 'lot-top-left-4'] },
+  { id: 'top-right', pattern: 'blue', name: 'azul', lots: ['lot-top-right-4', 'lot-top-right-3', 'lot-top-right-2', 'lot-top-right-1'] },
+  { id: 'bottom-left', pattern: 'red', name: 'rojo', lots: ['lot-bottom-left-1', 'lot-bottom-left-2', 'lot-bottom-left-3', 'lot-bottom-left-4'] },
+  { id: 'bottom-right', pattern: 'purple', name: 'morado', lots: ['lot-bottom-right-4', 'lot-bottom-right-3', 'lot-bottom-right-2', 'lot-bottom-right-1'] },
 ];
+
+/** Loseta de Incendio de un Nagaya: lleva su estampado. */
+export const fireTileImage = (nagayaId) => `/tokens/fire-tile/${NAGAYAS_BY_ID[nagayaId].pattern}.webp`;
 export const NAGAYAS_BY_ID = Object.assign(Object.create(null), Object.fromEntries(NAGAYAS.map((n) => [n.id, n]))); // sin prototipo: «constructor» o «__proto__» no son ids
 
 /** Grupos de la Bonificación por Armonía: los 4 Nagayas y el 5.º grupo de las esquinas. */

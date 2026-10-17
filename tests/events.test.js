@@ -4,6 +4,8 @@ import { newGame, tweak } from './helpers.js';
 import { act, legalActions, whoseTurn } from '../src/game/engine.js';
 import { startEvent, continueEvent, harmonyBonus, FIRE_STRENGTH } from '../src/game/events.js';
 import { KOBUN_PER_PLAYER, OUTER_LOTS } from '../src/game/setup.js';
+import { NAGAYAS, fireTileImage } from '../src/data/zones.js';
+import { existsSync } from 'node:fs';
 
 /** Estado al final de la fase B del `month`, con ajustes, y resuelve el Evento. */
 function eventOf(month, edit = () => {}) {
@@ -276,4 +278,18 @@ test('el Evento de incendio sortea una loseta, la devuelve a la pila y avanza el
   assert.deepEqual(same.fireTiles, g.fireTiles, 'con la misma semilla sale lo mismo');
   assert.notEqual(g.rng, newGame().rng);
   assert.ok(g.log.some((e) => e.type === 'fire-start' && e.strength === FIRE_STRENGTH[5]));
+});
+
+test('cada incendio roba al azar: según la partida y el mes arde cualquiera de los 4 Nagayas, y su loseta tiene imagen', () => {
+  const burned = new Set();
+  for (let seed = 1; seed <= 40; seed++) {
+    let g = newGame(3, seed);
+    for (const month of [5, 8, 11]) {
+      g = tweak(g, (d) => { d.month = month; d.lots = {}; startEvent(d); });
+      const start = g.log.findLast((e) => e.type === 'fire-start');
+      burned.add(start.nagaya);
+      assert.ok(existsSync(`public${fireTileImage(start.nagaya)}`), `falta la loseta del Nagaya ${start.nagaya}`);
+    }
+  }
+  assert.deepEqual([...burned].sort(), NAGAYAS.map((n) => n.id).sort());
 });
