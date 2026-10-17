@@ -1,5 +1,5 @@
 import { currentPicker } from '../game/setup.js';
-import { isWaiting } from './format.js';
+import { cardSummary, isWaiting } from './format.js';
 
 /** Pantallas bajas (móvil en horizontal): el tablero a todo el alto y lo demás en paneles. Igual que en mobile.css. */
 const MOBILE = matchMedia('(max-height: 560px)');
@@ -69,11 +69,12 @@ export function createMobileLayout({ app, side, players, turn }) {
   preview.id = 'card-preview';
   preview.hidden = true;
   preview.innerHTML = `<figure><img alt=""><figcaption></figcaption>
-    <div class="actions"><button type="button" class="btn primary" data-pv="pick">Elegir</button><button type="button" class="btn" data-pv="close">Cerrar</button></div></figure>`;
+    <div class="actions"><aside class="card-summary"></aside><button type="button" class="btn primary" data-pv="pick">Elegir</button><button type="button" class="btn" data-pv="close">Cerrar</button></div></figure>`;
   document.body.append(preview);
   const pvImg = preview.querySelector('img');
   const pvCaption = preview.querySelector('figcaption');
   const pvPick = preview.querySelector('[data-pv="pick"]');
+  const pvSummary = preview.querySelector('.card-summary');
   let source = null; // el botón de la carta ampliada
   let confirmed = false; // el clic que se reenvía al pulsar «Elegir» no debe volver a abrir la ampliación
 
@@ -81,6 +82,8 @@ export function createMobileLayout({ app, side, players, turn }) {
     source = el;
     pvImg.src = el.dataset.zoom;
     pvCaption.textContent = el.title || el.querySelector('img')?.alt || '';
+    pvSummary.innerHTML = cardSummary(el.dataset.zoom);
+    pvSummary.hidden = !pvSummary.innerHTML;
     pvPick.hidden = el.disabled || !el.matches('button');
     pvPick.textContent = el.classList.contains('selected') ? 'Quitar selección' : 'Elegir';
     preview.hidden = false;

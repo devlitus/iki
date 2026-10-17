@@ -68,7 +68,9 @@
 #card-preview figure { display: flex; align-items: center; gap: 14px; margin: 0; max-height: 100%; }
 #card-preview img { height: min(88vh, 520px); height: min(88dvh, 520px); max-width: 60vw; object-fit: contain; border-radius: 8px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7); }
 #card-preview figcaption { display: none; }
-#card-preview .actions { display: flex; flex-direction: column; gap: 10px; min-width: 130px; }
+#card-preview .actions { display: flex; flex-direction: column; gap: 10px; min-width: 130px; max-width: 34vw; max-height: 88dvh; overflow-y: auto; }
+#card-preview .card-summary { width: auto; box-shadow: none; }
+#card-preview .card-summary[hidden] { display: none; }
 #card-preview .actions .btn { min-height: 48px; font-size: 15px; }
 #card-preview .actions .btn[hidden] { display: none; }
 
