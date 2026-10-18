@@ -9,11 +9,14 @@
     "preview": "vite preview",
     "test": "node --test tests/*.test.js",
     "golden:record": "node tests/golden/golden.js record",
-    "golden:check": "node tests/golden/golden.js check"
+    "golden:check": "node tests/golden/golden.js check",
+    "typecheck": "tsc"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.10",
+    "@types/node": "^26.6.5",
     "happy-dom": "^21.0.3",
+    "typescript": "^7.0.2",
     "vite": "^6.4.4"
   },
   "dependencies": {
