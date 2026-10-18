@@ -5,7 +5,7 @@ import { createApp } from '../server/app.js';
 import { eloDeltas } from '../server/rating.js';
 import { cleanAction, settle } from '../server/games.js';
 import { act } from '../src/game/engine.ts';
-import { chooseAction, deciderOf } from '../src/ai/player.js';
+import { chooseAction, deciderOf } from '../src/ai/player.ts';
 
 const SECRET = 'x'.repeat(40);
 const ORIGIN = 'http://iki.test';

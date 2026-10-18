@@ -2,7 +2,7 @@ import { CHARACTERS_BY_ID, CHARACTER_TYPES } from '../data/characters.ts';
 import { BUILDINGS_BY_ID } from '../data/decks.ts';
 import { PLAYER_BOARDS_BY_ID } from '../data/playerBoards.ts';
 import { NAGAYAS_BY_ID, ZONES_BY_ID } from '../data/zones.ts';
-import { deciderOf, isAiTurn } from '../ai/player.js';
+import { deciderOf, isAiTurn } from '../ai/player.ts';
 
 /** Textos de la interfaz: nombres de jugadores, recursos, habilidades y entradas del registro. */
 

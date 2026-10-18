@@ -4,7 +4,7 @@ import { createRng, secretSeed } from '../src/game/random.ts';
 import { createGame } from '../src/game/setup.ts';
 import { act, legalActions } from '../src/game/engine.ts';
 import { publicView, HIDDEN } from '../src/game/view.ts';
-import { chooseAction, isAiTurn, deciderOf } from '../src/ai/player.js';
+import { chooseAction, isAiTurn, deciderOf } from '../src/ai/player.ts';
 import { BOARDS } from './helpers.js';
 
 const players = (n = 3) => BOARDS.slice(0, n).map((boardId) => ({ boardId, ai: true }));

@@ -7,7 +7,7 @@ import './players/players.css';
 import { createGame, freeOuterLots, MIN_PLAYERS, GAME_VERSION } from './game/setup.ts';
 import { act, whoseTurn } from './game/engine.ts';
 import { randomSeed } from './game/random.ts';
-import { chooseAction, isAiTurn } from './ai/player.js';
+import { chooseAction, isAiTurn } from './ai/player.ts';
 import { renderDecks, renderSupply, renderPlayers, renderSpecialsInfo } from './view/table.js';
 import { renderBoardPieces } from './view/boardPieces.js';
 import { renderTurnPanel, bindTurnPanel, boardTargets, hireableCards } from './view/turnPanel.js';

@@ -2,8 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame } from '../src/game/setup.ts';
 import { act, legalActions } from '../src/game/engine.ts';
-import { chooseAction, deciderOf, isAiTurn } from '../src/ai/player.js';
-import { evaluate } from '../src/ai/evaluate.js';
+import { chooseAction, deciderOf, isAiTurn } from '../src/ai/player.ts';
+import { evaluate } from '../src/ai/evaluate.ts';
 import { BOARDS } from './helpers.js';
 
 const aiGame = (n, seed, ai = () => true) =>

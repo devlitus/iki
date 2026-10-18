@@ -4,7 +4,7 @@ import { act, legalActions } from '../src/game/engine.ts';
 import { RuleError } from '../src/game/state.ts';
 import { publicView } from '../src/game/view.ts';
 import { createRng, secretSeed } from '../src/game/random.ts';
-import { chooseAction, deciderOf, isAiTurn } from '../src/ai/player.js';
+import { chooseAction, deciderOf, isAiTurn } from '../src/ai/player.ts';
 import { PLAYER_BOARDS } from '../src/data/playerBoards.ts';
 import { eloDeltas } from './rating.js';
 import { fail, HttpError } from './http.js';
