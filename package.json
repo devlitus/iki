@@ -10,7 +10,8 @@
     "test": "node --test tests/*.test.js",
     "golden:record": "node tests/golden/golden.js record",
     "golden:check": "node tests/golden/golden.js check",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "golden:bundle": "node tests/golden/bundle.js"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.10",

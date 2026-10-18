@@ -16,10 +16,12 @@ después, en un commit aparte.
 | Tutorial | `tutorial-first`, `tutorial-last` | paso, textos (escritorio y móvil), zonas, progreso, jugadas permitidas |
 | Interfaz | 4 partidas pintadas en happy-dom (IA, local y en línea; con `ui` vacío, a medio elegir y con error) + `view-static` + `data` | HTML del panel de turno, mazos, suministro, jugadores, piezas del tablero, ficha de jugador, resumen del Evento, tabla final, objetivos del tablero, textos del registro y de las cartas |
 | Servidor | `server` (pglite) | transcripción de peticiones y respuestas: cuentas, bloqueo, CSRF, sala, partida completa con jugadas manipuladas y conflictos de versión, sala con IA, `cleanAction`, Elo |
+| Código generado | `golden:bundle` | lo que genera Vite (web y, con `--ssr`, la función del servidor) comparado byte a byte con el de `pre-ts`: los tipos se borran al compilar, así que debe salir idéntico |
 
 ```sh
 pnpm golden:record   # solo en pre-ts (o al añadir escenarios, grabando desde pre-ts)
 pnpm golden:check    # tras cada paso: ✓ N escenarios idénticos byte a byte
+pnpm golden:bundle   # tras cada paso: ✓ web y servidor generados idénticos a pre-ts
 ```
 
 Todos los imports de la grabación pasan por `tests/golden/modules.js`: al renombrar a `.ts` solo cambia ese archivo.
@@ -35,7 +37,8 @@ Todos los imports de la grabación pasan por `tests/golden/modules.js`: al renom
    por `type`) y los datos (`Zone`, `Character`, `Building`, `PlayerBoard`).
 3. **Migración por grupos** (un commit por grupo): `data/` → `game/` → `ai/` → `tutorial/` → `online/` →
    `cards/`, `players/`, `view/`, `main` → `server/`, `api/` → configuración → `tests/`. Tras cada grupo:
-   `pnpm test`, `pnpm typecheck`, `pnpm build`, `pnpm golden:check`.
+   `pnpm test`, `pnpm typecheck`, `pnpm build`, `pnpm golden:check`, `pnpm golden:bundle`.
+
 4. **Estricto** (commit): `strict`, sin `allowJs`.
 5. **Verificación final** (commit con el informe): `golden:check` contra las grabaciones de `pre-ts`; prueba cruzada
    regrabando desde cero en un worktree de `pre-ts` y comparando con las grabaciones guardadas; tests en verde.
