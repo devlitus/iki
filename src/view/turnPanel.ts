@@ -128,8 +128,18 @@ export function renderTurnPanel(el: HTMLElement, game: Game, ctx: Ctx) {
     ${ctx.canUndo && !waiting ? '<button type="button" class="btn btn-sm" data-do="undo">↶ Deshacer</button>' : ''}
     <details class="turn-log" open>
       <summary class="label">Registro</summary>
-      <ul>${game.log.slice(-8).reverse().map((e) => `<li>${logLine(game, e)}</li>`).join('')}</ul>
+      <ul>${recentLog(game)}</ul>
     </details>`;
+}
+
+/** Las últimas entradas, de la más reciente a la más antigua, con la cabecera «Mes N» encima de las de cada mes. */
+function recentLog(game: Game) {
+  let month: number | null = null;
+  return game.log.slice(-8).reverse().filter((e) => e.type !== 'month').map((e) => {
+    const head = e.month !== month ? `<li>${logLine(game, { ...e, type: 'month' })}</li>` : '';
+    month = e.month;
+    return `${head}<li>${logLine(game, e)}</li>`;
+  }).join('');
 }
 
 const btn = (label: string | number, attrs: string, { disabled = false, cls = '' } = {}) =>
