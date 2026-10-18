@@ -87,10 +87,11 @@ export function createFinalTable({ onNewGame }: { onNewGame: () => void }) {
       const { scores, ranking, winner } = game.final!;
       const order = game.turnOrder;
       const place = (p: number) => ranking.indexOf(p) + 1;
+      const tied = ranking.filter((p) => scores[p].total === scores[winner].total).length > 1;
       dialog.innerHTML = `
         <h2>Puntuación final</h2>
-        <p class="muted">Gana <b style="color:${playerColor(game, winner)}">${playerName(game, winner)}</b> con ${scores[winner].total} IKI.
-          Desempate: Extinción de Incendios y posición en la pila.</p>
+        <p class="muted">Gana <b style="color:${playerColor(game, winner)}">${playerName(game, winner)}</b> con ${scores[winner].total} IKI.${tied ? `
+          Empate a ${scores[winner].total}: gana quien tiene más Extinción de Incendios y, si sigue, quien está más arriba en la pila.` : ''}</p>
         <table class="score-table">
           <thead><tr><th></th>${order.map((p) => `<th class="${p === winner ? 'winner' : ''}" style="--player-color:${playerColor(game, p)}">
             ${playerName(game, p)}</th>`).join('')}</tr></thead>

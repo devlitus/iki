@@ -72,15 +72,16 @@ export const MARKET_BACKS: Record<SeasonId, string> = {
 /** Texto corto del efecto o la puntuación de una ficha, para títulos y diálogos. */
 export function describeToken(t: MarketToken) {
   const RES: Record<Resource, string> = { mon: 'mon', rice: 'arroz', sandal: 'sandalia', wood: 'madera', koban: 'Koban' };
-  if (t.kind === 'fish') return `Pescado · ${t.cost} mons${t.bonus ? ` · +${t.bonus} IKI al final` : ''}`;
+  const cost = `${t.cost} ${t.cost === 1 ? 'mon' : 'mons'}`;
+  if (t.kind === 'fish') return `Pescado · ${cost}${t.bonus ? ` · +${t.bonus} IKI al final` : ''}`;
   if (t.kind === 'pipe') {
     const e = t.effect!;
     const what = e.fire ? `+${e.fire} Extinción de Incendios`
       : e.xp ? '+1 experiencia a uno de tus personajes'
       : e.gain!.map(({ res, n }) => `+${n} ${RES[res as Resource]}`).join(', ');
-    return `Pipa · ${t.cost} mons · ${what}`;
+    return `Pipa · ${cost} · ${what}`;
   }
   const PER: Record<string, string> = { fire2: '1 IKI por cada 2 de Extinción', mostType: '1 IKI por personaje del tipo más contratado',
     types: '1 IKI por tipo de personaje distinto', mon4: '1 IKI por cada 4 mons' };
-  return `Bolsa de Tabaco · ${t.cost} mons · ${t.score!.iki != null ? `${t.score!.iki} IKI` : PER[t.score!.per!]} al final`;
+  return `Bolsa de Tabaco · ${cost} · ${t.score!.iki != null ? `${t.score!.iki} IKI` : PER[t.score!.per!]} al final`;
 }

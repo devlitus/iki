@@ -33,11 +33,17 @@ export const playerColor = (g: Game, p: number) => PLAYER_BOARDS_BY_ID[g.players
 export const who = (g: Game, p: number) => `<b class="who-name" style="--player-color:${playerColor(g, p)}">${playerName(g, p)}</b>`;
 
 const RES_LABEL: Record<string, string> = { mon: 'mons', rice: 'arroz', sandal: 'sandalias', wood: 'madera', koban: 'Koban', iki: 'IKI' };
+const RES_ONE: Record<string, string> = { mon: 'mon', rice: 'arroz', sandal: 'sandalia', wood: 'madera', koban: 'Koban', iki: 'IKI' };
+
+/** «1 espacio», «3 espacios»: el número con la palabra en singular o plural. */
+export const count = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+/** «1 mon», «4 mons», «2 sandalias», en texto plano. */
+export const resText = (res: string, n: number) => `${n} ${n === 1 ? RES_ONE[res] : RES_LABEL[res]}`;
 
 /** n + icono del recurso (`iki` va como texto: no tiene ficha); el lector de pantalla lee el nombre del recurso. */
 export const chip = (res: string, n: number) => (res === 'iki'
   ? `<span class="res" title="IKI">${n} IKI</span>`
-  : `<span class="res" title="${RES_LABEL[res]}">${n}<span class="ic ic-${res}" aria-hidden="true"></span><span class="sr-only"> ${RES_LABEL[res]}</span></span>`);
+  : `<span class="res" title="${RES_LABEL[res]}">${n}<span class="ic ic-${res}" aria-hidden="true"></span><span class="sr-only"> ${n === 1 ? RES_ONE[res] : RES_LABEL[res]}</span></span>`);
 
 /** [{ res, n }] → chips; un IKI negativo se muestra con su signo. */
 export const chips = (list: Amount[]) => list.map(({ res, n }) => chip(res, n)).join(' ');
@@ -46,7 +52,7 @@ export const chips = (list: Amount[]) => list.map(({ res, n }) => chip(res, n)).
 export const costChips = (cost: Cost) => Object.entries(cost).filter(([, n]) => n > 0).map(([res, n]) => chip(res, n)).join(' · ');
 
 /** Coste de un edificio en texto plano (para `title` y `alt`, donde no cabe HTML). */
-export const costText = (cost: Cost) => Object.entries(cost).filter(([, n]) => n > 0).map(([res, n]) => `${n} ${RES_LABEL[res]}`).join(', ');
+export const costText = (cost: Cost) => Object.entries(cost).filter(([, n]) => n > 0).map(([res, n]) => resText(res, n)).join(', ');
 
 /** Lo que hace un personaje al activarlo, en una línea. */
 export function abilityText(def: Character) {
@@ -186,7 +192,7 @@ export function logLine(g: Game, e: Entry) {
     case 'salary': return `${p} cobra ${Object.entries(e.gain as Cost).filter(([, n]) => n).map(([r, n]) => chip(r, n)).join(' ') || 'nada'} de salario`;
     case 'perk': return `${p} gana ${Object.entries(e.gain as Cost).map(([r, n]) => chip(r, n)).join(' ')} por ${name(e.building)}`;
     case 'harmony': return `${p} gana ${e.iki} IKI por Armonía`;
-    case 'food': return `${p} alimenta a ${e.fed} personaje(s)${e.dropped ? ` y pierde ${e.dropped}` : ''}`;
+    case 'food': return `${p} alimenta a ${count(e.fed, 'personaje')}${e.dropped ? ` y pierde ${e.dropped}` : ''}`;
     case 'starve': return `${p} pierde a ${name(e.card)} por falta de arroz`;
     case 'fire-start': return `Incendio de fuerza ${e.strength} en el Nagaya ${NAGAYAS_BY_ID[e.nagaya].name}`;
     case 'fire-stopped': return e.card

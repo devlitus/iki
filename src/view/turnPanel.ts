@@ -5,7 +5,7 @@ import { ZONES_BY_ID, STREET, LOT_IDS } from '../data/zones.ts';
 import { act, whoseTurn, seasonOf, IKIZAMA_SLOTS } from '../game/engine.ts';
 import { FIRE_STRENGTH } from '../game/events.ts';
 import { buildCost, characterLots } from '../game/state.ts';
-import { abilityText, cardName, chip, chips, costChips, costText, isWaiting, logByMonth, playerColor, playerName, shopName, theShop, toShop, waitingText, who } from './format.ts';
+import { abilityText, cardName, chip, chips, count, resText, costChips, costText, isWaiting, logByMonth, playerColor, playerName, shopName, theShop, toShop, waitingText, who } from './format.ts';
 import type { Action, ActionOf, CharacterType, Game, IkizamaSlot, MarketToken, Target } from '../types.ts';
 
 
@@ -73,7 +73,7 @@ function hireCost(game: Game, p: number, card: string, lot: string) {
 }
 
 /** Un coste de contratar: si los mons de la carta lo superan, no cuesta nada y sobran mons. */
-const hireCostText = (cost: number) => cost > 0 ? `${cost} mons` : cost < 0 ? `gratis, te quedas ${-cost} mons` : 'gratis';
+const hireCostText = (cost: number) => cost > 0 ? resText('mon', cost) : cost < 0 ? `gratis, te quedas ${resText('mon', -cost)}` : 'gratis';
 
 /** Cartas de la fila que el jugador de turno puede contratar en algún solar libre. */
 export function hireableCards(game: Game): Set<string> {
@@ -108,7 +108,7 @@ export function boardTargets(game: Game, { ui, dispatch }: Pick<Ctx, 'ui' | 'dis
   if (ui.building?.building && game.turn!.step === 'business') {
     const { via, lot: charLot, building } = ui.building;
     const make = (lot: string): Action => (via === 'shop' ? { type: 'shop', choice: 'build', building, lot } : { type: 'character', lot: charLot!, building, buildLot: lot });
-    return legalLots(game, make).map((lot) => ({ zone: lot, title: `Construir ${cardName(building)} aquí${ZONES_BY_ID[lot].extraCost ? ` · ${ZONES_BY_ID[lot].extraCost} mons más` : ''}`,
+    return legalLots(game, make).map((lot) => ({ zone: lot, title: `Construir ${cardName(building)} aquí${ZONES_BY_ID[lot].extraCost ? ` · ${resText('mon', ZONES_BY_ID[lot].extraCost!)} más` : ''}`,
       onClick: () => dispatch(make(lot)), badge: cornerBadge(lot) }));
   }
   return [];
@@ -129,7 +129,7 @@ export function renderTurnPanel(el: HTMLElement, game: Game, ctx: Ctx) {
     </header>`;
 
   const waiting = isWaiting(game);
-  const body = waiting ? `<p class="ai-thinking" role="status">${waitingText(game, p!)}</p>` : game.pending ? pendingBody(game, ctx) : ({ ikizama: ikizamaBody, actions: actionsBody, newyear: actionsBody, event: () => '', ended: endedBody } as Partial<Record<string, (game: Game, ctx: Ctx) => string>>)[game.phase]?.(game, ctx) ?? '';
+  const body = waiting ? `<p class="ai-thinking">${waitingText(game, p!)}</p>` : game.pending ? pendingBody(game, ctx) : ({ ikizama: ikizamaBody, actions: actionsBody, newyear: actionsBody, event: () => '', ended: endedBody } as Partial<Record<string, (game: Game, ctx: Ctx) => string>>)[game.phase]?.(game, ctx) ?? '';
 
   el.innerHTML = `
     ${header}
@@ -259,12 +259,12 @@ function moveBody(game: Game, { ui }: Ctx) {
   return `
     <p>Mueve tu Oyakata en el sentido de las flechas.</p>
     ${choose ? `<div class="stepper"><span>Espacios</span>${[1, 2, 3, 4].map((n) => btn(n, `data-do="base" data-n="${n}"`, { cls: n === base ? 'on' : '' })).join('')}</div>`
-      : `<p class="muted">Tu Ikizama marca ${game.turn!.slot} espacio(s).</p>`}
+      : `<p class="muted">Tu Ikizama marca ${count(Number(game.turn!.slot), 'espacio')}.</p>`}
     <div class="stepper"><span>Sandalias ${chips([{ res: 'sandal', n: sandals }])} / ${player.resources.sandal}</span>
       ${btn('−', 'data-do="sandals" data-d="-1"', { disabled: sandals <= 0 })}${btn('+', 'data-do="sandals" data-d="1"', { disabled: sandals >= player.resources.sandal })}</div>
     ${player.specials.includes('move') ? `<label class="check"><input type="checkbox" data-do="bonus"${ui.bonus ? ' checked' : ''}> Usar «Mover +1»</label>` : ''}
     ${preview}
-    ${btn(`Mover ${total} espacio(s)`, 'data-do="move"', { cls: 'wide primary' })}`;
+    ${btn(`Mover ${count(total, 'espacio')}`, 'data-do="move"', { cls: 'wide primary' })}`;
 }
 
 // --- Negocios -----------------------------------------------------------------------------------

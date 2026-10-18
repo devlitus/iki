@@ -25,7 +25,7 @@ import { openIntro } from './tutorial/intro.ts';
 import { createTutorialGame } from './tutorial/game.ts';
 import { createOnline } from './online/online.ts';
 import { api, type ApiError } from './online/api.ts';
-import { EVENT_LOG_TYPES, isWaiting } from './view/format.ts';
+import { EVENT_LOG_TYPES, isWaiting, logLine, playerName } from './view/format.ts';
 import { CHARACTERS_BY_ID } from './data/characters.ts';
 import './view/table.css';
 import './view/turn.css';
@@ -228,8 +228,22 @@ function dispatch(action: Action, { auto = false } = {}) {
   ui = {};
   persist();
   render();
+  announce(before);
   showEvent(before);
   if (game.phase === 'ended' && before.phase !== 'ended') finalTable.open(game);
+}
+
+/**
+ * Para lectores de pantalla: lo nuevo del registro desde `before` y, si ahora le toca decidir a una persona, quién
+ * juega. El panel de turno se redibuja entero a cada cambio y no puede ser una región viva: lo leería todo cada vez.
+ */
+const announcer = document.getElementById('announcer')!;
+const plain = (html: string) => Object.assign(document.createElement('div'), { innerHTML: html }).textContent!.replace(/\s+/g, ' ').trim();
+function announce(before: Game) {
+  const lines = game!.log.filter((e) => e.seq > (before.logSeq ?? 0)).map((e) => plain(logLine(game!, e)));
+  const p = whoseTurn(game!);
+  if (p != null && !isWaiting(game!) && turnKey(before) !== turnKey(game!)) lines.push(`Juega ${plain(playerName(game!, p))}.`);
+  announcer.textContent = lines.slice(-6).join('. ');
 }
 
 /**
@@ -304,6 +318,7 @@ function showOnlineChange(before: Game | null) {
   selectedCard = null;
   ui = {};
   render();
+  if (before) announce(before);
   showEvent(before!);
   if (game!.phase === 'ended' && before!.phase !== 'ended') finalTable.open(game!);
 }

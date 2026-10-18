@@ -5,7 +5,7 @@ import { FIRE_STRENGTH, PAYDAY_MONTHS } from '../game/events.ts';
 import { seasonOf } from '../game/month.ts';
 import { characterLots } from '../game/state.ts';
 import { isAiTurn } from '../ai/player.ts';
-import { EVENT_LOG_TYPES, abilityText, cardName, logLine, shopName, theShop, toShop, typeLabel, who } from '../view/format.ts';
+import { EVENT_LOG_TYPES, abilityText, cardName, count, logLine, shopName, theShop, toShop, typeLabel, who } from '../view/format.ts';
 import type { Action, Game } from '../types.ts';
 
 export type TextOptions = { mobile?: boolean };
@@ -131,7 +131,7 @@ function monthEnd(month: number) {
 function nowText(g: Game) {
   const h = humanOf(g);
   const pending = g.pending?.player === h ? g.pending.type : null;
-  if (pending === 'food') return `No tienes arroz para todos: elige <b>${(g.pending as { drop: number }).drop}</b> personaje(s) que se quedan sin comer y se van.`;
+  if (pending === 'food') return `No tienes arroz para todos: elige <b>${count((g.pending as { drop: number }).drop, 'personaje')}</b> que se quedan sin comer y se van.`;
   if (pending === 'avoidFire') return 'El fuego va a quemar uno de tus personajes: puedes gastar tu ficha <b>Evitar un incendio</b> para salvarlo.';
   if (pending === 'wildType') return 'Elige de qué tipo cuenta tu <b>Marionetista</b> para la Variedad.';
   if (waiting(g)) return 'Juegan los demás… Lo que hacen queda en el registro.';
@@ -155,7 +155,7 @@ const play = (month: number): Step => ({
 function riceTip(g: Game) {
   const rice = player(g).resources.rice;
   const mouths = characterLots(g, humanOf(g)).length;
-  if (rice >= mouths) return `Tienes <b>${rice}</b> de arroz para <b>${mouths}</b> personaje(s): de momento, comen todos.`;
+  if (rice >= mouths) return `Tienes <b>${rice}</b> de arroz para <b>${count(mouths, 'personaje')}</b>: de momento, comen todos.`;
   return `Tienes <b>${rice}</b> de arroz y <b>${mouths}</b> personajes: te faltan ${mouths - rice}. Consíguelo en la <b>Tienda de Arroz</b>
     o el <b>Lugar de Construcción</b> (marcados) antes de que acabe el mes.`;
 }
@@ -288,7 +288,7 @@ export const STEPS: Step[] = [
       const h = home(g)!;
       const need = stepsBetween(player(g).oyakata!, h.cell)!;
       const tip = need >= 1 && need <= 4
-        ? `Tu personaje está en <b>${cellName(h.cell)}</b>, a ${need} casilla(s) de tu Oyakata: el espacio <b>${need}</b> te llevaría justo a sus puestos.`
+        ? `Tu personaje está en <b>${cellName(h.cell)}</b>, a ${count(need, 'casilla')} de tu Oyakata: el espacio <b>${need}</b> te llevaría justo a sus puestos.`
         : `Tu personaje está en <b>${cellName(h.cell)}</b>, lejos de tu Oyakata: con las sandalias podrías acercarte.`;
       return `<p>Pulsa un espacio del marcador de turno, abajo a la derecha del tablero, para colocar tu <b>Ikizama</b> (el peón alargado).
         Decide dos cosas: <b>el orden</b> (el de la izquierda juega primero) y <b>cuántas casillas</b> avanzas este mes (1, 2, 3 o 4).</p>
@@ -333,11 +333,11 @@ export const STEPS: Step[] = [
       const slot = Number(g.turn!.slot);
       const sandals = player(g).resources.sandal;
       const need = stepsBetween(player(g).oyakata!, h.cell)!;
-      const reach = slot === need ? `Con tus ${slot} paso(s) llegas justo a sus puestos.`
+      const reach = slot === need ? `Con ${slot === 1 ? 'tu paso' : `tus ${slot} pasos`} llegas justo a sus puestos.`
         : slot > need ? `Con ${slot} pasos te pasas de sus puestos: este turno no podrás activarlo, pero sí usar la tienda de donde pares.`
-        : slot + sandals >= need ? `Te faltan ${need - slot} paso(s): gasta sandalias con «+» para llegar.`
+        : slot + sandals >= need ? `Te faltan ${count(need - slot, 'paso')}: gasta sandalias con «+» para llegar.`
         : 'No llegas a sus puestos este turno; no pasa nada, aprovecha la tienda de donde pares.';
-      return `<p>Tu Ikizama marca <b>${slot}</b>: tu Oyakata avanza ${slot} casilla(s) siguiendo las flechas. Cada <b>sandalia</b> que gastes
+      return `<p>Tu Ikizama marca <b>${slot}</b>: tu Oyakata avanza ${count(slot, 'casilla')} siguiendo las flechas. Cada <b>sandalia</b> que gastes
         añade un paso más (tienes ${sandals}).</p>
         <p>Tu personaje trabaja en <b>${cellName(h.cell)}</b> (marcada en el tablero). ${reach}</p>
         <p class="muted">Al cruzar la casilla de vuelta, todos tus personajes ganan 1 de experiencia.</p>

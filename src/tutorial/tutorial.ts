@@ -75,18 +75,21 @@ export function createTutorial({ coach, board, onChange, onExit }: {
     board.place(el, u, v);
   }
 
+  let lastCoach = '';
   function renderCoach(step: Step, game: Game) {
     const month = Math.min(game.month, 13);
     const actions = step.last
       ? '<button type="button" class="btn primary" data-tut="exit">Volver al menú</button>'
       : step.kind === 'info' ? `<button type="button" class="btn primary" data-tut="next" data-step="${step.id}">Siguiente</button>`
       : step.kind === 'free' ? '<button type="button" class="btn" data-tut="keep" title="Sigue esta partida sin la burbuja; se guarda como una normal">Seguir sin ayuda</button>' : '';
-    paper.innerHTML = `
+    const html = `
       <header title="Arrastra para mover la burbuja"><span class="tut-seal" lang="ja" aria-hidden="true">${kanjiNumber(month)}</span><span class="label">Tutorial · mes ${month} de 13</span>
         ${step.last ? '' : '<button type="button" class="tut-close" data-tut="exit" aria-label="Salir del tutorial" title="Volver al menú; tu partida guardada no cambia">×</button>'}</header>
       <h2>${step.title}</h2>
       <div class="tut-text">${step.text(game, { mobile: isMobileLayout() })}</div>
       ${actions ? `<footer>${actions}</footer>` : ''}`;
+    // La burbuja es una región viva: solo se reescribe si cambia, o el lector de pantalla la repetiría a cada render.
+    if (html !== lastCoach) paper.innerHTML = lastCoach = html;
     coach.hidden = false;
   }
 
@@ -224,6 +227,7 @@ export function createTutorial({ coach, board, onChange, onExit }: {
       shownStep = null;
       coach.hidden = true;
       paper.replaceChildren();
+      lastCoach = '';
       document.querySelectorAll('.tut-focus').forEach((el) => el.classList.remove('tut-focus'));
     },
   };
