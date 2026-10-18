@@ -37,7 +37,7 @@ export function playerStats(game: Game, index: number) {
     specials: p.specials.map((id) => SPECIALS[id] ?? id),
     kobunFree: p.kobun,
     kobunTotal: KOBUN_PER_PLAYER,
-    ikizama: p.ikizama ? ZONES_BY_ID[p.ikizama]?.label ?? p.ikizama : 'En su tablero',
+    ikizama: p.ikizama ? ZONES_BY_ID[`turn-${p.ikizama}`]?.label ?? p.ikizama : 'En su tablero',
 
 
     oyakata: p.oyakata ? ZONES_BY_ID[p.oyakata]?.label ?? p.oyakata : 'Recogido',

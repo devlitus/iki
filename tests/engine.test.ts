@@ -7,6 +7,7 @@ import { createRng } from '../src/game/random.ts';
 import { act, legalActions, whoseTurn } from '../src/game/engine.ts';
 import { CHARACTERS_BY_ID } from '../src/data/characters.ts';
 import { ZONES_BY_ID } from '../src/data/zones.ts';
+import { playerStats } from '../src/game/playerStats.ts';
 
 // --- Ayudas ------------------------------------------------------------------------------------
 
@@ -54,6 +55,7 @@ test('fase A: coloca por orden de Extinción y no repite espacio', () => {
   assert.equal(whoseTurn(g), second);
   throws(() => act(g, { type: 'placeIkizama', slot: '3' }), /ocupado/);
   throws(() => act(g, { type: 'placeIkizama', slot: '9' } as any), /desconocido/);
+  assert.equal(playerStats(g, first).ikizama, 'Turno 3');
 });
 
 test('fase A: desde el mes 2 el más adelantado en Extinción coloca primero; en empate, el de arriba de la pila', () => {

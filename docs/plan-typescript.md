@@ -59,8 +59,9 @@ Todos los imports de la grabación pasan por `tests/golden/modules.js`: al renom
 - `view-static`: pide `cardSummary(c.image)` para los personajes, pero los personajes guardan la imagen en `scan`;
   la comprobación grababa siempre un texto vacío.
 
-## Bugs encontrados al tipar (se arreglan después)
+## Bugs encontrados al tipar (arreglados después, con las grabaciones regrabadas)
 
 - `src/game/playerStats.ts`, `ikizama`: busca `ZONES_BY_ID[p.ikizama]` con el espacio (`'1-4'`, `'2'`…), pero las zonas
-  se llaman `turn-1-4`, `turn-2`…, así que nunca encuentra la etiqueta y muestra el espacio tal cual.
+  se llaman `turn-1-4`, `turn-2`…, así que nunca encuentra la etiqueta y muestra el espacio tal cual. **Arreglado**: busca `turn-${p.ikizama}` y muestra
+  «Turno 3»; solo cambian `stats` y la ficha de jugador en las grabaciones.
 
