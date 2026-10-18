@@ -30,7 +30,7 @@
 .char .ability { margin: 2px 0 0; }
 .swap { display: flex; align-items: center; gap: 4px; }
 .swap select { flex: 1; min-width: 0; font: inherit; }
-.turn-log ol { margin: 4px 0 0; padding-left: 16px; display: flex; flex-direction: column; gap: 2px; font-size: 12px; }
+.turn-log ul { margin: 4px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; font-size: 12px; }
 .turn-log summary { cursor: pointer; }
 .ic-iki { width: auto; padding: 0 3px; border-radius: 3px; background: #2b2622; }
 

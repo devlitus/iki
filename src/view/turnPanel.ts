@@ -128,7 +128,7 @@ export function renderTurnPanel(el: HTMLElement, game: Game, ctx: Ctx) {
     ${ctx.canUndo && !waiting ? '<button type="button" class="btn btn-sm" data-do="undo">↶ Deshacer</button>' : ''}
     <details class="turn-log" open>
       <summary class="label">Registro</summary>
-      <ol>${game.log.slice(-8).reverse().map((e) => `<li>${logLine(game, e)}</li>`).join('')}</ol>
+      <ul>${game.log.slice(-8).reverse().map((e) => `<li>${logLine(game, e)}</li>`).join('')}</ul>
     </details>`;
 }
 

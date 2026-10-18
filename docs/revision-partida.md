@@ -52,8 +52,8 @@ Resultado: Rojo 113 · Azul 89 · Morado 87.
 
 ## Dudas (no son fallos claros)
 
-- **Numeración del registro**: el 1 es la entrada más reciente («1. Mes 1» queda abajo del todo). Puede ser
-  intencionado, pero se lee como orden cronológico.
+- **Numeración del registro** (resuelta): el 1 era la entrada más reciente y se leía al revés. Se han quitado los
+  números; cada entrada ya lleva su mes.
 - **Coste extra de los solares** (resuelta con las fotos del reglamento): B1 dice literalmente «Recuerda pagar el
   coste extra del espacio (1 o 2 mons) si lo hubiera», y el ejemplo del Monje solo usa las esquinas (+2). En el lado
   de 3-4 jugadores no hay solares de +1, así que el código es correcto; el +1 será del lado de 2 jugadores (en la
