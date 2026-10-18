@@ -1,4 +1,4 @@
-import { currentPicker } from '../game/setup.js';
+import { currentPicker } from '../game/setup.ts';
 import { cardSummary, isWaiting } from './format.js';
 
 /** Pantallas bajas (móvil en horizontal): el tablero a todo el alto y lo demás en paneles. Igual que en mobile.css. */

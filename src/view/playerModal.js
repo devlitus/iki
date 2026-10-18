@@ -2,8 +2,8 @@ import { PLAYER_BOARDS_BY_ID } from '../data/playerBoards.ts';
 import { MARKET_BY_ID, describeToken } from '../data/market.ts';
 import { SEASONS } from '../data/decks.ts';
 import { CHARACTER_TYPES } from '../data/characters.ts';
-import { activePlayer } from '../game/setup.js';
-import { playerStats, SPECIALS, MAX_FISH, MAX_TYPES } from '../game/playerStats.js';
+import { activePlayer } from '../game/setup.ts';
+import { playerStats, SPECIALS, MAX_FISH, MAX_TYPES } from '../game/playerStats.ts';
 
 /**
  * Modal con el tablero de un jugador: la imagen tumbada a todo el ancho y debajo su información en tres

@@ -1,7 +1,7 @@
 import { ZONES_BY_ID, STREET_ENTRY } from '../data/zones.ts';
-import { act, candidates, tryAct, whoseTurn, IKIZAMA_SLOTS } from '../game/engine.js';
-import { currentPicker, freeOuterLots } from '../game/setup.js';
-import { receive } from '../game/state.js';
+import { act, candidates, tryAct, whoseTurn, IKIZAMA_SLOTS } from '../game/engine.ts';
+import { currentPicker, freeOuterLots } from '../game/setup.ts';
+import { receive } from '../game/state.ts';
 import { evaluateAgainstOthers } from './evaluate.js';
 
 /**

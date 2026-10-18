@@ -1,11 +1,13 @@
 import { CHARACTERS_BY_ID, CHARACTER_TYPES } from '../data/characters.ts';
 import { ZONES_BY_ID, LOT_IDS, STREET, STREET_ENTRY, LAP_FROM } from '../data/zones.ts';
-import { placeInitialCard, currentPlacer } from './setup.js';
-import { activateCharacter, activateShop } from './abilities.js';
-import { startEvent, resolvePending } from './events.js';
-import { startMonth, beginNewYearTurn, seasonOf } from './month.js';
-import { finishGame, resolveWild } from './ending.js';
-import { advanceFire, assertFreeLot, characterLots, gainXp, log, pay, receive, rule } from './state.js';
+import { placeInitialCard, currentPlacer } from './setup.ts';
+import { activateCharacter, activateShop } from './abilities.ts';
+import { startEvent, resolvePending } from './events.ts';
+import { startMonth, beginNewYearTurn, seasonOf } from './month.ts';
+import { finishGame, resolveWild } from './ending.ts';
+import { advanceFire, assertFreeLot, characterLots, gainXp, log, pay, receive, rule } from './state.ts';
+import type { Action, ActionOf, ActionType, CharacterType, Game, IkizamaSlot, TurnStep } from '../types.ts';
+
 
 /**
  * Motor de la partida (docs/plan-logica.md, fase 2). Puro: `act(estado, acción) → estado nuevo`; no toca el DOM
@@ -32,21 +34,21 @@ import { advanceFire, assertFreeLot, characterLots, gainXp, log, pay, receive, r
  *   resolve { drop? | use? | cardType? } contesta la decisión pendiente (`game.pending`: events.js, ending.js)
  */
 
-export const IKIZAMA_SLOTS = ['1-4', '1', '2', '3', '4'];
+export const IKIZAMA_SLOTS: IkizamaSlot[] = ['1-4', '1', '2', '3', '4'];
 export const INCOME = 4;
 export { seasonOf };
 
 /** Aplica una acción. Devuelve el estado nuevo; lanza un Error si no es válida. */
-export function act(game, action) {
-  const handler = Object.hasOwn(HANDLERS, action?.type) ? HANDLERS[action.type] : null; // sin claves heredadas («constructor»…)
+export function act(game: Game, action: Action): Game {
+  const handler = (Object.hasOwn(HANDLERS, action?.type) ? HANDLERS[action.type] : null) as Handler<ActionType> | null; // sin claves heredadas («constructor»…)
   rule(handler, `Acción desconocida: ${action?.type}`);
   const g = structuredClone(game);
-  handler(g, action);
+  handler(g, action as ActionOf<ActionType>);
   return g;
 }
 
 /** Jugador al que le toca decidir ahora (o null si la partida no espera a nadie). */
-export function whoseTurn(g) {
+export function whoseTurn(g: Game): number | null {
   if (g.pending) return g.pending.player;
   if (g.phase === 'ikizama') return currentPlacer(g);
   if (g.turn) return g.turn.player;
@@ -56,7 +58,7 @@ export function whoseTurn(g) {
 // --- Fases -------------------------------------------------------------------------------------
 
 /** Fase B: turnos por orden del Ikizama, empezando por el más a la izquierda. */
-function startActions(g) {
+function startActions(g: Game) {
   g.phase = 'actions';
   g.turnList = g.players
     .map((p, i) => ({ i, slot: IKIZAMA_SLOTS.indexOf(p.ikizama) }))
@@ -65,37 +67,40 @@ function startActions(g) {
   beginTurn(g, 0);
 }
 
-function beginTurn(g, index) {
-  const player = g.turnList[index];
+function beginTurn(g: Game, index: number) {
+  const player = g.turnList![index];
   const slot = g.players[player].ikizama;
   g.turn = { index, player, slot, step: slot === '1-4' ? 'move' : 'b1', didShop: false, didChar: false };
   if (slot === '1-4') receive(g, player, { mon: 1 }); // no contrata ni gana ingresos, pero cobra 1 mon
 }
 
-function endTurn(g) {
-  const { index, player } = g.turn;
+function endTurn(g: Game) {
+  const { index, player } = g.turn!;
   g.players[player].ikizama = null; // B3
   if (g.phase === 'newyear') {
-    if (index + 1 < g.turnList.length) return beginNewYearTurn(g, index + 1);
+    if (index + 1 < g.turnList!.length) return beginNewYearTurn(g, index + 1);
     return finishGame(g);
   }
-  if (index + 1 < g.turnList.length) return beginTurn(g, index + 1);
+  if (index + 1 < g.turnList!.length) return beginTurn(g, index + 1);
   g.turn = null;
   startEvent(g);
 }
 
 // --- Acciones ----------------------------------------------------------------------------------
 
-const inPhase = (g, phase) => rule(g.phase === phase, `No es la fase ${phase}`);
+const inPhase = (g: Game, phase: Game['phase']) => rule(g.phase === phase, `No es la fase ${phase}`);
 
-function inStep(g, step) {
+function inStep(g: Game, step: TurnStep) {
   rule(g.phase === 'actions' || g.phase === 'newyear', 'Ahora no se juegan acciones');
   rule(g.turn && !g.pending, 'Ahora no se juegan acciones'); // al final de la partida hay una decisión pendiente y ya no hay turno
-  rule(g.turn.step === step, `Ahora no toca ${step}`);
-  return g.turn.player;
+  rule(g.turn!.step === step, `Ahora no toca ${step}`);
+  return g.turn!.player;
 }
 
-const HANDLERS = {
+type Handler<T extends ActionType> = (g: Game, a: ActionOf<T>) => void;
+
+const HANDLERS: { [T in ActionType]: Handler<T> } = {
+
   placeInitial(g, a) {
     Object.assign(g, placeInitialCard(g, a.card, a.lot));
     if (g.phase === 'ready') startMonth(g);
@@ -207,7 +212,7 @@ const HANDLERS = {
 // --- Jugadas legales ---------------------------------------------------------------------------
 
 /** El estado tras `action`, o null si no es válida (para quien prueba muchas jugadas y no quiere aplicar cada una dos veces). */
-export function tryAct(g, action) {
+export function tryAct(g: Game, action: Action): Game | null {
   try {
     return act(g, action);
   } catch {
@@ -219,7 +224,7 @@ export function tryAct(g, action) {
  * Todas las jugadas válidas ahora mismo, como acciones completas (la interfaz las usa para resaltar y los tests para
  * jugar partidas al azar). Se generan los candidatos y se descartan los que `act` rechaza, así la validación es una sola.
  */
-export function legalActions(g) {
+export function legalActions(g: Game): Action[] {
   return candidates(g).filter((a) => {
     try {
       act(g, a);
@@ -231,8 +236,8 @@ export function legalActions(g) {
 }
 
 /** Acciones que se prueban en cada momento (algunas pueden no ser válidas); `legalActions` se queda con las válidas. */
-export function candidates(g) {
-  if (g.pending?.type === 'wildType') return Object.keys(CHARACTER_TYPES).map((cardType) => ({ type: 'resolve', cardType }));
+export function candidates(g: Game): Action[] {
+  if (g.pending?.type === 'wildType') return (Object.keys(CHARACTER_TYPES) as CharacterType[]).map((cardType) => ({ type: 'resolve', cardType }));
   if (g.pending?.type === 'avoidFire') return [{ type: 'resolve', use: true }, { type: 'resolve', use: false }];
   if (g.pending?.type === 'food') return combinations(characterLots(g, g.pending.player), g.pending.drop).map((drop) => ({ type: 'resolve', drop }));
   if (g.phase === 'ikizama') return IKIZAMA_SLOTS.map((slot) => ({ type: 'placeIkizama', slot }));
@@ -243,12 +248,12 @@ export function candidates(g) {
 
   if (g.turn.step === 'b1') {
     const freeLots = LOT_IDS.filter((id) => !g.lots[id]);
-    return [{ type: 'income' }, ...g.row.flatMap((r) => freeLots.map((lot) => ({ type: 'hire', card: r.card, lot })))];
+    return [{ type: 'income' }, ...g.row.flatMap((r) => freeLots.map((lot) => ({ type: 'hire' as const, card: r.card, lot })))];
   }
 
   if (g.turn.step === 'move') {
     const bases = g.turn.slot === '1-4' ? [1, 2, 3, 4] : [undefined];
-    const out = [];
+    const out: Action[] = [];
     for (const base of bases) {
       for (let sandals = 0; sandals <= player.resources.sandal; sandals++) {
         out.push({ type: 'move', base, sandals });
@@ -259,15 +264,15 @@ export function candidates(g) {
   }
 
   const here = ZONES_BY_ID[player.oyakata];
-  const out = [{ type: 'endTurn' }];
+  const out: Action[] = [{ type: 'endTurn' }];
   if (!g.turn.didShop) out.push(...shopCandidates(g, here.shop, p));
   if (!g.turn.didChar) for (const lot of here.stalls) if (g.lots[lot]?.kind === 'character') out.push(...characterCandidates(g, lot, p));
   return out;
 }
 
-const freeLotIds = (g) => LOT_IDS.filter((id) => !g.lots[id]);
+const freeLotIds = (g: Game) => LOT_IDS.filter((id) => !g.lots[id]);
 
-function shopCandidates(g, shop, p) {
+function shopCandidates(g: Game, shop: string | undefined, p: number): Action[] {
   const m = g.market;
   const own = characterLots(g, p);
   const pipes = [undefined, ...m.pipes];
@@ -282,7 +287,7 @@ function shopCandidates(g, shop, p) {
     case 'shop-pawn':
       return ['rice', 'sandal'].map((choice) => ({ type: 'shop', choice }));
     case 'shop-construction':
-      return [{ type: 'shop', choice: 'rice' }, ...g.buildings.flatMap((building) => freeLotIds(g).map((lot) => ({ type: 'shop', choice: 'build', building, lot })))];
+      return [{ type: 'shop', choice: 'rice' }, ...g.buildings.flatMap((building) => freeLotIds(g).map((lot) => ({ type: 'shop' as const, choice: 'build', building, lot })))];
     case 'shop-fish':
       return m.fish.map((fish) => ({ type: 'shop', fish }));
     case 'shop-exchange':
@@ -292,9 +297,9 @@ function shopCandidates(g, shop, p) {
   }
 }
 
-function characterCandidates(g, lot, p) {
+function characterCandidates(g: Game, lot: string, p: number): Action[] {
   const def = CHARACTERS_BY_ID[g.lots[lot].card];
-  const base = { type: 'character', lot };
+  const base = { type: 'character' as const, lot };
   switch (def.ability.kind) {
     case 'xp':
       return characterLots(g, p).map((target) => ({ ...base, target }));
@@ -310,7 +315,8 @@ function characterCandidates(g, lot, p) {
 }
 
 /** Todas las formas de elegir `k` elementos de `list`. */
-function combinations(list, k) {
+function combinations<T>(list: T[], k: number): T[][] {
+
   if (k === 0) return [[]];
   return list.flatMap((x, i) => combinations(list.slice(i + 1), k - 1).map((rest) => [x, ...rest]));
 }

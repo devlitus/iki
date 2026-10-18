@@ -45,4 +45,6 @@ Todos los imports de la grabación pasan por `tests/golden/modules.js`: al renom
 
 ## Bugs encontrados al tipar (se arreglan después)
 
-_Ninguno todavía._
+- `src/game/playerStats.ts`, `ikizama`: busca `ZONES_BY_ID[p.ikizama]` con el espacio (`'1-4'`, `'2'`…), pero las zonas
+  se llaman `turn-1-4`, `turn-2`…, así que nunca encuentra la etiqueta y muestra el espacio tal cual.
+

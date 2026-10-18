@@ -1,10 +1,10 @@
 import { PLAYER_BOARDS_BY_ID } from '../data/playerBoards.ts';
 import { SEASONS, BUILDINGS_BY_ID, BUILDING_BACK } from '../data/decks.ts';
 import { CHARACTERS_BY_ID } from '../data/characters.ts';
-import { currentPicker, activePlayer } from '../game/setup.js';
-import { seasonOf } from '../game/engine.js';
+import { currentPicker, activePlayer } from '../game/setup.ts';
+import { seasonOf } from '../game/engine.ts';
 import { esc, isWaiting, playerName } from './format.js';
-import { playerStats, SPECIALS, MAX_FISH, MAX_TYPES } from '../game/playerStats.js';
+import { playerStats, SPECIALS, MAX_FISH, MAX_TYPES } from '../game/playerStats.ts';
 
 /**
  * Mesa alrededor del tablero: mazos, edificios y reserva en la columna izquierda; los jugadores en la

@@ -4,12 +4,12 @@ import './dom.js';
  * Todo lo que usa la grabación de referencia, en un solo sitio: al migrar a TypeScript solo cambian estas rutas, y la
  * grabación y la comprobación siguen siendo exactamente el mismo código.
  */
-export { createGame, MIN_PLAYERS, MAX_PLAYERS, OUTER_LOTS } from '../../src/game/setup.js';
-export { act, tryAct, candidates, legalActions, whoseTurn } from '../../src/game/engine.js';
-export { publicView } from '../../src/game/view.js';
-export { scoreGame } from '../../src/game/scoring.js';
-export { playerStats } from '../../src/game/playerStats.js';
-export { createRng } from '../../src/game/random.js';
+export { createGame, MIN_PLAYERS, MAX_PLAYERS, OUTER_LOTS } from '../../src/game/setup.ts';
+export { act, tryAct, candidates, legalActions, whoseTurn } from '../../src/game/engine.ts';
+export { publicView } from '../../src/game/view.ts';
+export { scoreGame } from '../../src/game/scoring.ts';
+export { playerStats } from '../../src/game/playerStats.ts';
+export { createRng } from '../../src/game/random.ts';
 export { chooseAction, deciderOf, isAiTurn } from '../../src/ai/player.js';
 export { evaluate, evaluateAgainstOthers } from '../../src/ai/evaluate.js';
 export { createTutorialGame, HUMAN_LOTS } from '../../src/tutorial/game.js';

@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { newGame, tweak } from './helpers.js';
-import { act, legalActions, whoseTurn } from '../src/game/engine.js';
-import { startEvent, continueEvent, harmonyBonus, FIRE_STRENGTH } from '../src/game/events.js';
-import { KOBUN_PER_PLAYER, OUTER_LOTS } from '../src/game/setup.js';
+import { act, legalActions, whoseTurn } from '../src/game/engine.ts';
+import { startEvent, continueEvent, harmonyBonus, FIRE_STRENGTH } from '../src/game/events.ts';
+import { KOBUN_PER_PLAYER, OUTER_LOTS } from '../src/game/setup.ts';
 import { NAGAYAS, fireTileImage } from '../src/data/zones.ts';
 import { existsSync } from 'node:fs';
 

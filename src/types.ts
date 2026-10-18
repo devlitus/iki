@@ -117,7 +117,8 @@ export type Player = {
   buildings: string[];
   fire: number;
   iki: number;
-  oyakata: string;
+  /** Casilla del Oyakata; null cuando se recogen al final del año (mes 12). */
+  oyakata: string | null;
   wildType?: CharacterType;
   /** Personajes alimentados en el Día de Pago en curso (solo mientras dura). */
   fed?: number;
@@ -135,10 +136,9 @@ export type Pending =
   | { type: 'avoidFire'; player: number; lot: string }
   | { type: 'wildType'; player: number };
 
-export type GameEvent =
-  | { kind: 'plain' }
-  | { kind: 'payday'; stage: string; who: number }
-  | { kind: 'fire'; stage: string; tile?: string; nagaya?: string; index?: number };
+export type PaydayEvent = { kind: 'payday'; stage: string; who: number };
+export type FireEvent = { kind: 'fire'; stage: string; tile?: string; nagaya?: string; index?: number };
+export type GameEvent = { kind: 'plain' } | PaydayEvent | FireEvent;
 
 export type Score = { track: number; variety: number; fish: number; tobacco: number; buildings: number; resources: number; total?: number };
 export type FinalScore = { scores: Score[]; ranking: number[]; winner: number };
@@ -151,6 +151,9 @@ export type LogEntry = {
   player?: number;
   [field: string]: unknown;
 };
+
+/** Lo que se pasa a `log(g, …)`: el motor añade `seq` y `month`. */
+export type LogInput = { type: string; player?: number; [field: string]: unknown };
 
 /** Carta boca abajo en la vista pública (game/view.js). */
 export type Hidden = null;
@@ -204,3 +207,5 @@ export type Action =
   | { type: 'resolve'; drop?: string[]; use?: boolean; cardType?: CharacterType };
 
 export type ActionType = Action['type'];
+export type ActionOf<T extends ActionType> = Extract<Action, { type: T }>;
+

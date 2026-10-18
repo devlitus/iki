@@ -1,5 +1,5 @@
-import { createGame, OUTER_LOTS, KOBUN_PER_PLAYER } from '../src/game/setup.js';
-import { act } from '../src/game/engine.js';
+import { createGame, OUTER_LOTS, KOBUN_PER_PLAYER } from '../src/game/setup.ts';
+import { act } from '../src/game/engine.ts';
 
 export const BOARDS = ['yellow', 'blue', 'red', 'purple'];
 

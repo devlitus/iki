@@ -1,6 +1,10 @@
 import { CHARACTERS_BY_ID } from '../data/characters.ts';
 import { MARKET_BY_ID } from '../data/market.ts';
-import { advanceFire, build, characterLots, gainXp, log, pay, receive, rule, toCost } from './state.js';
+import { advanceFire, build, characterLots, gainXp, log, pay, receive, rule, toCost } from './state.ts';
+import type { ActionOf, Character, Game, MarketKind, MarketRow } from '../types.ts';
+
+type CharacterAction = ActionOf<'character'>;
+type ShopAction = ActionOf<'shop'>;
 
 /**
  * Lo que se hace al activar una tienda o un personaje en la fase de Acciones. Cada función MUTA `g` (el motor ya
@@ -10,12 +14,12 @@ import { advanceFire, build, characterLots, gainXp, log, pay, receive, rule, toC
 // --- Personajes --------------------------------------------------------------------------------
 
 /** Da +1 de experiencia a un personaje propio elegido en `target` (Costurera, Pipa de Invierno…). */
-function xpToOwn(g, p, target) {
-  rule(characterLots(g, p).includes(target), 'Elige uno de tus personajes');
-  gainXp(g, target);
+function xpToOwn(g: Game, p: number, target: string | undefined) {
+  rule(characterLots(g, p).includes(target!), 'Elige uno de tus personajes');
+  gainXp(g, target!);
 }
 
-const ABILITIES = {
+const ABILITIES: Record<Character['ability']['kind'], (g: Game, p: number, def: Character, a: CharacterAction) => void> = {
   gain: (g, p, def) => receive(g, p, toCost(def.ability.gain)),
 
   trade(g, p, def) {
@@ -34,7 +38,7 @@ const ABILITIES = {
   },
 
   build(g, p, def, a) {
-    build(g, p, { building: a.building, lot: a.buildLot, discount: def.ability.discount });
+    build(g, p, { building: a.building!, lot: a.buildLot!, discount: def.ability.discount });
   },
 
   swap(g, p, def, a) {
@@ -45,7 +49,7 @@ const ABILITIES = {
 
   gainOthers(g, p, def) {
     receive(g, p, toCost(def.ability.gain));
-    g.players.forEach((_, q) => q !== p && receive(g, q, toCost(def.ability.others)));
+    g.players.forEach((_, q) => q !== p && receive(g, q, toCost(def.ability.others!)));
   },
 };
 
@@ -53,7 +57,7 @@ const ABILITIES = {
  * Activa el personaje del solar `lotId` por `p`. Si es de otro jugador, gana 1 de experiencia después (puede
  * retirarse); si es tuyo, no.
  */
-export function activateCharacter(g, p, lotId, a) {
+export function activateCharacter(g: Game, p: number, lotId: string, a: CharacterAction) {
   const lot = g.lots[lotId];
   rule(lot?.kind === 'character', 'Ahí no hay ningún personaje');
   const def = CHARACTERS_BY_ID[lot.card];
@@ -67,16 +71,16 @@ export function activateCharacter(g, p, lotId, a) {
 // --- Tiendas -----------------------------------------------------------------------------------
 
 /** Compra una ficha de mercado de la estación actual: la paga y la quita de la oferta. */
-function takeToken(g, p, id, kind) {
+function takeToken(g: Game, p: number, id: string, kind: MarketKind) {
   const token = MARKET_BY_ID[id];
-  const list = kind === 'fish' ? 'fish' : `${kind}s`; // g.market: { fish, pipes, bags }
+  const list = (kind === 'fish' ? 'fish' : `${kind}s`) as keyof MarketRow; // g.market: { fish, pipes, bags }
   rule(token?.kind === kind && g.market[list].includes(id), `${id} no está a la venta`);
   pay(g, p, { mon: token.cost }, 'la ficha');
   g.market[list] = g.market[list].filter((t) => t !== id);
   return token;
 }
 
-const SHOPS = {
+const SHOPS: Record<string, (g: Game, p: number, a: ShopAction) => void> = {
   'shop-sandals': (g, p) => {
     pay(g, p, { mon: 2 }, 'la Tienda de Sandalias');
     receive(g, p, { sandal: 2 });
@@ -94,7 +98,7 @@ const SHOPS = {
     if (a.pipe) {
       const pipe = takeToken(g, p, a.pipe, 'pipe');
       g.players[p].pipes.push(pipe.id);
-      const e = pipe.effect;
+      const e = pipe.effect!;
       if (e.fire) advanceFire(g, p, e.fire);
       if (e.gain) receive(g, p, toCost(e.gain));
       if (e.xp && characterLots(g, p).length) xpToOwn(g, p, a.target); // sin personajes en el tablero, la experiencia se pierde
@@ -104,7 +108,7 @@ const SHOPS = {
 
   'shop-pawn': (g, p, a) => {
     rule(a.choice === 'rice' || a.choice === 'sandal', 'Elige arroz o sandalia');
-    pay(g, p, { [a.choice]: 1 }, 'la Casa de Empeños');
+    pay(g, p, { [a.choice!]: 1 }, 'la Casa de Empeños');
     receive(g, p, { mon: 4 });
   },
 
@@ -114,15 +118,15 @@ const SHOPS = {
       receive(g, p, { rice: 1 });
     } else {
       rule(a.choice === 'build', 'Elige arroz o construir');
-      build(g, p, { building: a.building, lot: a.lot, fee: 1 });
+      build(g, p, { building: a.building!, lot: a.lot!, fee: 1 });
     }
   },
 
   'shop-fish': (g, p, a) => {
-    const fish = MARKET_BY_ID[a.fish];
+    const fish = MARKET_BY_ID[a.fish!];
     rule(fish, 'Elige un Pescado');
     rule(!g.players[p].fish.some((id) => MARKET_BY_ID[id].season === fish.season), 'Solo un Pescado por estación');
-    g.players[p].fish.push(takeToken(g, p, a.fish, 'fish').id);
+    g.players[p].fish.push(takeToken(g, p, a.fish!, 'fish').id);
   },
 
   'shop-exchange': (g, p, a) => {
@@ -139,7 +143,8 @@ const SHOPS = {
   },
 };
 
-export function activateShop(g, p, shopId, a) {
+export function activateShop(g: Game, p: number, shopId: string, a: ShopAction) {
+
   rule(SHOPS[shopId], `${shopId} no es una tienda`);
   SHOPS[shopId](g, p, a);
   log(g, { type: 'shop', player: p, shop: shopId });

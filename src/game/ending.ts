@@ -1,11 +1,12 @@
 import { CHARACTER_TYPES } from '../data/characters.ts';
-import { log, rule } from './state.js';
-import { scoreGame } from './scoring.js';
+import { log, rule } from './state.ts';
+import { scoreGame } from './scoring.ts';
+import type { ActionOf, Game } from '../types.ts';
 
 /** Fin de la partida (docs/reglas.md, p. 10): se recogen las cartas, se decide el Comodín y se puntúa. */
 
 /** Tras el último turno del Día de Año Nuevo. */
-export function finishGame(g) {
+export function finishGame(g: Game) {
   g.turn = null;
   // Se recogen los personajes que siguen en el tablero (se colocan en las columnas del tablero de jugador).
   for (const [lotId, lot] of Object.entries(g.lots)) {
@@ -18,7 +19,7 @@ export function finishGame(g) {
 }
 
 /** Pregunta el tipo del Marionetista a cada jugador que tenga el Comodín; después puntúa. */
-function continueEnding(g) {
+function continueEnding(g: Game) {
   const p = g.turnOrder.find((i) => g.players[i].specials.includes('wild') && !g.players[i].wildType);
   if (p != null) {
     g.pending = { type: 'wildType', player: p };
@@ -31,9 +32,10 @@ function continueEnding(g) {
 }
 
 /** resolve { cardType }: el Marionetista retirado pasa a ser del tipo elegido. */
-export function resolveWild(g, a) {
-  rule(Object.hasOwn(CHARACTER_TYPES, a.cardType), 'Elige un tipo de personaje');
-  g.players[g.pending.player].wildType = a.cardType;
-  log(g, { type: 'wild', player: g.pending.player, cardType: a.cardType });
+export function resolveWild(g: Game, a: ActionOf<'resolve'>) {
+  rule(Object.hasOwn(CHARACTER_TYPES, a.cardType!), 'Elige un tipo de personaje');
+  g.players[g.pending!.player].wildType = a.cardType;
+  log(g, { type: 'wild', player: g.pending!.player, cardType: a.cardType });
+
   continueEnding(g);
 }

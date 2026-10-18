@@ -1,9 +1,9 @@
 import { CHARACTERS_BY_ID } from '../data/characters.ts';
 import { ZONES_BY_ID, STREET, STREET_ENTRY, LOT_IDS, NAGAYAS } from '../data/zones.ts';
-import { tryAct } from '../game/engine.js';
-import { FIRE_STRENGTH, PAYDAY_MONTHS } from '../game/events.js';
-import { seasonOf } from '../game/month.js';
-import { characterLots } from '../game/state.js';
+import { tryAct } from '../game/engine.ts';
+import { FIRE_STRENGTH, PAYDAY_MONTHS } from '../game/events.ts';
+import { seasonOf } from '../game/month.ts';
+import { characterLots } from '../game/state.ts';
 import { isAiTurn } from '../ai/player.js';
 import { EVENT_LOG_TYPES, abilityText, cardName, logLine, shopName, typeLabel, who } from '../view/format.js';
 

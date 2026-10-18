@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame } from '../src/game/setup.js';
-import { act, legalActions } from '../src/game/engine.js';
+import { createGame } from '../src/game/setup.ts';
+import { act, legalActions } from '../src/game/engine.ts';
 import { chooseAction, deciderOf, isAiTurn } from '../src/ai/player.js';
 import { evaluate } from '../src/ai/evaluate.js';
 import { BOARDS } from './helpers.js';

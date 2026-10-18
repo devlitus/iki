@@ -1,9 +1,12 @@
-import { createRng } from './random.js';
+import { createRng } from './random.ts';
 import { SEASONS, BUILDINGS } from '../data/decks.ts';
 import { CHARACTERS } from '../data/characters.ts';
 import { ZONES } from '../data/zones.ts';
 import { seasonMarket } from '../data/market.ts';
-import { rule } from './state.js';
+import type { SeasonId } from '../types.ts';
+import { rule } from './state.ts';
+import type { Rng } from './random.ts';
+import type { Game, Seed } from '../types.ts';
 
 /**
  * Preparación de la partida (docs/reglas.md, p. 2). Lógica pura: recibe datos y devuelve el estado como
@@ -27,7 +30,7 @@ export const OUTER_LOTS = ZONES.filter((z) => z.group === 'lots' && z.fire === 0
 const FIRE_TILES = OUTER_LOTS;
 
 /** Fichas de mercado por estación (paso 5): 2 pescados, 2 pipas y 2 bolsas de tabaco (ids de data/market.js). */
-const marketTokens = (season) => {
+const marketTokens = (season: SeasonId) => {
   const { fish, pipe, bag } = seasonMarket(season);
   return { fish, pipes: pipe, bags: bag };
 };
@@ -36,7 +39,7 @@ const marketTokens = (season) => {
  * Tirada para decidir el jugador inicial: cada jugador tira un dado y empieza el más alto. Si varios
  * empatan en la cifra más alta, solo ellos vuelven a tirar. Devuelve las tiradas de cada jugador.
  */
-export function rollForStarter(rng, n) {
+export function rollForStarter(rng: Rng, n: number) {
   const rolls = Array.from({ length: n }, () => [rng.roll()]);
   let tied = [...rolls.keys()];
   for (;;) {
@@ -51,10 +54,9 @@ export function rollForStarter(rng, n) {
  * Crea una partida preparada hasta el paso 12. El paso 13 (personajes iniciales) lo hacen los jugadores
  * con placeInitialCard().
  *
- * @param {{ boardId: string, ai?: boolean }[]} players  en orden de asiento, en sentido horario; `ai` = lo juega la IA.
- * @param {number} seed
+ * `players` en orden de asiento, en sentido horario; `ai` = lo juega la IA.
  */
-export function createGame({ players, seed }) {
+export function createGame({ players, seed }: { players: { boardId: string; ai?: boolean }[]; seed: Seed }): Game {
   const n = players.length;
   if (n < MIN_PLAYERS || n > MAX_PLAYERS) throw new Error(`IKI se prepara con ${MIN_PLAYERS}-${MAX_PLAYERS} jugadores`);
   const rng = createRng(seed);
@@ -99,7 +101,7 @@ export function createGame({ players, seed }) {
     marketFaceDown: Object.fromEntries(laterSeasons.map((s) => [s.id, marketTokens(s.id)])), // paso 5B
     buildings: buildings.slice(0, BUILDINGS_IN_GAME), // paso 6
     buildingsBox: buildings.slice(BUILDINGS_IN_GAME),
-    decks: Object.fromEntries(SEASONS.map((s) => [s.id, rng.shuffle(s.cards)])), // paso 8
+    decks: Object.fromEntries(SEASONS.map((s) => [s.id, rng.shuffle(s.cards)])) as Game['decks'], // paso 8
     row: [],
     initialCharacters: [...INITIAL_CHARACTERS], // paso 13A
     pickOrder,
@@ -112,7 +114,7 @@ export function createGame({ players, seed }) {
 }
 
 /** Jugador al que le toca elegir personaje inicial, o null si ya han elegido todos. */
-export function currentPicker(game) {
+export function currentPicker(game: Game): number | null {
   if (game.phase !== 'initial-characters') return null;
   return game.pickOrder[pickedCount(game)] ?? null;
 }
@@ -121,33 +123,35 @@ export function currentPicker(game) {
  * Jugador que está jugando: durante el paso 13 el que elige personaje; después, el del turno.
  * Aún no hay turnos, así que tras la preparación es el jugador inicial.
  */
-export const activePlayer = (game) => currentPicker(game) ?? game.pending?.player ?? game.turn?.player ?? currentPlacer(game) ?? game.turnOrder[0];
+export const activePlayer = (game: Game): number => currentPicker(game) ?? game.pending?.player ?? game.turn?.player ?? currentPlacer(game) ?? game.turnOrder[0];
 
 /** Fase A: jugador al que le toca colocar su Ikizama, o null fuera de esa fase. */
-export function currentPlacer(game) {
+export function currentPlacer(game: Game): number | null {
   if (game.phase !== 'ikizama') return null;
-  return game.order.find((i) => game.players[i].ikizama == null) ?? null;
+  return game.order!.find((i) => game.players[i].ikizama == null) ?? null;
 }
 
-const pickedCount = (game) => Object.values(game.lots).filter((l) => l.initial).length;
+const pickedCount = (game: Game) => Object.values(game.lots).filter((l) => l.initial).length;
 
 /** Solares exteriores que siguen libres. */
-export const freeOuterLots = (game) => OUTER_LOTS.filter((id) => !game.lots[id]);
+export const freeOuterLots = (game: Game) => OUTER_LOTS.filter((id) => !game.lots[id]);
 
 /**
  * Paso 13B: el jugador de turno coloca un personaje inicial en un solar exterior libre con un Kobun en
  * el primer espacio de experiencia. Devuelve un estado nuevo; lanza un error si la jugada no es válida.
  */
-export function placeInitialCard(game, cardId, lotId) {
+export function placeInitialCard(game: Game, cardId: string, lotId: string): Game {
   const player = currentPicker(game);
   rule(player != null, 'Ya se han colocado todos los personajes iniciales');
   rule(game.initialCharacters.includes(cardId), `${cardId} no está disponible`);
   rule(freeOuterLots(game).includes(lotId), `${lotId} no es un solar exterior libre`);
 
   const players = game.players.map((p, i) => (i === player ? { ...p, kobun: p.kobun - 1 } : p));
-  const lots = { ...game.lots, [lotId]: { kind: 'character', card: cardId, owner: player, xp: 0, initial: true } };
+  const lots: Game['lots'] = { ...game.lots,
+ [lotId]: { kind: 'character', card: cardId, owner: player, xp: 0, initial: true } };
   let initialCharacters = game.initialCharacters.filter((id) => id !== cardId);
-  let phase = game.phase;
+  let phase: Game['phase'] = game.phase;
+
   if (Object.values(lots).filter((l) => l.initial).length === game.players.length) {
     initialCharacters = []; // con 2-3 jugadores, las sobrantes vuelven a la caja
     phase = 'ready';

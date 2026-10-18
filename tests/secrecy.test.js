@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createRng, secretSeed } from '../src/game/random.js';
-import { createGame } from '../src/game/setup.js';
-import { act, legalActions } from '../src/game/engine.js';
-import { publicView, HIDDEN } from '../src/game/view.js';
+import { createRng, secretSeed } from '../src/game/random.ts';
+import { createGame } from '../src/game/setup.ts';
+import { act, legalActions } from '../src/game/engine.ts';
+import { publicView, HIDDEN } from '../src/game/view.ts';
 import { chooseAction, isAiTurn, deciderOf } from '../src/ai/player.js';
 import { BOARDS } from './helpers.js';
 

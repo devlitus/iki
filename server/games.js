@@ -1,9 +1,9 @@
 import { randomBytes } from 'node:crypto';
-import { createGame } from '../src/game/setup.js';
-import { act, legalActions } from '../src/game/engine.js';
-import { RuleError } from '../src/game/state.js';
-import { publicView } from '../src/game/view.js';
-import { createRng, secretSeed } from '../src/game/random.js';
+import { createGame } from '../src/game/setup.ts';
+import { act, legalActions } from '../src/game/engine.ts';
+import { RuleError } from '../src/game/state.ts';
+import { publicView } from '../src/game/view.ts';
+import { createRng, secretSeed } from '../src/game/random.ts';
 import { chooseAction, deciderOf, isAiTurn } from '../src/ai/player.js';
 import { PLAYER_BOARDS } from '../src/data/playerBoards.ts';
 import { eloDeltas } from './rating.js';

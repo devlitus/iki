@@ -10,7 +10,16 @@
  * `state()` devuelve el mismo tipo que se pasó: createRng(rng.state()) continúa la secuencia donde se quedó.
  */
 
-const mulberry32 = (seed) => {
+import type { Seed } from '../types.ts';
+
+export type Rng = {
+  next: () => number;
+  state: () => Seed;
+  roll: (sides?: number) => number;
+  shuffle: <T>(list: T[]) => T[];
+};
+
+const mulberry32 = (seed: number) => {
   let a = seed >>> 0;
   return {
     next() {
@@ -24,7 +33,7 @@ const mulberry32 = (seed) => {
   };
 };
 
-const sfc32 = (seed) => {
+const sfc32 = (seed: number[]) => {
   if (seed.length !== 4 || !seed.every(Number.isInteger) || seed.every((n) => n === 0)) throw new Error('Semilla no válida');
   let [a, b, c, d] = seed.map((n) => n >>> 0);
   return {
@@ -41,7 +50,7 @@ const sfc32 = (seed) => {
   };
 };
 
-export function createRng(seed) {
+export function createRng(seed: Seed): Rng {
   const { next, state } = Array.isArray(seed) ? sfc32(seed) : mulberry32(seed);
   return {
     next,
@@ -49,7 +58,8 @@ export function createRng(seed) {
     /** Entero en [1, sides]. */
     roll: (sides = 6) => 1 + Math.floor(next() * sides),
     /** Copia mezclada (Fisher-Yates). */
-    shuffle(list) {
+    shuffle<T>(list: T[]): T[] {
+
       const out = [...list];
       for (let i = out.length - 1; i > 0; i--) {
         const j = Math.floor(next() * (i + 1));

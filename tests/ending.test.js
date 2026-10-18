@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { newGame, tweak } from './helpers.js';
-import { act, legalActions, whoseTurn } from '../src/game/engine.js';
-import { createRng } from '../src/game/random.js';
-import { scorePlayer, scoreGame } from '../src/game/scoring.js';
-import { KOBUN_PER_PLAYER } from '../src/game/setup.js';
-import { startEvent } from '../src/game/events.js';
+import { act, legalActions, whoseTurn } from '../src/game/engine.ts';
+import { createRng } from '../src/game/random.ts';
+import { scorePlayer, scoreGame } from '../src/game/scoring.ts';
+import { KOBUN_PER_PLAYER } from '../src/game/setup.ts';
+import { startEvent } from '../src/game/events.ts';
 
 // --- Puntuación --------------------------------------------------------------------------------
 

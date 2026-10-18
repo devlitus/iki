@@ -1,5 +1,5 @@
 import { PLAYER_BOARDS, PLAYER_BOARDS_BY_ID } from '../data/playerBoards.ts';
-import { MIN_PLAYERS, MAX_PLAYERS } from '../game/setup.js';
+import { MIN_PLAYERS, MAX_PLAYERS } from '../game/setup.ts';
 import { esc } from '../view/format.js';
 
 const STORAGE_KEY = 'iki.playerBoards';

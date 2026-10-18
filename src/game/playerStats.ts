@@ -1,15 +1,16 @@
 import { CHARACTERS_BY_ID, CHARACTER_TYPES } from '../data/characters.ts';
 import { BUILDINGS_BY_ID } from '../data/decks.ts';
 import { ZONES_BY_ID } from '../data/zones.ts';
-import { KOBUN_PER_PLAYER } from './setup.js';
-import { scorePlayer } from './scoring.js';
+import { KOBUN_PER_PLAYER } from './setup.ts';
+import { scorePlayer } from './scoring.ts';
+import type { CharacterType, Game } from '../types.ts';
 
 /**
  * Resumen de lo que un jugador necesita saber de su tablero (ver docs/reglas.md): recursos, peones,
  * marcadores, colección, personajes y una estimación de la puntuación final.
  */
 
-export const SPECIALS = {
+export const SPECIALS: Record<string, string> = {
   move: 'Mover +1',
   'avoid-fire': 'Evitar un incendio',
   wild: 'Comodín',
@@ -19,9 +20,9 @@ export const SPECIALS = {
 export const MAX_FISH = 4;
 export const MAX_TYPES = Object.keys(CHARACTER_TYPES).length;
 
-const characterName = (id) => CHARACTERS_BY_ID[id]?.name ?? id;
+const characterName = (id: string) => CHARACTERS_BY_ID[id]?.name ?? id;
 
-export function playerStats(game, index) {
+export function playerStats(game: Game, index: number) {
   const p = game.players[index];
   const hired = Object.entries(game.lots)
     .filter(([, l]) => l.kind === 'character' && l.owner === index)
@@ -37,6 +38,8 @@ export function playerStats(game, index) {
     kobunFree: p.kobun,
     kobunTotal: KOBUN_PER_PLAYER,
     ikizama: p.ikizama ? ZONES_BY_ID[p.ikizama]?.label ?? p.ikizama : 'En su tablero',
+
+
     oyakata: p.oyakata ? ZONES_BY_ID[p.oyakata]?.label ?? p.oyakata : 'Recogido',
     iki: p.iki,
     fire: p.fire,
@@ -47,7 +50,7 @@ export function playerStats(game, index) {
     tobacco: p.tobacco.length,
     hired,
     retired,
-    types: [...types].map((t) => CHARACTER_TYPES[t].label),
+    types: [...types].map((t) => CHARACTER_TYPES[t as CharacterType].label),
     buildings: p.buildings.map((id) => BUILDINGS_BY_ID[id]?.name ?? id),
     rice: hired.length, // arroz que pagará el Día de Pago
     score,

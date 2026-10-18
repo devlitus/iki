@@ -4,7 +4,7 @@ import { localDb } from '../server/db-local.js';
 import { createApp } from '../server/app.js';
 import { eloDeltas } from '../server/rating.js';
 import { cleanAction, settle } from '../server/games.js';
-import { act } from '../src/game/engine.js';
+import { act } from '../src/game/engine.ts';
 import { chooseAction, deciderOf } from '../src/ai/player.js';
 
 const SECRET = 'x'.repeat(40);
@@ -340,7 +340,7 @@ test('una partida clasificatoria completa entre tres personas termina, puntúa y
 
   // El registro de jugadas reproduce la partida: misma semilla + mismas jugadas = mismo final.
   const log = await db.query('SELECT action FROM game_actions WHERE game_id = $1 ORDER BY seq', [id]);
-  const { createGame } = await import('../src/game/setup.js');
+  const { createGame } = await import('../src/game/setup.ts');
   let replay = createGame({ players: ended.state.players.map((p) => ({ boardId: p.boardId, ai: p.ai })), seed: ended.state.seed });
   for (const { action } of log) replay = act(replay, action);
   assert.deepEqual(replay.final, ended.state.final);

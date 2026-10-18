@@ -2,8 +2,8 @@ import { CHARACTERS_BY_ID, CHARACTER_TYPES } from '../data/characters.ts';
 import { BUILDINGS_BY_ID } from '../data/decks.ts';
 import { MARKET_BY_ID, describeToken } from '../data/market.ts';
 import { ZONES_BY_ID, STREET, LOT_IDS } from '../data/zones.ts';
-import { act, whoseTurn, seasonOf, IKIZAMA_SLOTS } from '../game/engine.js';
-import { characterLots } from '../game/state.js';
+import { act, whoseTurn, seasonOf, IKIZAMA_SLOTS } from '../game/engine.ts';
+import { characterLots } from '../game/state.ts';
 import { abilityText, cardName, chips, costChips, costText, isWaiting, logLine, playerColor, playerName, shopName, waitingText, who } from './format.js';
 
 /**

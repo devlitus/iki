@@ -1,5 +1,5 @@
-import { createGame, OUTER_LOTS } from '../game/setup.js';
-import { act } from '../game/engine.js';
+import { createGame, OUTER_LOTS } from '../game/setup.ts';
+import { act } from '../game/engine.ts';
 
 /**
  * Partida del tutorial: tres jugadores, uno humano y dos de IA, con semilla fija. El humano es el jugador inicial

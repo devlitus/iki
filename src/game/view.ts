@@ -11,14 +11,17 @@
  */
 
 /** Marcador de «carta boca abajo»: no es ningún id de carta. */
+import type { Game } from '../types.ts';
+
 export const HIDDEN = null;
 
-export function publicView(game) {
+export function publicView(game: Game): Game {
   const view = structuredClone(game);
   delete view.seed;
   view.rng = null;
   // Se conserva cuántas hay (se ve en la mesa) pero no cuáles ni en qué orden.
-  view.decks = Object.fromEntries(Object.entries(game.decks).map(([season, cards]) => [season, cards.map(() => HIDDEN)]));
+  view.decks = Object.fromEntries(Object.entries(game.decks).map(([season, cards]) => [season, cards.map(() => HIDDEN)])) as Game['decks'];
+
   view.fireTiles = game.fireTiles.map(() => HIDDEN);
   // Fichas de mercado de las estaciones que aún no han empezado: boca abajo hasta el cambio de estación.
   view.marketFaceDown = Object.fromEntries(Object.keys(game.marketFaceDown).map((season) => [season, { fish: [], pipes: [], bags: [] }]));

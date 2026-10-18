@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { OUTER_LOTS, KOBUN_PER_PLAYER, createGame, currentPicker } from '../src/game/setup.js';
+import { OUTER_LOTS, KOBUN_PER_PLAYER, createGame, currentPicker } from '../src/game/setup.ts';
 import { newGame, tweak, placeAll, turnOf } from './helpers.js';
-import { createRng } from '../src/game/random.js';
-import { act, legalActions, whoseTurn } from '../src/game/engine.js';
+import { createRng } from '../src/game/random.ts';
+import { act, legalActions, whoseTurn } from '../src/game/engine.ts';
 import { CHARACTERS_BY_ID } from '../src/data/characters.ts';
 import { ZONES_BY_ID } from '../src/data/zones.ts';
 
