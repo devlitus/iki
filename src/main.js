@@ -21,6 +21,7 @@ import { createMobileLayout } from './view/mobile.js';
 import { initFullscreen } from './view/fullscreen.js';
 import { initExit } from './view/exit.js';
 import { createTutorial } from './tutorial/tutorial.js';
+import { openIntro } from './tutorial/intro.js';
 import { createTutorialGame } from './tutorial/game.js';
 import { createOnline } from './online/online.js';
 import { api } from './online/api.js';
@@ -381,7 +382,7 @@ function exitTutorial({ keep }) {
 }
 
 // Portada y tableros de jugador: «Nueva partida» abre el selector; al pulsar Empezar se prepara una partida nueva.
-const cover = createCover({ onNew: () => openPicker({ fromCover: true }), onContinue: () => {}, onTutorial: startTutorial, onOnline: ONLINE_ENABLED ? () => hub.open() : undefined });
+const cover = createCover({ onNew: () => openIntro({ tutorial: false, onClose: () => openPicker({ fromCover: true }) }), onContinue: () => {}, onTutorial: startTutorial, onOnline: ONLINE_ENABLED ? () => hub.open() : undefined });
 initFullscreen({ button: document.querySelector('[data-rail="fullscreen"]'), tip: document.querySelector('.cover-install') });
 initExit({ button: cover.exitButton });
 let pickerFromCover = false;

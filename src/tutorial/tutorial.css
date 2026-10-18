@@ -296,57 +296,59 @@
   border-radius: 50%;
   background: radial-gradient(ellipse at center, rgba(43, 26, 12, 0.75), rgba(43, 26, 12, 0.15) 65%, transparent 72%);
 }
-.scroll-lead { max-width: 40ch; font-size: 15px; line-height: 1.4; }
+.scroll-lead { max-width: 46ch; font-size: 15px; line-height: 1.45; }
 
-/* El año: cuatro estaciones, con su kanji. */
-.scroll-seasons { display: flex; gap: 6px; padding: 0; list-style: none; }
-.scroll-seasons li {
+/* El pregón de un vendedor, a pincel y algo torcido. */
+.scroll-cry { font-size: 13px; color: #6b5238; rotate: -2deg; }
+.scroll-cry span { font: 700 18px/1 'Yu Mincho', 'Hiragino Mincho ProN', 'Noto Serif JP', serif; color: var(--vermilion); }
+.scroll-lead b { color: #7a1f17; }
+
+/* La calle: una hilera de noren de añil que pasa despacio, como si caminaras por Nihonbashi. Va duplicada para que el
+   desfile no tenga costura; al pasar el ratón se detiene. */
+.scroll-street {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 64px;
-  padding: 4px 6px;
-  border: 1px solid rgba(43, 26, 12, 0.35);
-  border-radius: 4px;
-  font-size: 11px;
-  color: #6b5238;
-}
-.scroll-seasons li:first-child { border-color: var(--vermilion); background: rgba(200, 50, 58, 0.08); color: var(--vermilion); }
-.scroll-seasons span { font: 700 22px/1.1 'Yu Mincho', 'Hiragino Mincho ProN', 'Noto Serif JP', serif; }
-
-/* El camino: contratar, trabajar, retirar. Cada paso con su kanji en tinta. */
-.scroll-path { display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 0; list-style: none; text-align: left; }
-.scroll-path li { display: flex; align-items: center; gap: 12px; }
-.scroll-path p { margin: 0; font-size: 14px; line-height: 1.35; }
-.scroll-path b { color: #7a1f17; }
-.scroll-kanji {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 40% 35%, #3a2414, #1a0d05);
-  color: var(--paper);
-  font: 700 22px/1 'Yu Mincho', 'Hiragino Mincho ProN', 'Noto Serif JP', serif;
-  box-shadow: 0 0 0 2px var(--paper), 0 0 0 3px rgba(43, 26, 12, 0.4);
-}
-
-.scroll-goal {
   width: 100%;
-  padding: 10px 12px;
-  border-top: 1px dashed rgba(43, 26, 12, 0.4);
-  border-bottom: 1px dashed rgba(43, 26, 12, 0.4);
-  font-size: 15px;
+  overflow: hidden;
+  padding: 4px 0 2px;
+  mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
 }
-.scroll-goal p { margin: 0; }
-.scroll-goal b { color: var(--vermilion); font-size: 1.1em; }
-.scroll-flowers { display: flex; justify-content: center; gap: 18px; margin-top: 6px !important; font-size: 12px; color: #6b5238; }
-.scroll-flowers span { display: inline-flex; align-items: center; gap: 4px; }
-.scroll-flowers svg { width: 20px; height: 20px; animation: scroll-spin 12s linear infinite; }
-@keyframes scroll-spin { to { rotate: 360deg; } }
+.scroll-noren {
+  flex: none;
+  display: flex;
+  gap: 10px;
+  margin: 0;
+  padding: 0 5px;
+  list-style: none;
+  animation: scroll-walk 32s linear infinite;
+}
+.scroll-street:hover .scroll-noren { animation-play-state: paused; }
+@keyframes scroll-walk { to { translate: -100% 0; } }
+.scroll-noren li { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; color: #6b5238; }
+.noren-cloth {
+  display: block;
+  min-width: 34px;
+  height: 62px;
+  padding: 5px 0 0;
+  box-sizing: border-box;
+  text-align: center;
+  background: #2c3e6b;
+  border-top: 4px solid #4a1f0c;
+  border-radius: 0 0 3px 3px;
+  color: #f3e4c0;
+  font: 700 13px/1.05 'Yu Mincho', 'Hiragino Mincho ProN', 'Noto Serif JP', serif;
+  /* Las dos rajas del noren, solo en la mitad de abajo. */
+  mask: linear-gradient(90deg, #000 calc(33% - 1px), transparent 0 33%, #000 0 calc(66% - 1px), transparent 0 66%, #000 0) bottom / 100% 22% no-repeat,
+    linear-gradient(#000, #000) top / 100% 78% no-repeat;
+  transform-origin: top center;
+  animation: noren-sway 3.2s ease-in-out infinite alternate;
+}
+.scroll-noren li:nth-child(odd) .noren-cloth { background-color: #6b2a1e; animation-delay: -1.6s; }
+@keyframes noren-sway { from { rotate: -2deg; } to { rotate: 2deg; } }
 
-.scroll-note { font-size: 13px; color: #6b5238; }
+.scroll-goal { max-width: 46ch; padding-top: 8px; border-top: 1px dashed rgba(43, 26, 12, 0.4); font-size: 15px; line-height: 1.4; }
+.scroll-goal b { color: var(--vermilion); }
+
+.scroll-note { margin: 0; font-size: 13px; color: #6b5238; }
 #tut-scroll .scroll-go {
   padding: 8px 22px;
   font: 400 20px/1 'Patrick Hand SC', system-ui, sans-serif;
@@ -357,10 +359,13 @@
 #tut-scroll .scroll-go:hover { background: #4a9157; }
 
 @media (prefers-reduced-motion: reduce) {
-  #tut-scroll, #tut-scroll::backdrop, .scroll-rod.top, .scroll-paper > *, .scroll-flowers svg { animation: none; }
+  #tut-scroll, #tut-scroll::backdrop, .scroll-rod.top, .scroll-paper > *, .scroll-noren, .noren-cloth { animation: none; }
+  .scroll-street { mask-image: none; }
+  .scroll-noren { flex-wrap: wrap; justify-content: center; flex: 1; }
+  .scroll-noren[aria-hidden] { display: none; }
 }
 
-/* Móvil en horizontal: menos alto, el camino en tres columnas. */
+/* Móvil en horizontal: menos alto. */
 @media (max-height: 560px) {
   #tut-scroll { width: min(640px, calc(100vw - 48px)); }
   .scroll-rod { height: 12px; }
@@ -369,14 +374,10 @@
   .scroll-seal { width: 34px; height: 34px; font-size: 22px; top: 10px; right: 22px; }
   .scroll-kicker { display: none; }
   #tut-scroll h2 { margin: 0; font-size: 24px; }
-  .scroll-lead, .scroll-goal { font-size: 13px; }
-  .scroll-seasons li { flex-direction: row; gap: 4px; min-width: 0; padding: 1px 6px; }
-  .scroll-seasons span { font-size: 15px; }
-  .scroll-path { flex-direction: row; gap: 10px; }
-  .scroll-path li { flex: 1; flex-direction: column; text-align: center; gap: 4px; }
-  .scroll-path p { font-size: 12px; }
-  .scroll-kanji { width: 30px; height: 30px; font-size: 17px; }
-  .scroll-goal { padding: 4px 8px; }
-  .scroll-flowers { margin-top: 2px !important; }
+  .scroll-lead, .scroll-goal { max-width: none; font-size: 12.5px; line-height: 1.3; }
+  .scroll-cry { display: none; }
+  .noren-cloth { height: 42px; min-width: 26px; padding-top: 3px; font-size: 10px; }
+  .scroll-goal { padding-top: 3px; }
+  .scroll-note { font-size: 12px; }
   #tut-scroll .scroll-go { padding: 6px 18px; font-size: 17px; }
 }
