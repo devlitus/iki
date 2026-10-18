@@ -35,7 +35,7 @@ const HTML = `
       <p>Gana quien termine el año con más <b>IKI</b>, el arte de vivir con estilo.</p>
       <p class="scroll-flowers"><span>${flower('#f39bb5')} durante la partida</span><span>${flower('#c8323a')} al final</span></p>
     </div>
-    <p class="scroll-note">En este tutorial jugarás <b>el primer mes</b> de la primavera, paso a paso.</p>
+    <p class="scroll-note">En este tutorial jugarás <b>el año entero</b>: el primer mes paso a paso y el resto con avisos.</p>
     <button type="button" class="btn primary scroll-go">Entrar en Edo</button>
   </article>
   <div class="scroll-rod bottom"></div>`;
