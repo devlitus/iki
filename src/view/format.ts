@@ -114,7 +114,7 @@ const lotName = (g: Game, lot: string) => name(g.lots[lot]?.card);
 const nagayaOfLot = (lot: string) => NAGAYAS_BY_ID[lot.replace(/^lot-|-\d$/g, '')]?.name ?? lot;
 
 /** Entradas del registro que cuentan lo que pasó en el Evento del mes (para el resumen). */
-export const EVENT_LOG_TYPES = ['salary', 'harmony', 'starve', 'food', 'fire-start', 'fire-stopped', 'fire-avoided', 'burned'];
+export const EVENT_LOG_TYPES = ['salary', 'harmony', 'perk', 'starve', 'food', 'fire-start', 'fire-stopped', 'fire-avoided', 'burned'];
 
 /** Una entrada del registro como frase (HTML); `g` da los nombres de los jugadores. */
 /** Campos de una entrada del registro: dependen de `type` (ver los `log(g, …)` del motor). */
@@ -137,6 +137,7 @@ export function logLine(g: Game, e: Entry) {
     case 'fire': return `${p} sube a ${e.level} en Extinción`;
     case 'retire': return `${p} retira a ${name(e.card)}`;
     case 'salary': return `${p} cobra ${Object.entries(e.gain as Cost).filter(([, n]) => n).map(([r, n]) => chip(r, n)).join(' ') || 'nada'} de salario`;
+    case 'perk': return `${p} gana ${Object.entries(e.gain as Cost).map(([r, n]) => chip(r, n)).join(' ')} por ${name(e.building)}`;
     case 'harmony': return `${p} gana ${e.iki} IKI por Armonía`;
     case 'food': return `${p} alimenta a ${e.fed} personaje(s)${e.dropped ? ` y pierde ${e.dropped}` : ''}`;
     case 'starve': return `${p} pierde a ${name(e.card)} por falta de arroz`;
