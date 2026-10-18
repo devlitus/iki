@@ -1,6 +1,6 @@
 import './tutorial.css';
 import { ZONES_BY_ID, zoneCenter } from '../data/zones.js';
-import { STEPS, currentStep, stepAllows, stepZones } from './script.js';
+import { currentStep, stepAllows, stepZones } from './script.js';
 import { isMobileLayout } from '../view/mobile.js';
 import { openIntro } from './intro.js';
 
@@ -23,7 +23,7 @@ function anchorRect() {
 
 const clamp = (n, min, max) => Math.max(min, Math.min(n, max));
 
-/** Número del paso en kanji, para el sello del pergamino (1 → 一, 12 → 十二, 20 → 二十). */
+/** Número del mes en kanji, para el sello del pergamino (1 → 一, 12 → 十二, 20 → 二十). */
 const KANJI = '〇一二三四五六七八九';
 const kanjiNumber = (n) => n < 10 ? KANJI[n] : `${n >= 20 ? KANJI[Math.floor(n / 10)] : ''}十${n % 10 ? KANJI[n % 10] : ''}`;
 
@@ -70,13 +70,13 @@ export function createTutorial({ coach, board, onChange, onExit }) {
   }
 
   function renderCoach(step, game) {
-    const total = STEPS.length;
-    const n = STEPS.indexOf(step) + 1;
+    const month = Math.min(game.month, 13);
     const actions = step.last
-      ? '<button type="button" class="btn primary" data-tut="keep">Seguir jugando</button><button type="button" class="btn" data-tut="exit">Volver al menú</button>'
-      : step.kind === 'info' ? `<button type="button" class="btn primary" data-tut="next" data-step="${step.id}">Siguiente</button>` : '';
+      ? '<button type="button" class="btn primary" data-tut="exit">Volver al menú</button>'
+      : step.kind === 'info' ? `<button type="button" class="btn primary" data-tut="next" data-step="${step.id}">Siguiente</button>`
+      : step.kind === 'free' ? '<button type="button" class="btn" data-tut="keep" title="Sigue esta partida sin la burbuja; se guarda como una normal">Seguir sin ayuda</button>' : '';
     paper.innerHTML = `
-      <header title="Arrastra para mover la burbuja"><span class="tut-seal" lang="ja" aria-hidden="true">${kanjiNumber(n)}</span><span class="label">Tutorial · ${n} de ${total}</span>
+      <header title="Arrastra para mover la burbuja"><span class="tut-seal" lang="ja" aria-hidden="true">${kanjiNumber(month)}</span><span class="label">Tutorial · mes ${month} de 13</span>
         ${step.last ? '' : '<button type="button" class="tut-close" data-tut="exit" aria-label="Salir del tutorial" title="Volver al menú; tu partida guardada no cambia">×</button>'}</header>
       <h2>${step.title}</h2>
       <div class="tut-text">${step.text(game, { mobile: isMobileLayout() })}</div>

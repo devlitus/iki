@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { act, legalActions } from '../src/game/engine.js';
 import { chooseAction, isAiTurn } from '../src/ai/player.js';
 import { createTutorialGame, HUMAN_LOTS } from '../src/tutorial/game.js';
-import { STEPS, currentStep, humanOf, progress, stepAllows, stepZones } from '../src/tutorial/script.js';
+import { STEPS, TIPS, currentStep, humanOf, progress, stepAllows, stepZones } from '../src/tutorial/script.js';
 
 /** Jugadas del humano: el motor no las lista en la preparación, así que ahí se generan las colocaciones posibles. */
 const humanOptions = (g) => (g.phase === 'initial-characters'
@@ -12,20 +12,21 @@ const humanOptions = (g) => (g.phase === 'initial-characters'
 
 /**
  * Recorre el tutorial como lo haría una persona que sigue las indicaciones: lee los pasos informativos, hace la primera
- * jugada que el paso acepta y deja jugar a la IA. Devuelve los pasos vistos y la partida al llegar al último.
+ * jugada que el paso acepta y deja jugar a la IA; en el juego libre, el humano juega como la IA. Devuelve los pasos vistos
+ * y la partida al llegar al paso `until` (por defecto, el último).
  */
-function playThrough(choose = (options) => options[0]) {
+function playThrough(choose = (options) => options[0], until = (step) => step.last) {
   let g = createTutorialGame();
   const acked = new Set();
   const seen = [];
-  for (let i = 0; i < 400; i++) {
+  for (let i = 0; i < 5000; i++) {
     const step = currentStep(g, acked);
     assert.ok(step, 'el tutorial se queda sin pasos');
     if (seen.at(-1) !== step.id) seen.push(step.id);
-    if (step.last) return { g, seen };
+    if (until(step)) return { g, seen };
     for (const mobile of [false, true]) assert.doesNotThrow(() => step.text(g, { mobile }), `el texto de «${step.id}» falla`);
     if (step.kind === 'info') acked.add(step.id);
-    else if (isAiTurn(g)) g = act(g, chooseAction(g, { effort: 'fast' }));
+    else if (isAiTurn(g) || step.kind === 'free') g = act(g, chooseAction(g, { effort: 'fast' }));
     else {
       const options = humanOptions(g).filter((a) => stepAllows(step, g, a));
       assert.ok(options.length, `en «${step.id}» el humano no tiene ninguna jugada permitida`);
@@ -46,14 +47,48 @@ test('la partida del tutorial empieza con un humano que elige el último y dos I
   assert.ok(HUMAN_LOTS.every((lot) => !g.lots[lot]));
 });
 
-test('seguir las indicaciones lleva del principio al final del mes 1', () => {
+const afterMonth1 = (step) => step.id === 'on-your-own';
+
+test('seguir las indicaciones lleva del principio al final del año', () => {
   const { g, seen } = playThrough();
-  assert.equal(g.month, 2);
-  assert.deepEqual(seen, STEPS.map((s) => s.id));
+  assert.equal(g.phase, 'ended');
+  const tips = new Set(TIPS.map((t) => t.id));
+  const steps = seen.filter((id) => !tips.has(id)).filter((id, i, list) => id !== list[i - 1]); // un aviso suelto parte un paso en dos
+  assert.deepEqual(steps, STEPS.map((s) => s.id));
+});
+
+test('los avisos del año salen en su mes', () => {
+  let g = createTutorialGame();
+  const acked = new Set();
+  const at = {};
+  for (let i = 0; i < 5000 && g.phase !== 'ended'; i++) {
+    const step = currentStep(g, acked);
+    at[step.id] ??= g.month;
+    if (step.kind === 'info') acked.add(step.id);
+    else if (isAiTurn(g) || step.kind === 'free') g = act(g, chooseAction(g, { effort: 'fast' }));
+    else g = act(g, humanOptions(g).filter((a) => stepAllows(step, g, a)).find((a) => a.type === 'endTurn') ?? humanOptions(g).filter((a) => stepAllows(step, g, a))[0]);
+  }
+  assert.equal(g.phase, 'ended');
+  assert.equal(at['payday-soon'], 3);
+  assert.equal(at.season, 4);
+  assert.equal(at['fire-intro'], 4);
+  assert.equal(at['fire-soon-5'], 5);
+  assert.equal(at['fire-done-5'], 6);
+  assert.equal(at['payday-done-9'], 10);
+  assert.equal(at['fire-soon-11'], 11);
+  assert.equal(at.newyear, 13);
+});
+
+test('en el juego libre se acepta cualquier jugada y no se para a la IA', () => {
+  const { g } = playThrough(undefined, (step) => step.kind === 'free');
+  const step = currentStep(g, new Set(STEPS.filter((s) => s.kind === 'info' && !s.done(g, new Set())).map((s) => s.id)));
+  assert.equal(step.kind, 'free');
+  assert.ok(legalActions(g).every((a) => stepAllows(step, g, a)));
+  assert.equal(stepZones(step, g), null);
 });
 
 test('el mes se puede completar contratando en lugar de cobrar ingresos', () => {
-  const { g, seen } = playThrough((options) => options.find((a) => a.type === 'hire') ?? options[0]);
+  const { g, seen } = playThrough((options) => options.find((a) => a.type === 'hire') ?? options[0], afterMonth1);
   assert.equal(g.month, 2);
   assert.ok(seen.includes('business'));
 });
@@ -63,7 +98,7 @@ test('cualquier espacio de Ikizama y cualquier personaje inicial permiten acabar
     for (const card of createTutorialGame().initialCharacters) {
       let g = createTutorialGame();
       const acked = new Set();
-      for (let i = 0; i < 400 && currentStep(g, acked)?.last !== true; i++) {
+      for (let i = 0; i < 400 && !afterMonth1(currentStep(g, acked)); i++) {
         const step = currentStep(g, acked);
         if (step.kind === 'info') acked.add(step.id);
         else if (isAiTurn(g)) g = act(g, chooseAction(g, { effort: 'fast' }));
@@ -80,7 +115,7 @@ test('cualquier espacio de Ikizama y cualquier personaje inicial permiten acabar
 });
 
 test('el espacio «1-4» y las jugadas de otro paso se rechazan', () => {
-  const { g } = playThrough();
+  const { g } = playThrough(undefined, afterMonth1);
   const fresh = createTutorialGame();
   const initial = currentStep(fresh, new Set(['welcome', 'street', 'lots', 'you']));
   assert.equal(initial.id, 'initial');
@@ -100,7 +135,7 @@ test('los pasos de información no aceptan jugadas ni zonas pulsables', () => {
 });
 
 test('el progreso del humano avanza con su turno', () => {
-  const { g } = playThrough();
+  const { g } = playThrough(undefined, afterMonth1);
   assert.equal(progress(g), 'after');
   assert.equal(progress(createTutorialGame()), 'before');
 });
