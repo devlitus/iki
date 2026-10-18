@@ -34,6 +34,16 @@ function marketPieces(board, player) {
   ].join('');
 }
 
+/** Sandalias sobre su recuadro del tablero: una pila (como mucho 4 fichas a la vista) con el total si hay más de una. */
+function sandalPieces(board, n) {
+  if (!n) return '';
+  const [x, y] = board.sandalSlot;
+  const label = `${n} sandalia${n > 1 ? 's' : ''}`;
+  return Array.from({ length: Math.min(n, 4) }, (_, k) =>
+    `<img class="sandal-piece" src="/tokens/resource/sandals.webp" alt="" style="left: ${(x + k * 0.0025) * 100}%; top: ${(y - k * 0.02) * 100}%; z-index: ${k + 1}" draggable="false">`).join('')
+    + `<span class="sandal-count" role="img" aria-label="${label}" title="${label}" style="left: ${(x + 0.017) * 100}%; top: ${(y + 0.2) * 100}%">${n > 1 ? `×${n}` : ''}</span>`;
+}
+
 const typeDot = (type) => (type ? `<span class="type-dot" style="--type-color: ${CHARACTER_TYPES[type].color}" title="${CHARACTER_TYPES[type].label}"></span>` : '');
 
 export function createPlayerModal() {
@@ -66,6 +76,7 @@ export function createPlayerModal() {
       <div class="board-strip"><img src="${board.image}" alt="Tablero de jugador ${board.name}" draggable="false">
         ${board.kobunSlots.slice(0, st.kobunFree).map(([x, y]) =>
           `<img class="kobun-free" src="/pawns/kobun-${board.id}.webp" alt="Kobun libre" style="left: ${x * 100}%; top: ${y * 100}%" draggable="false">`).join('')}
+        ${sandalPieces(board, st.resources.sandal)}
         ${marketPieces(board, p)}</div>
       <div class="cols">
         <section>

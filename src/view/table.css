@@ -148,6 +148,10 @@
 .board-strip img { position: absolute; left: 50%; top: 50%; width: 100cqh; height: 100cqw; transform: translate(-50%, -50%) rotate(90deg); }
 /* Kobun libres sobre sus huecos del tablero de jugador */
 .board-strip img.kobun-free { width: auto; height: 17%; aspect-ratio: 1113 / 2048; transform: translate(-50%, -50%); filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5)); }
+/* Sandalias sobre su recuadro del tablero de jugador */
+.board-strip .sandal-piece { position: absolute; width: 3.6%; height: auto; aspect-ratio: 2048 / 2027; transform: translate(-50%, -50%); filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5)); }
+.board-strip .sandal-count { position: absolute; z-index: 6; transform: translate(-50%, -50%); color: #2b1a0c; font: 700 clamp(10px, 1.4cqw, 18px)/1 system-ui, sans-serif; text-shadow: 0 0 3px #fff, 0 0 3px #fff; }
+.board-strip .sandal-count:empty { display: none; }
 /* Pescado, Pipas y Tabaco comprados, sobre sus círculos del tablero de jugador */
 .board-strip .mkt-piece { position: absolute; width: 4.8%; height: auto; aspect-ratio: 1; transform: translate(-50%, -50%); filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5)); }
 .board-strip .mkt-plain { display: grid; place-items: center; border-radius: 50%; background: #3e6b46; border: 2px solid #fff; color: #fff; font-weight: 700; rotate: none; }
