@@ -33,8 +33,8 @@
       <aside id="side">
         <header id="toolbar">
           <h1>IKI</h1>
-          <button type="button" class="btn" id="open-steps" aria-controls="steps" aria-expanded="false">Pasos de preparación</button>
           <button type="button" class="btn" id="open-picker">Jugadores (J)</button>
+          <details id="specials-info" hidden></details>
           <button type="button" class="btn" id="open-menu">Menú</button>
         </header>
         <section id="turn" class="panel" aria-live="polite" hidden></section>
@@ -52,7 +52,6 @@
       <section id="players" aria-label="Jugadores"></section>
     </div>
     <section id="coach" aria-live="polite" hidden></section>
-    <nav id="steps" aria-label="Pasos de preparación"></nav>
     <div id="rotate-hint" role="alert">
       <div class="phone" aria-hidden="true"></div>
       <p>Gira el móvil: IKI se juega en horizontal.</p>

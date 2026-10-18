@@ -40,7 +40,7 @@
 }
 .btn:hover:not(:disabled) { background: rgba(0, 0, 0, 0.4); }
 .btn:disabled { opacity: 0.4; cursor: default; }
-.btn:focus-visible, .step:focus-visible, .initial-card:focus-visible, .lot-target:focus-visible { outline: 2px solid #ffd27a; outline-offset: 2px; }
+.btn:focus-visible, .initial-card:focus-visible, .lot-target:focus-visible { outline: 2px solid #ffd27a; outline-offset: 2px; }
 
 .label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.75; }
 .muted { opacity: 0.75; font-size: 12px; }
@@ -171,35 +171,15 @@
 #player-modal footer b { margin-left: auto; font-size: 16px; color: #ffd27a; }
 
 
-/* Panel de pasos (ocultable) */
-#steps {
-  position: fixed;
-  z-index: 15;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: min(320px, 88vw);
-  overflow-y: auto;
-  padding: 14px 12px 14px 8px;
-  background: var(--table-dark);
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
-  transform: translateX(-105%);
-  transition: transform 0.25s;
-}
-#steps.open { transform: none; }
-#steps ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
-.steps-head { display: flex; justify-content: space-between; align-items: center; margin: 0 0 6px 36px; }
-.steps-close { font-size: 22px; line-height: 1; color: var(--ink); background: none; border: 0; cursor: pointer; }
-.step { display: grid; grid-template-columns: 28px 1fr; gap: 8px; width: 100%; padding: 6px 8px; text-align: left; font: inherit; color: var(--ink); background: none; border: 1px solid transparent; border-radius: 6px; cursor: pointer; }
-.step:hover { background: rgba(0, 0, 0, 0.25); }
-.step[aria-pressed='true'] { border-color: #ffd27a; background: rgba(0, 0, 0, 0.3); }
-.step .n { font: 400 18px/1 'Patrick Hand SC', system-ui, sans-serif; color: #ffd27a; text-align: right; }
-.step .d { display: block; opacity: 0.75; font-size: 12px; }
-
-/* Resaltado del paso abierto */
-[data-steps] { transition: opacity 0.2s, filter 0.2s; }
-#app.focus [data-steps]:not(.on) { opacity: 0.2; filter: grayscale(0.7); }
-#app.focus .seat.on, #app.focus .panel.on, #app.focus .deck.on, #app.focus .initial-row.on { box-shadow: 0 0 0 2px #ffd27a; border-radius: 8px; }
+/* Desplegable de fichas especiales */
+#specials-info summary { list-style: none; text-align: center; }
+#specials-info summary::-webkit-details-marker { display: none; }
+#specials-info summary::after { content: ' ▾'; }
+#specials-info[open] summary::after { content: ' ▴'; }
+#specials-info ul { list-style: none; margin: 6px 0 0; padding: 8px; display: flex; flex-direction: column; gap: 8px; background: rgba(0, 0, 0, 0.3); border-radius: 8px; }
+#specials-info li { display: grid; grid-template-columns: 36px 1fr; gap: 8px; align-items: center; }
+#specials-info img { width: 36px; height: 36px; object-fit: contain; }
+#specials-info .d { display: block; opacity: 0.75; font-size: 12px; }
 
 /* Piezas sobre el tablero (tamaños en % del ancho del tablero) */
 #pieces .tok, #pieces .pawn { display: grid; place-items: center; aspect-ratio: 1; border-radius: 50%; color: #fff; font-weight: 700; font-size: clamp(6px, 0.6vw, 11px); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); }
@@ -230,7 +210,7 @@
 @keyframes lot-pulse { to { background: rgba(255, 210, 122, 0.08); } }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-steps], #steps, .initial-card { transition: none; }
+  .initial-card { transition: none; }
   .lot-target.armed { animation: none; }
 }
 
@@ -264,7 +244,7 @@
 /* En móvil solo se juega en horizontal: en vertical se pide girar el teléfono. */
 #rotate-hint { display: none; }
 @media (orientation: portrait) and (pointer: coarse) and (max-width: 900px) {
-  #app, #steps, #board-picker, #player-modal { display: none; }
+  #app, #board-picker, #player-modal { display: none; }
   #rotate-hint { position: fixed; inset: 0; display: grid; place-content: center; gap: 12px; padding: 24px; text-align: center; font-size: 16px; }
   #rotate-hint .phone { width: 46px; height: 76px; margin: 0 auto; border: 3px solid var(--ink); border-radius: 9px; animation: rotate-phone 2s ease-in-out infinite; }
 }

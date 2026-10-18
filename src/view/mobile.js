@@ -60,7 +60,7 @@ export function createMobileLayout({ app, side, players, turn }) {
   document.addEventListener('click', (e) => {
     const b = e.target.closest?.('[data-open-drawer]');
     if (b) openDrawer(b.dataset.openDrawer);
-    else if (e.target.closest?.('#toolbar .btn')) closeDrawer(); // pasos, jugadores…: se abren sobre el tablero
+    else if (e.target.closest?.('#toolbar button.btn')) closeDrawer(); // jugadores, menú…: se abren sobre el tablero; el desplegable de fichas especiales, no
   });
   window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !preview.hidden) closePreview(); });
 
