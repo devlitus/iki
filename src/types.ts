@@ -209,3 +209,9 @@ export type Action =
 export type ActionType = Action['type'];
 export type ActionOf<T extends ActionType> = Extract<Action, { type: T }>;
 
+// --- Interfaz ----------------------------------------------------------------------------------
+
+/** Zona del tablero que se puede pulsar ahora (view/turnPanel.js). */
+export type Target = { zone: string; title: string; onClick: () => void };
+
+

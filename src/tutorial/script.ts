@@ -6,6 +6,25 @@ import { seasonOf } from '../game/month.ts';
 import { characterLots } from '../game/state.ts';
 import { isAiTurn } from '../ai/player.ts';
 import { EVENT_LOG_TYPES, abilityText, cardName, logLine, shopName, typeLabel, who } from '../view/format.js';
+import type { Action, Game } from '../types.ts';
+
+export type TextOptions = { mobile?: boolean };
+
+/** Paso del guion (ver el comentario de abajo); los avisos sueltos (TIPS) llevan además `when`. */
+export type Step = {
+  id: string;
+  kind: 'info' | 'action' | 'wait' | 'free';
+  title: string;
+  done?: (g: Game, acked: Set<string>) => boolean;
+  when?: (g: Game) => boolean;
+  text: (g: Game, options?: TextOptions) => string;
+  allow?: (g: Game, a: Action) => boolean;
+  deny?: (g: Game, a: Action) => string | null;
+  zones?: (g: Game) => string[] | null;
+  spots?: (g: Game) => (string | null)[];
+  focus?: (g: Game) => string[];
+  last?: boolean;
+};
 
 /**
  * Guion del tutorial: un año completo jugado por el humano contra dos IA. El mes 1 va paso a paso (fases A, B y C); del
@@ -30,53 +49,53 @@ import { EVENT_LOG_TYPES, abilityText, cardName, logLine, shopName, typeLabel, w
 
 // --- Dónde está el humano ------------------------------------------------------------------------
 
-export const humanOf = (g) => g.players.findIndex((p) => !p.ai);
+export const humanOf = (g: Game) => g.players.findIndex((p) => !p.ai);
 
 /** Cuánto ha avanzado el humano en el mes 1: 'before' | 'b1' | 'move' | 'business' | 'after'. */
-export function progress(g) {
+export function progress(g: Game): string {
   if (g.month > 1) return 'after';
   if (g.phase !== 'actions') return 'before';
-  const mine = g.turnList.indexOf(humanOf(g));
-  if (g.turn.index < mine) return 'before';
-  return g.turn.index === mine ? g.turn.step : 'after';
+  const mine = g.turnList!.indexOf(humanOf(g));
+  if (g.turn!.index < mine) return 'before';
+  return g.turn!.index === mine ? g.turn!.step : 'after';
 }
 
 /** Casillas que hay que recorrer desde `from` hasta `to` siguiendo la calle (la salida entra por STREET_ENTRY). */
-function stepsBetween(from, to) {
+function stepsBetween(from: string, to: string) {
   let pos = from;
   for (let n = 0; n <= 9; n++) {
     if (pos === to) return n;
-    pos = pos.startsWith('queue-') ? STREET_ENTRY : ZONES_BY_ID[pos].next;
+    pos = pos.startsWith('queue-') ? STREET_ENTRY : ZONES_BY_ID[pos].next!;
   }
   return null;
 }
 
 /** Solar y casilla de la calle del personaje inicial del humano (null antes de colocarlo). */
-function home(g) {
+function home(g: Game) {
   const h = humanOf(g);
   const lot = Object.keys(g.lots).find((id) => g.lots[id].owner === h && g.lots[id].initial);
   if (!lot) return null;
-  const cell = STREET.find((id) => ZONES_BY_ID[id].stalls.includes(lot));
+  const cell = STREET.find((id) => ZONES_BY_ID[id].stalls!.includes(lot))!;
   return { lot, cell, card: g.lots[lot].card };
 }
 
-const cellName = (cell) => `${ZONES_BY_ID[cell].label} · ${shopName(cell)}`;
-const player = (g) => g.players[humanOf(g)];
+const cellName = (cell: string) => `${ZONES_BY_ID[cell].label} · ${shopName(cell)}`;
+const player = (g: Game) => g.players[humanOf(g)];
 
 /** Casilla a la que llegaría el humano con su Ikizama y `sandals` sandalias, desde el paso B1 o B2. */
-function destination(g, sandals = 0) {
+function destination(g: Game, sandals = 0) {
   const copy = structuredClone(g);
-  copy.turn.step = 'move';
+  copy.turn!.step = 'move';
   return tryAct(copy, { type: 'move', sandals })?.players[humanOf(g)].oyakata ?? null;
 }
 
 /** Cartas de la fila que el humano puede contratar ahora en algún solar libre. */
-function hireable(g) {
+function hireable(g: Game) {
   const free = LOT_IDS.filter((id) => !g.lots[id]);
   return g.row.filter((r) => free.some((lot) => tryAct(g, { type: 'hire', card: r.card, lot })));
 }
 
-const SHOP_HELP = {
+const SHOP_HELP: Record<string, string> = {
   'shop-rice': 'cambia 3 mons por 2 de arroz; sin arroz no puedes alimentar a tus personajes el Día de Pago',
   'shop-sandals': 'cambia 2 mons por 2 sandalias, que te dejan avanzar más en la calle',
   'shop-exchange': 'cambia mons por Koban (monedas de oro, muy valiosas al final) o cobra 2 mons',
@@ -89,29 +108,29 @@ const SHOP_HELP = {
 
 // --- Pasos ------------------------------------------------------------------------------------------
 
-const ack = (id) => (g, acked) => acked.has(id);
-const waiting = (g) => isAiTurn(g);
+const ack = (id: string) => (g: Game, acked: Set<string>) => acked.has(id);
+const waiting = (g: Game) => isAiTurn(g);
 
 // --- Del mes 2 en adelante ---------------------------------------------------------------------------
 
 /** Aviso del mes `month`: superado al leerlo o, si se pasó de largo, cuando ya va el mes siguiente. */
-const seen = (id, month) => (g, acked) => acked.has(id) || g.month > month || g.phase === 'ended';
+const seen = (id: string, month: number) => (g: Game, acked: Set<string>) => acked.has(id) || g.month > month || g.phase === 'ended';
 
 /** Marcas del marcador de Extinción de Incendios: donde están las fichas de todos. */
-const fireSpots = (g) => [...new Set(g.players.map((p) => `fire-${p.fire}`))];
+const fireSpots = (g: Game) => [...new Set(g.players.map((p) => `fire-${p.fire}`))];
 
 /** Qué cierra el mes `month`. */
-function monthEnd(month) {
+function monthEnd(month: number) {
   if (PAYDAY_MONTHS.includes(month)) return `el <b>Día de Pago</b>${month < 12 ? ' y el cambio de estación' : ''}`;
   if (FIRE_STRENGTH[month]) return `un <b>Incendio de fuerza ${FIRE_STRENGTH[month]}</b>`;
   return month === 13 ? 'el final de la partida' : 'solo 1 mon más en cada carta de la fila';
 }
 
 /** Recordatorio de lo que toca ahora en el juego libre. */
-function nowText(g) {
+function nowText(g: Game) {
   const h = humanOf(g);
   const pending = g.pending?.player === h ? g.pending.type : null;
-  if (pending === 'food') return `No tienes arroz para todos: elige <b>${g.pending.drop}</b> personaje(s) que se quedan sin comer y se van.`;
+  if (pending === 'food') return `No tienes arroz para todos: elige <b>${(g.pending as { drop: number }).drop}</b> personaje(s) que se quedan sin comer y se van.`;
   if (pending === 'avoidFire') return 'El fuego va a quemar uno de tus personajes: puedes gastar tu ficha <b>Evitar un incendio</b> para salvarlo.';
   if (pending === 'wildType') return 'Elige de qué tipo cuenta tu <b>Marionetista</b> para la Variedad.';
   if (waiting(g)) return 'Juegan los demás… Lo que hacen queda en el registro.';
@@ -125,14 +144,14 @@ function nowText(g) {
 }
 
 /** Juego libre del mes `month` (en el 13, hasta que acaba la partida). */
-const play = (month) => ({
+const play = (month: number): Step => ({
   id: `play-${month}`, kind: 'free', done: (g) => g.phase === 'ended' || (month < 13 && g.month > month),
   title: month === 13 ? 'Mes 13 · Año Nuevo' : `Mes ${month} · ${seasonOf(month).name}`,
   text: (g) => `<p>${nowText(g)}</p><p class="muted">Al final de este mes: ${monthEnd(month)}.</p>`,
 });
 
 /** Arroz que tiene el humano frente a los personajes que tendrá que alimentar. */
-function riceTip(g) {
+function riceTip(g: Game) {
   const rice = player(g).resources.rice;
   const mouths = characterLots(g, humanOf(g)).length;
   if (rice >= mouths) return `Tienes <b>${rice}</b> de arroz para <b>${mouths}</b> personaje(s): de momento, comen todos.`;
@@ -141,18 +160,18 @@ function riceTip(g) {
 }
 
 /** Lo que pasó en el Evento del mes `month`, contado como lista (el humano y el fuego, que afecta a todos). */
-function recap(g, month) {
+function recap(g: Game, month: number) {
   const h = humanOf(g);
   const lines = g.log.filter((e) => e.month === month && EVENT_LOG_TYPES.includes(e.type) && (e.player === h || e.type.startsWith('fire')));
   return lines.length ? `<ul>${lines.map((e) => `<li>${logLine(g, e)}</li>`).join('')}</ul>` : '<p class="muted">No te ha afectado.</p>';
 }
-const recapLine = (g, month) => {
+const recapLine = (g: Game, month: number) => {
   const salary = g.log.find((e) => e.month === month && e.type === 'salary' && e.player === humanOf(g));
   return salary ? `En el último Día de Pago: ${logLine(g, salary)}. ` : '';
 };
 
 /** Aviso al empezar un mes de Incendio: qué fuerza tendría el fuego en cada solar del humano. */
-const fireSoon = (month) => ({
+const fireSoon = (month: number): Step => ({
   id: `fire-soon-${month}`, kind: 'info', title: `Incendio al final del mes ${month}`, done: seen(`fire-soon-${month}`, month),
   spots: (g) => [...fireSpots(g), 'shop-fire-tower'],
   text: (g) => {
@@ -171,7 +190,7 @@ const fireSoon = (month) => ({
 });
 
 /** Lo que hizo el Incendio del mes `month`, al empezar el siguiente. */
-const fireDone = (month) => ({
+const fireDone = (month: number): Step => ({
   id: `fire-done-${month}`, kind: 'info', title: 'Así fue el Incendio', done: seen(`fire-done-${month}`, month + 1),
   text: (g) => `${recap(g, month)}<p>${month < 11
     ? `El próximo Incendio, al final del mes ${month + 3}, será más fuerte (${FIRE_STRENGTH[month + 3]}).`
@@ -179,14 +198,14 @@ const fireDone = (month) => ({
 });
 
 /** Aviso al empezar un mes de Día de Pago (el del mes 3 se explica entero en su propio paso). */
-const paydaySoon = (month) => ({
+const paydaySoon = (month: number): Step => ({
   id: `payday-soon-${month}`, kind: 'info', title: `Día de Pago al final del mes ${month}`, done: seen(`payday-soon-${month}`, month),
   spots: () => [`month-${month}`, 'shop-rice', 'shop-construction'],
   text: (g) => `<p>Este mes cierra la estación con un <b>Día de Pago</b>: salario, Armonía y comida.</p><p>${riceTip(g)}</p>`,
 });
 
 /** Lo que dio el Día de Pago y la estación que empieza. */
-const paydayDone = (month, season, name) => ({
+const paydayDone = (month: number, season: string, name: string): Step => ({
   id: `payday-done-${month}`, kind: 'info', title: `Empieza el ${name}`, done: seen(`payday-done-${month}`, month + 1),
   spots: () => [`season-${season}`],
   focus: () => ['.row-cards'],
@@ -194,7 +213,7 @@ const paydayDone = (month, season, name) => ({
     <p>Empieza el <b>${name}</b>: nuevas cartas en la fila y nuevo Pescado, Pipas y Tabaco. Recuerda comprar un pescado esta estación si quieres variedad.</p>`,
 });
 
-export const STEPS = [
+export const STEPS: Step[] = [
   {
     id: 'welcome', kind: 'info', title: 'Bienvenido a Edo', done: ack('welcome'),
     text: (g) => `<p>Vas a jugar <b>un año completo</b> de IKI como ${who(g, humanOf(g))}, contra dos jugadores de IA. El primer mes, paso a paso;
@@ -455,7 +474,7 @@ export const STEPS = [
  * Avisos sueltos: salen una vez, en cuanto se cumple `when`, antes que el paso en curso (no tienen un sitio fijo en el
  * guion porque pueden pasar en cualquier mes).
  */
-export const TIPS = [
+export const TIPS: Step[] = [
   {
     id: 'tip-retire', kind: 'info', title: 'Un personaje se retira', when: (g) => player(g).retired.length > 0,
     focus: (g) => [`.seat[data-player="${humanOf(g)}"]`],
@@ -466,11 +485,12 @@ export const TIPS = [
 ];
 
 /** Paso en curso: un aviso suelto pendiente o, si no, el primer paso que aún no está superado. */
-export const currentStep = (g, acked) => (g.month > 1 && TIPS.find((t) => !acked.has(t.id) && t.when(g)))
-  || STEPS.find((s) => !s.done(g, acked));
+export const currentStep = (g: Game, acked: Set<string>) => (g.month > 1 && TIPS.find((t) => !acked.has(t.id) && t.when!(g)))
+  || STEPS.find((s) => !s.done!(g, acked));
 
 /** ¿Acepta el paso `step` esta jugada del humano? En el juego libre, cualquiera. */
-export const stepAllows = (step, g, action) => step.kind === 'free' || (step.kind === 'action' && step.allow(g, action));
+export const stepAllows = (step: Step, g: Game, action: Action) => step.kind === 'free' || (step.kind === 'action' && step.allow!(g, action));
 
 /** Zonas pulsables en este paso: null = las que ofrezca el panel. */
-export const stepZones = (step, g) => (step.kind === 'action' ? step.zones?.(g) ?? null : step.kind === 'free' ? null : []);
+export const stepZones = (step: Step, g: Game) =>
+ (step.kind === 'action' ? step.zones?.(g) ?? null : step.kind === 'free' ? null : []);

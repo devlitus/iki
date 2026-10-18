@@ -9,10 +9,10 @@ const TRADES = [
   ['鮨', 'Sushi'], ['天麩羅', 'Tempura'], ['芸者', 'Geishas'], ['歌舞伎', 'Kabuki'],
 ];
 // Los kanji van en columna, uno por línea, como se pintan en la tela.
-const noren = ([k, name]) => `<li><span class="noren-cloth" lang="ja">${[...k].join('<br>')}</span>${name}</li>`;
+const noren = ([k, name]: string[]) => `<li><span class="noren-cloth" lang="ja">${[...k].join('<br>')}</span>${name}</li>`;
 
 // Texto de «Bienvenidos a Edo» y «Objetivo del juego» del reglamento; las reglas las cuentan después las burbujas.
-const html = (tutorial) => `
+const html = (tutorial: boolean) => `
   <div class="scroll-rod top"></div>
   <article class="scroll-paper">
     <span class="scroll-seal" aria-hidden="true">粋</span>
@@ -35,7 +35,7 @@ const html = (tutorial) => `
   </article>
   <div class="scroll-rod bottom"></div>`;
 
-export function openIntro({ onClose, tutorial = true }) {
+export function openIntro({ onClose, tutorial = true }: { onClose: () => void; tutorial?: boolean }) {
   const dialog = document.createElement('dialog');
   dialog.id = 'tut-scroll';
   dialog.setAttribute('aria-label', 'Bienvenidos a Edo');
@@ -52,23 +52,24 @@ export function openIntro({ onClose, tutorial = true }) {
     dialog.addEventListener('animationend', (e) => { if (e.target === dialog) done(); });
   };
   dialog.addEventListener('cancel', (e) => { e.preventDefault(); close(); });
-  dialog.addEventListener('click', (e) => { if (e.target === dialog || e.target.closest('.scroll-go')) close(); });
+  dialog.addEventListener('click', (e) => { if (e.target === dialog || (e.target as Element).closest('.scroll-go')) close(); });
 
   dialog.showModal();
   // El foco va al botón sin desplazar el papel, para que en pantallas bajas se lea desde el título.
-  dialog.querySelector('.scroll-go').focus({ preventScroll: true });
+  dialog.querySelector<HTMLElement>('.scroll-go')!.focus({ preventScroll: true });
   unroll(dialog);
   // remove: se quita sin avisar (el tutorial se cierra por otro lado).
   return { close, remove: () => { closing = true; dialog.close(); dialog.remove(); } };
 }
 
 /** El rollo baja desde la varilla de arriba: el papel se descubre y la varilla de abajo cae con él. */
-function unroll(dialog) {
+function unroll(dialog: HTMLDialogElement) {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const paper = dialog.querySelector('.scroll-paper');
-  const rod = dialog.querySelector('.scroll-rod.bottom');
+  const paper = dialog.querySelector<HTMLElement>('.scroll-paper')!;
+  const rod = dialog.querySelector<HTMLElement>('.scroll-rod.bottom')!;
   const h = paper.offsetHeight;
-  const timing = { duration: 1100, easing: 'cubic-bezier(0.3, 0.7, 0.2, 1)', fill: 'backwards', delay: 250 };
+  const timing: KeyframeAnimationOptions = { duration: 1100, easing: 'cubic-bezier(0.3, 0.7, 0.2, 1)', fill: 'backwards', delay: 250 };
+
   paper.animate([{ clipPath: 'inset(0 0 100% 0)' }, { clipPath: 'inset(0 0 0 0)' }], timing);
   rod.animate([{ transform: `translateY(${-h}px)` }, { transform: 'none' }], timing);
 }

@@ -1,5 +1,7 @@
 import { createGame, OUTER_LOTS } from '../game/setup.ts';
 import { act } from '../game/engine.ts';
+import type { Game } from '../types.ts';
+
 
 /**
  * Partida del tutorial: tres jugadores, uno humano y dos de IA, con semilla fija. El humano es el jugador inicial
@@ -17,7 +19,7 @@ const AI_PICKS = [
   { card: 'boiled-egg-seller', lot: 'lot-bottom-right-4' },
 ];
 
-export function createTutorialGame() {
+export function createTutorialGame(): Game {
   let g = createGame({ players: BOARD_IDS.map((boardId) => ({ boardId, ai: true })), seed: TUTORIAL_SEED });
   g.players[g.starter].ai = false;
   g.pickOrder = [...g.pickOrder.slice(1), g.starter]; // las IA ya han elegido cuando empieza el tutorial

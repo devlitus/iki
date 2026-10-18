@@ -1,8 +1,10 @@
 import './tutorial.css';
 import { ZONES_BY_ID, zoneCenter } from '../data/zones.ts';
-import { currentStep, stepAllows, stepZones } from './script.js';
+import { currentStep, stepAllows, stepZones } from './script.ts';
 import { isMobileLayout } from '../view/mobile.js';
-import { openIntro } from './intro.js';
+import { openIntro } from './intro.ts';
+import type { Step } from './script.ts';
+import type { Action, Game, Target } from '../types.ts';
 
 const GAP = 22;    // separación entre la burbuja y lo que señala (aquí caben el rabito y las varillas del rollo)
 const MARGIN = 10; // separación mínima con el borde de la ventana
@@ -21,47 +23,51 @@ function anchorRect() {
   return { left, top, right, bottom, width: right - left, height: bottom - top };
 }
 
-const clamp = (n, min, max) => Math.max(min, Math.min(n, max));
+const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(n, max));
 
 /** Número del mes en kanji, para el sello del pergamino (1 → 一, 12 → 十二, 20 → 二十). */
 const KANJI = '〇一二三四五六七八九';
-const kanjiNumber = (n) => n < 10 ? KANJI[n] : `${n >= 20 ? KANJI[Math.floor(n / 10)] : ''}十${n % 10 ? KANJI[n % 10] : ''}`;
+const kanjiNumber = (n: number): string => n < 10 ? KANJI[n] : `${n >= 20 ? KANJI[Math.floor(n / 10)] : ''}十${n % 10 ? KANJI[n % 10] : ''}`;
 
 /**
  * Tutorial: una burbuja de ayuda junto a lo que explica (con rabito), marcas sobre el tablero y un filtro para que el
  * humano solo pueda hacer lo que pide el paso en curso. No tiene estado de partida: el paso se deduce de la partida
  * (script.js) y aquí solo se recuerdan los pasos informativos ya leídos.
  *
- * @param {{ coach: HTMLElement, board: object, onChange(): void, onExit(options: { keep: boolean }): void }} o
  *   onChange: se ha leído un paso informativo (hay que redibujar y dejar jugar a la IA).
  *   onExit:   el jugador sale; `keep` = sigue jugando esta partida (la del tutorial) como una normal.
  */
-export function createTutorial({ coach, board, onChange, onExit }) {
-  const acked = new Set();
+export function createTutorial({ coach, board, onChange, onExit }: {
+  coach: HTMLElement;
+  board: { place: (el: HTMLElement, u: number, v: number) => unknown };
+  onChange: () => void;
+  onExit: (options: { keep: boolean }) => void;
+}) {
+  const acked = new Set<string>();
   // La burbuja es un pequeño pergamino: las varillas quedan fijas y cada paso reescribe solo el papel.
   coach.innerHTML = '<div class="coach-rod top"></div><div class="coach-paper"></div><div class="coach-rod bottom"></div>';
-  const paper = coach.querySelector('.coach-paper');
-  const stepOf = (game) => currentStep(game, acked);
+  const paper = coach.querySelector<HTMLElement>('.coach-paper')!;
+  const stepOf = (game: Game) => currentStep(game, acked);
   // Antes de la primera burbuja, el pergamino con el objetivo del juego; mientras se lee, ni burbuja ni IA.
-  let intro = openIntro({ onClose: () => { intro = null; onChange(); } });
+  let intro: ReturnType<typeof openIntro> | null = openIntro({ onClose: () => { intro = null; onChange(); } });
 
   coach.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-tut]');
+    const b = (e.target as Element).closest<HTMLElement>('[data-tut]');
     if (!b) return;
-    if (b.dataset.tut === 'next') { acked.add(b.dataset.step); onChange(); }
+    if (b.dataset.tut === 'next') { acked.add(b.dataset.step!); onChange(); }
     else onExit({ keep: b.dataset.tut === 'keep' });
   });
 
   /** Marca una zona del tablero con un anillo (no se pulsa; solo señala). */
-  function spot(id) {
-    const zone = ZONES_BY_ID[id];
+  function spot(id: string | null) {
+    const zone = ZONES_BY_ID[id!];
     const el = document.createElement('div');
     el.className = 'tut-spot';
     if (zone.kind === 'rect') {
-      el.style.width = `${zone.w * 100}%`;
-      el.style.height = `${zone.h * 100}%`;
+      el.style.width = `${zone.w! * 100}%`;
+      el.style.height = `${zone.h! * 100}%`;
     } else {
-      el.style.width = `${zone.r * 200}%`;
+      el.style.width = `${zone.r! * 200}%`;
       el.style.aspectRatio = '1';
       el.style.borderRadius = '50%';
     }
@@ -69,7 +75,7 @@ export function createTutorial({ coach, board, onChange, onExit }) {
     board.place(el, u, v);
   }
 
-  function renderCoach(step, game) {
+  function renderCoach(step: Step, game: Game) {
     const month = Math.min(game.month, 13);
     const actions = step.last
       ? '<button type="button" class="btn primary" data-tut="exit">Volver al menú</button>'
@@ -87,18 +93,18 @@ export function createTutorial({ coach, board, onChange, onExit }) {
   // La burbuja se coloca junto a lo señalado: al lado donde más sitio hay, con el rabito apuntándole. Si no señala nada, o
   // es demasiado grande para apuntarlo, o no cabe, se ancla abajo en el centro del tablero. Como el tablero se mueve y
   // se amplía, se recoloca mientras la burbuja está abierta (solo escribe cuando algo ha cambiado).
-  let placedKey = null;
+  let placedKey: string | null = null;
   let raf = 0;
   let moved = false;  // el jugador ha arrastrado la burbuja: no se recoloca hasta el paso siguiente
-  let shownStep = null;
+  let shownStep: string | null = null;
 
   // Arrastrar por la cabecera, por si la burbuja tapa algo que hay que pulsar.
   coach.addEventListener('pointerdown', (e) => {
-    const bar = e.target.closest('header');
-    if (!bar || e.target.closest('button') || e.button !== 0) return;
+    const bar = (e.target as Element).closest('header');
+    if (!bar || (e.target as Element).closest('button') || e.button !== 0) return;
     const dx = e.clientX - coach.offsetLeft;
     const dy = e.clientY - coach.offsetTop;
-    const drag = (ev) => {
+    const drag = (ev: PointerEvent) => {
       coach.style.left = `${clamp(ev.clientX - dx, 0, innerWidth - coach.offsetWidth)}px`;
       coach.style.top = `${clamp(ev.clientY - dy, 0, innerHeight - coach.offsetHeight)}px`;
     };
@@ -127,7 +133,7 @@ export function createTutorial({ coach, board, onChange, onExit }) {
     placedKey = key;
 
     const visible = a && a.right > 0 && a.left < W && a.bottom > 0 && a.top < H;
-    const sides = visible && (a.width * a.height) / (W * H) < BIG ? {
+    const sides: Record<string, { room: number; tail: string }> = visible && (a.width * a.height) / (W * H) < BIG ? {
       right: { room: W - a.right - MARGIN - w - GAP, tail: 'left' },
       left: { room: a.left - MARGIN - w - GAP, tail: 'right' },
       bottom: { room: H - a.bottom - MARGIN - h - GAP, tail: 'top' },
@@ -135,10 +141,10 @@ export function createTutorial({ coach, board, onChange, onExit }) {
     } : {};
     const [side, spot] = Object.entries(sides).filter(([, s]) => s.room >= 0).sort((p, q) => q[1].room - p[1].room)[0] ?? [];
 
-    let left;
-    let top;
+    let left: number;
+    let top: number;
     if (!side) {
-      const vp = document.getElementById('viewport').getBoundingClientRect();
+      const vp = document.getElementById('viewport')!.getBoundingClientRect();
       left = vp.left + (vp.width - w) / 2;
       top = vp.bottom - h - GAP;
       coach.dataset.tail = 'none';
@@ -165,7 +171,7 @@ export function createTutorial({ coach, board, onChange, onExit }) {
     const h = paper.offsetHeight;
     const timing = { duration: 480, easing: 'cubic-bezier(0.3, 0.7, 0.2, 1)' };
     paper.animate([{ clipPath: 'inset(0 0 100% 0)' }, { clipPath: 'inset(0 0 0 0)' }], timing);
-    coach.querySelector('.coach-rod.bottom').animate([{ transform: `translateY(${-h}px)` }, { transform: 'none' }], timing);
+    coach.querySelector('.coach-rod.bottom')!.animate([{ transform: `translateY(${-h}px)` }, { transform: 'none' }], timing);
   }
 
   const track = () => {
@@ -175,10 +181,10 @@ export function createTutorial({ coach, board, onChange, onExit }) {
 
   return {
     /** ¿Hay que parar a la IA? Mientras se lee un paso informativo, el tablero no cambia. */
-    blocking: (game) => Boolean(intro) || stepOf(game)?.kind === 'info',
+    blocking: (game: Game) => Boolean(intro) || stepOf(game)?.kind === 'info',
 
     /** Motivo por el que se rechaza una jugada del humano, o null si el paso en curso la acepta. */
-    refuse(game, action) {
+    refuse(game: Game, action: Action) {
       const step = stepOf(game);
       if (!step || stepAllows(step, game, action)) return null;
       if (step.kind === 'info') return 'Pulsa «Siguiente» en el tutorial para continuar.';
@@ -186,13 +192,14 @@ export function createTutorial({ coach, board, onChange, onExit }) {
     },
 
     /** Deja solo las zonas del tablero que el paso permite pulsar. */
-    filterTargets(game, targets) {
-      const zones = stepZones(stepOf(game), game);
+    filterTargets(game: Game, targets: Target[]) {
+      const zones = stepZones(stepOf(game)!, game);
       return zones ? targets.filter((t) => zones.includes(t.zone)) : targets;
     },
 
     /** Redibuja la tarjeta y las marcas; hay que llamarlo después de pintar el tablero (que borra las marcas). */
-    update(game) {
+    update(game: Game) {
+
       const step = stepOf(game);
       if (!step || intro) return;
       renderCoach(step, game);

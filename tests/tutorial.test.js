@@ -2,8 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { act, legalActions } from '../src/game/engine.ts';
 import { chooseAction, isAiTurn } from '../src/ai/player.ts';
-import { createTutorialGame, HUMAN_LOTS } from '../src/tutorial/game.js';
-import { STEPS, TIPS, currentStep, humanOf, progress, stepAllows, stepZones } from '../src/tutorial/script.js';
+import { createTutorialGame, HUMAN_LOTS } from '../src/tutorial/game.ts';
+import { STEPS, TIPS, currentStep, humanOf, progress, stepAllows, stepZones } from '../src/tutorial/script.ts';
 
 /** Jugadas del humano: el motor no las lista en la preparación, así que ahí se generan las colocaciones posibles. */
 const humanOptions = (g) => (g.phase === 'initial-characters'
