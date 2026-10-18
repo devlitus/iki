@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -39,9 +39,17 @@ try {
   const differ = [...new Set([...fa, ...fb])].filter((f) => !fa.includes(f) || !fb.includes(f) || !readFileSync(join(a, f)).equals(readFileSync(join(b, f))));
   if (differ.length) {
     console.log(`✗ ${differ.length} archivos difieren de ${ref}:\n${differ.map((f) => `  ${f}`).join('\n')}`);
-    for (const f of differ.filter((x) => fa.includes(x) && fb.includes(x)).slice(0, 3)) {
-      const diff = spawnSync('git', ['diff', '--no-index', '--no-color', '-U1', join(a, f), join(b, f)], { encoding: 'utf8' }).stdout;
-      console.log(diff.split('\n').slice(0, 60).join('\n'));
+    // Los nombres llevan el hash del contenido: se emparejan sin él y el código minificado se parte por sentencias.
+    const unhashed = (f) => f.replace(/-[\w-]{8}(\.\w+)$/, '$1');
+    const pairs = fa.filter((x) => differ.includes(x)).map((x) => [x, fb.find((y) => differ.includes(y) && unhashed(y) === unhashed(x))]).filter(([, y]) => y);
+    for (const [x, y] of pairs.slice(0, 3)) {
+      const split = (dir, f, name) => {
+        const out = join(work, name);
+        writeFileSync(out, readFileSync(join(dir, f), 'utf8').replaceAll(';', ';\n'));
+        return out;
+      };
+      const diff = spawnSync('git', ['diff', '--no-index', '--no-color', '-U1', split(a, x, 'a.txt'), split(b, y, 'b.txt')], { encoding: 'utf8' }).stdout;
+      console.log(`\n${x} → ${y}\n${diff.split('\n').slice(4, 60).map((l) => l.slice(0, 300)).join('\n')}`);
     }
 
     process.exitCode = 1;
