@@ -87,6 +87,7 @@ export function createFinalTable({ onNewGame }: { onNewGame: () => void }) {
         <div class="final-detail">${order.map((p) => detail(game, p)).join('')}</div>
         <footer><button type="button" class="btn close">Cerrar</button><button type="button" class="btn new-game">Nueva partida</button></footer>`;
       if (!dialog.open) dialog.showModal();
+      dialog.scrollTop = 0; // el foco va al botón «Cerrar» del final: en pantallas bajas, se vuelve arriba para ver quién gana
     },
   };
 }
