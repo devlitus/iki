@@ -4,8 +4,8 @@ import { OUTER_LOTS, KOBUN_PER_PLAYER, createGame, currentPicker } from '../src/
 import { newGame, tweak, placeAll, turnOf } from './helpers.js';
 import { createRng } from '../src/game/random.js';
 import { act, legalActions, whoseTurn } from '../src/game/engine.js';
-import { CHARACTERS_BY_ID } from '../src/data/characters.js';
-import { ZONES_BY_ID } from '../src/data/zones.js';
+import { CHARACTERS_BY_ID } from '../src/data/characters.ts';
+import { ZONES_BY_ID } from '../src/data/zones.ts';
 
 // --- Ayudas ------------------------------------------------------------------------------------
 

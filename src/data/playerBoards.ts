@@ -9,7 +9,9 @@
  * - sandalSlot: centro [x, y] del recuadro de las sandalias, igual que kobunSlots.
  */
 
-export const PLAYER_BOARDS = [
+import type { PlayerBoard } from '../types.ts';
+
+export const PLAYER_BOARDS: PlayerBoard[] = [
   { id: 'yellow', name: 'Amarillo', color: '#e9b824', side: '3-4', image: '/player-boards/yellow.webp',
     kobunSlots: [[0.2210, 0.5915], [0.2617, 0.5915], [0.2210, 0.8259], [0.2617, 0.8259]],
     sandalSlot: [0.3702, 0.6970],
@@ -32,4 +34,5 @@ export const PLAYER_BOARDS = [
       pipe: [0.8583, 0.5341], bag: [0.9367, 0.5341] } },
 ];
 
-export const PLAYER_BOARDS_BY_ID = Object.assign(Object.create(null), Object.fromEntries(PLAYER_BOARDS.map((b) => [b.id, b]))); // sin prototipo: «constructor» o «__proto__» no son ids
+export const PLAYER_BOARDS_BY_ID: Record<string, PlayerBoard> = Object.assign
+(Object.create(null), Object.fromEntries(PLAYER_BOARDS.map((b) => [b.id, b]))); // sin prototipo: «constructor» o «__proto__» no son ids

@@ -1,4 +1,4 @@
-import { CHARACTER_TYPES } from '../data/characters.js';
+import { CHARACTER_TYPES } from '../data/characters.ts';
 import { GLYPHS, resources } from './icons.js';
 
 const TYPE_SYMBOLS = {

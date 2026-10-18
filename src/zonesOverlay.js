@@ -1,4 +1,4 @@
-import { ZONES, radiusV } from './data/zones.js';
+import { ZONES, radiusV } from './data/zones.ts';
 
 const GROUP_COLORS = {
   calendar: '#ffcc00',

@@ -1,6 +1,6 @@
-import { PLAYER_BOARDS_BY_ID } from '../data/playerBoards.js';
-import { SEASONS, BUILDINGS_BY_ID, BUILDING_BACK } from '../data/decks.js';
-import { CHARACTERS_BY_ID } from '../data/characters.js';
+import { PLAYER_BOARDS_BY_ID } from '../data/playerBoards.ts';
+import { SEASONS, BUILDINGS_BY_ID, BUILDING_BACK } from '../data/decks.ts';
+import { CHARACTERS_BY_ID } from '../data/characters.ts';
 import { currentPicker, activePlayer } from '../game/setup.js';
 import { seasonOf } from '../game/engine.js';
 import { esc, isWaiting, playerName } from './format.js';

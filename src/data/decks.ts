@@ -3,7 +3,9 @@
  * Los ids coinciden con los escaneos de public/cards/<estación>/<id>.jpg.
  */
 
-export const SEASONS = [
+import type { Building, Season } from '../types.ts';
+
+export const SEASONS: Season[] = [
   {
     id: 'spring', name: 'Primavera', back: '/cards/spring/spring-back.jpg',
     cards: ['book-seller', 'sake-seller', 'soap-bubble-maker', 'dice-maker', 'sandal-maker', 'seamstress', 'ukiyoe-artist',
@@ -26,10 +28,10 @@ export const SEASONS = [
   },
 ];
 
-export const SEASONS_BY_ID = Object.assign(Object.create(null), Object.fromEntries(SEASONS.map((s) => [s.id, s]))); // sin prototipo: «constructor» o «__proto__» no son ids
+export const SEASONS_BY_ID: Record<string, Season> = Object.assign(Object.create(null), Object.fromEntries(SEASONS.map((s) => [s.id, s]))); // sin prototipo: «constructor» o «__proto__» no son ids
 
 /** Imagen de una carta de estación. */
-export const seasonCardImage = (seasonId, cardId) => `/cards/${seasonId}/${cardId}.jpg`;
+export const seasonCardImage = (seasonId: string, cardId: string) => `/cards/${seasonId}/${cardId}.jpg`;
 
 /**
  * Edificios (Apéndice 2; costes leídos de las cartas).
@@ -40,7 +42,7 @@ export const seasonCardImage = (seasonId, cardId) => `/cards/${seasonId}/${cardI
  * - perk:  habilidad continua: 'farm' (+2 IKI por Kobun alimentado cada Día de Pago), 'fire-tower' (+3 IKI al contratar
  *          un personaje con fuego), 'imperial-villa' (+2 mons por personaje del tipo más contratado cada Día de Pago).
  */
-export const BUILDINGS = [
+export const BUILDINGS: Building[] = ([
   { id: 'farm', name: 'Granja', cost: { wood: 1, sandal: 1, mon: 2 }, iki: 2, perk: 'farm' },
   { id: 'fire-tower', name: 'Torre Antiincendios', cost: { wood: 1, rice: 1, sandal: 1 }, iki: 3, perk: 'fire-tower' },
   { id: 'imperial-villa', name: 'Villa Imperial', cost: { wood: 1, mon: 4 }, iki: 4, perk: 'imperial-villa' },
@@ -51,7 +53,8 @@ export const BUILDINGS = [
   { id: 'shrine', name: 'Santuario', cost: { wood: 2, koban: 2 }, iki: 22 },
   { id: 'warehouse', name: 'Almacén', cost: { wood: 1, rice: 1, koban: 1 }, iki: 0, score: 'rice' },
   { id: 'well', name: 'Pozo', cost: { wood: 4 }, iki: 0, score: 'fire' },
-].map((b) => ({ ...b, image: `/cards/buildings/${b.id}.jpg` }));
+] satisfies Omit<Building, 'image'>[]).map((b) => ({ ...b, image: `/cards/buildings/${b.id}.jpg` }));
 
-export const BUILDINGS_BY_ID = Object.assign(Object.create(null), Object.fromEntries(BUILDINGS.map((b) => [b.id, b]))); // sin prototipo: «constructor» o «__proto__» no son ids
+export const BUILDINGS_BY_ID: Record<string, Building> = Object.assign
+(Object.create(null), Object.fromEntries(BUILDINGS.map((b) => [b.id, b]))); // sin prototipo: «constructor» o «__proto__» no son ids
 export const BUILDING_BACK = '/cards/buildings/building-back.jpg';

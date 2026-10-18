@@ -5,10 +5,14 @@
  * Coordenadas obtenidas analizando public/textures/tablero-iki.jpg (2048×1870).
  */
 
+import type { Nagaya, Zone } from '../types.ts';
+
 const BOARD_ASPECT = 2048 / 1870;
 
-const rect = (id, group, label, x, y, w, h, extra = {}) => ({ id, group, label, kind: 'rect', x, y, w, h, ...extra });
-const circle = (id, group, label, cx, cy, r, extra = {}) => ({ id, group, label, kind: 'circle', cx, cy, r, ...extra });
+const rect = (id: string, group: string, label: string, x: number, y: number, w: number, h: number, extra: Partial<Zone> = {}): Zone =>
+  ({ id, group, label, kind: 'rect', x, y, w, h, ...extra });
+const circle = (id: string, group: string, label: string, cx: number, cy: number, r: number, extra: Partial<Zone> = {}): Zone =>
+  ({ id, group, label, kind: 'circle', cx, cy, r, ...extra });
 
 // --- Calendario: 13 cartas de mes en 4 grupos + 3 círculos de estación -----------------------
 const CARD_W = 0.0537;
@@ -16,7 +20,7 @@ const CARD_Y = 0.0139;
 const CARD_H = 0.1139;
 const MONTH_GROUP_X = [0.0161, 0.2461, 0.4751, 0.7036]; // primera carta de cada grupo de 3
 
-const calendar = [];
+const calendar: Zone[] = [];
 MONTH_GROUP_X.forEach((x0, g) => {
   for (let i = 0; i < 3; i++) {
     const month = g * 3 + i + 1;
@@ -24,7 +28,7 @@ MONTH_GROUP_X.forEach((x0, g) => {
   }
 });
 calendar.push(rect('month-13', 'calendar', 'Mes 13 (Año nuevo)', 0.9297, CARD_Y, CARD_W, CARD_H, { month: 13 }));
-[['summer', 'Verano', 0.2173], ['autumn', 'Otoño', 0.4462], ['winter', 'Invierno', 0.6749]].forEach(([id, label, cx]) => {
+([['summer', 'Verano', 0.2173], ['autumn', 'Otoño', 0.4462], ['winter', 'Invierno', 0.6749]] satisfies [string, string, number][]).forEach(([id, label, cx]) => {
   calendar.push(circle(`season-${id}`, 'calendar', label, cx, 0.0575, 0.025));
 });
 
@@ -35,12 +39,12 @@ const LOT_COLUMNS = [
   [0.0107, 0.1162], [0.1230, 0.2290], [0.2363, 0.3423], [0.3491, 0.4551],
   [0.5459, 0.6514], [0.6587, 0.7646], [0.7715, 0.8774], [0.8843, 0.9902],
 ];
-const LOT_ROWS = { top: [0.1626, 0.3390], bottom: [0.6610, 0.8412] };
-const LOT_FIRE = { top: [0, -1, -2, -3, -3, -2, -1, 0], bottom: [0, -1, -2, -3, -3, -2, -1, 0] };
+const LOT_ROWS: Record<string, number[]> = { top: [0.1626, 0.3390], bottom: [0.6610, 0.8412] };
+const LOT_FIRE: Record<string, number[]> = { top: [0, -1, -2, -3, -3, -2, -1, 0], bottom: [0, -1, -2, -3, -3, -2, -1, 0] };
 // Solares junto al cruce central: cuestan 2 mons extra y forman el 5.º grupo de la Armonía (p. 5 y 8).
 const CORNER_COLUMNS = [3, 4];
 
-const lots = [];
+const lots: Zone[] = [];
 for (const [row, [y0, y1]] of Object.entries(LOT_ROWS)) {
   LOT_COLUMNS.forEach(([x0, x1], i) => {
     const side = i < 4 ? 'left' : 'right';
@@ -53,8 +57,8 @@ for (const [row, [y0, y1]] of Object.entries(LOT_ROWS)) {
 // Pestaña impresa junto a cada solar con su modificador de incendio (el «<» con el estampado en el exterior): por ellas
 // avanza la loseta de Incendio. Arriba quedan encima del solar y abajo debajo. Píxeles [x0, x1] de la textura.
 const FIRE_TAB_X = [[78, 180], [331, 391], [562, 622], [792, 854], [1199, 1259], [1428, 1488], [1660, 1720], [1870, 1970]];
-const FIRE_TAB_Y = { top: [273, 306], bottom: [1570, 1602] };
-const fireTabs = [];
+const FIRE_TAB_Y: Record<string, number[]> = { top: [273, 306], bottom: [1570, 1602] };
+const fireTabs: Zone[] = [];
 for (const [row, [y0, y1]] of Object.entries(FIRE_TAB_Y)) {
   FIRE_TAB_X.forEach(([x0, x1], i) => {
     const lot = lots.find((z) => z.id.startsWith(`lot-${row}-`) && z.x === LOT_COLUMNS[i][0]);
@@ -65,21 +69,21 @@ for (const [row, [y0, y1]] of Object.entries(FIRE_TAB_Y)) {
 // --- Calle: 8 casillas en circuito + cola de entrada ------------------------------------------
 // Flechas del tablero: fila superior hacia la izquierda, inferior hacia la derecha.
 const STREET_COLS = [[0.0240, 0.2256], [0.2495, 0.4512], [0.5490, 0.7500], [0.7744, 0.9761]];
-const STREET_ROWS = { top: [0.4572, 0.4979], bottom: [0.5043, 0.5449] };
+const STREET_ROWS: Record<string, number[]> = { top: [0.4572, 0.4979], bottom: [0.5043, 0.5449] };
 const STREET_ORDER = ['street-t4', 'street-t3', 'street-t2', 'street-t1', 'street-b1', 'street-b2', 'street-b3', 'street-b4'];
 
 // Tienda de cada casilla (el pergamino de su lado de la calle) y sus 2 puestos: los solares de detrás del pergamino.
-const STREET_SHOPS = {
+const STREET_SHOPS: Record<string, string[]> = {
   top: ['shop-rice', 'shop-sandals', 'shop-exchange', 'shop-fish'],
   bottom: ['shop-fire-tower', 'shop-tobacco', 'shop-pawn', 'shop-construction'],
 };
-const stallsOf = (row, i) => {
+const stallsOf = (row: string, i: number) => {
   const side = i < 2 ? 'left' : 'right';
   const first = (i % 2) * 2 + 1;
   return [`lot-${row}-${side}-${first}`, `lot-${row}-${side}-${first + 1}`];
 };
 
-const street = [];
+const street: Zone[] = [];
 for (const [row, [y0, y1]] of Object.entries(STREET_ROWS)) {
   STREET_COLS.forEach(([x0, x1], i) => {
     const id = `street-${row[0]}${i + 1}`;
@@ -118,11 +122,11 @@ const fireTrack = FIRE_X.map((cx, i) => {
 fireTrack.push(circle('fire-event', 'fire', 'Incendio', 0.4248, 0.895, 0.0168));
 fireTrack.push(rect('fire-tiles', 'fire', 'Pila de losetas de Incendio', 0.4625, 0.8780, 0.0555, 0.0370));
 
-const turnOrder = [['4', 0.651], ['3', 0.712], ['2', 0.774], ['1', 0.836], ['1-4', 0.898]]
+const turnOrder = ([['4', 0.651], ['3', 0.712], ['2', 0.774], ['1', 0.836], ['1-4', 0.898]] satisfies [string, number][])
   .map(([label, cx]) => circle(`turn-${label}`, 'turn', `Turno ${label}`, cx, 0.8955, 0.02));
 
 // Puntos: 0 a 29 de derecha a izquierda, siguiendo la línea ondulada de flores.
-const SCORE = [
+const SCORE: [number, number][] = [
   [0.9521, 0.9524], [0.9228, 0.9596], [0.8928, 0.9521], [0.8634, 0.9595], [0.8336, 0.9521],
   [0.8042, 0.9659], [0.7743, 0.9524], [0.7447, 0.9594], [0.7151, 0.9525], [0.6854, 0.9596],
   [0.6560, 0.9459], [0.6263, 0.9594], [0.5968, 0.9526], [0.5674, 0.9598], [0.5374, 0.9525],
@@ -133,17 +137,17 @@ const SCORE = [
 const score = SCORE.map(([cx, cy], n) => circle(`score-${n}`, 'score', `Puntos ${n}`, cx, cy, 0.0125, { value: n }));
 score.push(circle('score-lap', 'score', 'Vuelta (+30)', 0.0704, 0.9359, 0.008));
 
-export const ZONES = [...calendar, ...lots, ...street, ...queue, ...shops, ...fishSlots, ...pipeSlots, ...fireTrack, ...fireTabs, ...turnOrder, ...score];
+export const ZONES: Zone[] = [...calendar, ...lots, ...street, ...queue, ...shops, ...fishSlots, ...pipeSlots, ...fireTrack, ...fireTabs, ...turnOrder, ...score];
 
-export const ZONES_BY_ID = Object.assign(Object.create(null), Object.fromEntries(ZONES.map((z) => [z.id, z]))); // sin prototipo: «constructor» o «__proto__» no son ids
+export const ZONES_BY_ID: Record<string, Zone> = Object.assign(Object.create(null), Object.fromEntries(ZONES.map((z) => [z.id, z]))); // sin prototipo: «constructor» o «__proto__» no son ids
 
 /** Centro de una zona en coordenadas normalizadas, para colocar piezas con board.place(). */
-export function zoneCenter(zone) {
-  return zone.kind === 'rect' ? { u: zone.x + zone.w / 2, v: zone.y + zone.h / 2 } : { u: zone.cx, v: zone.cy };
+export function zoneCenter(zone: Zone): { u: number; v: number } {
+  return zone.kind === 'rect' ? { u: zone.x! + zone.w! / 2, v: zone.y! + zone.h! / 2 } : { u: zone.cx!, v: zone.cy! };
 }
 
 /** Radio vertical de un círculo en fracción del ALTO (el radio r va en fracción del ancho). */
-export const radiusV = (zone) => zone.r * BOARD_ASPECT;
+export const radiusV = (zone: Zone) => zone.r! * BOARD_ASPECT;
 
 // --- Reglas ligadas a las zonas ---------------------------------------------------------------
 
@@ -158,7 +162,7 @@ export const STREET_ENTRY = 'street-t2';
  * Nagayas: 4 manzanas de 4 solares, ordenados desde el solar exterior (origen del incendio, con el estampado de su
  * loseta de Incendio) hacia el cruce central.
  */
-export const NAGAYAS = [
+export const NAGAYAS: Nagaya[] = [
   { id: 'top-left', pattern: 'yellow', name: 'amarillo', lots: ['lot-top-left-1', 'lot-top-left-2', 'lot-top-left-3', 'lot-top-left-4'] },
   { id: 'top-right', pattern: 'blue', name: 'azul', lots: ['lot-top-right-4', 'lot-top-right-3', 'lot-top-right-2', 'lot-top-right-1'] },
   { id: 'bottom-left', pattern: 'red', name: 'rojo', lots: ['lot-bottom-left-1', 'lot-bottom-left-2', 'lot-bottom-left-3', 'lot-bottom-left-4'] },
@@ -166,11 +170,12 @@ export const NAGAYAS = [
 ];
 
 /** Loseta de Incendio de un Nagaya: lleva su estampado. */
-export const fireTileImage = (nagayaId) => `/tokens/fire-tile/${NAGAYAS_BY_ID[nagayaId].pattern}.webp`;
-export const NAGAYAS_BY_ID = Object.assign(Object.create(null), Object.fromEntries(NAGAYAS.map((n) => [n.id, n]))); // sin prototipo: «constructor» o «__proto__» no son ids
+export const fireTileImage = (nagayaId: string) => `/tokens/fire-tile/${NAGAYAS_BY_ID[nagayaId].pattern}.webp`;
+export const NAGAYAS_BY_ID: Record<string, Nagaya> = Object.assign(Object.create(null), Object.fromEntries(NAGAYAS.map((n) => [n.id, n]))); // sin prototipo: «constructor» o «__proto__» no son ids
 
 /** Grupos de la Bonificación por Armonía: los 4 Nagayas y el 5.º grupo de las esquinas. */
-export const HARMONY_GROUPS = [
+export const HARMONY_GROUPS: string[][] = [
+
   ...NAGAYAS.map((n) => n.lots),
   ZONES.filter((z) => z.group === 'lots' && z.corner).map((z) => z.id),
 ];

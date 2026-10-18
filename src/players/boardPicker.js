@@ -1,4 +1,4 @@
-import { PLAYER_BOARDS, PLAYER_BOARDS_BY_ID } from '../data/playerBoards.js';
+import { PLAYER_BOARDS, PLAYER_BOARDS_BY_ID } from '../data/playerBoards.ts';
 import { MIN_PLAYERS, MAX_PLAYERS } from '../game/setup.js';
 import { esc } from '../view/format.js';
 

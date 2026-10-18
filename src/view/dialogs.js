@@ -1,7 +1,7 @@
 import { EVENT_LOG_TYPES, cardSummary, logLine, playerColor, playerName, typeLabel } from './format.js';
-import { CHARACTERS_BY_ID } from '../data/characters.js';
-import { BUILDINGS_BY_ID } from '../data/decks.js';
-import { NAGAYAS_BY_ID, fireTileImage } from '../data/zones.js';
+import { CHARACTERS_BY_ID } from '../data/characters.ts';
+import { BUILDINGS_BY_ID } from '../data/decks.ts';
+import { NAGAYAS_BY_ID, fireTileImage } from '../data/zones.ts';
 
 /** Diálogos a pantalla completa: resumen del Evento del mes, tabla de puntuación final y ampliación de cartas. */
 

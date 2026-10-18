@@ -1,6 +1,6 @@
-import { CHARACTERS_BY_ID, CHARACTER_TYPES } from '../data/characters.js';
-import { BUILDINGS_BY_ID } from '../data/decks.js';
-import { MARKET_BY_ID } from '../data/market.js';
+import { CHARACTERS_BY_ID, CHARACTER_TYPES } from '../data/characters.ts';
+import { BUILDINGS_BY_ID } from '../data/decks.ts';
+import { MARKET_BY_ID } from '../data/market.ts';
 
 /**
  * Puntuación final (docs/reglas.md, p. 10-11). Pura: sirve para la tabla del final y, a mitad de partida, como

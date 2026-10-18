@@ -1,5 +1,5 @@
-import { CHARACTERS_BY_ID, CHARACTER_TYPES } from '../data/characters.js';
-import { ZONES_BY_ID, LOT_IDS, STREET, STREET_ENTRY, LAP_FROM } from '../data/zones.js';
+import { CHARACTERS_BY_ID, CHARACTER_TYPES } from '../data/characters.ts';
+import { ZONES_BY_ID, LOT_IDS, STREET, STREET_ENTRY, LAP_FROM } from '../data/zones.ts';
 import { placeInitialCard, currentPlacer } from './setup.js';
 import { activateCharacter, activateShop } from './abilities.js';
 import { startEvent, resolvePending } from './events.js';

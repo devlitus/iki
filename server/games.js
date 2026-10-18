@@ -5,7 +5,7 @@ import { RuleError } from '../src/game/state.js';
 import { publicView } from '../src/game/view.js';
 import { createRng, secretSeed } from '../src/game/random.js';
 import { chooseAction, deciderOf, isAiTurn } from '../src/ai/player.js';
-import { PLAYER_BOARDS } from '../src/data/playerBoards.js';
+import { PLAYER_BOARDS } from '../src/data/playerBoards.ts';
 import { eloDeltas } from './rating.js';
 import { fail, HttpError } from './http.js';
 

@@ -1,6 +1,6 @@
-import { CHARACTERS_BY_ID } from '../data/characters.js';
-import { BUILDINGS_BY_ID } from '../data/decks.js';
-import { ZONES_BY_ID, LOT_IDS } from '../data/zones.js';
+import { CHARACTERS_BY_ID } from '../data/characters.ts';
+import { BUILDINGS_BY_ID } from '../data/decks.ts';
+import { ZONES_BY_ID, LOT_IDS } from '../data/zones.ts';
 
 /**
  * Operaciones básicas sobre el estado de la partida. Todas MUTAN el estado `g` que reciben: el motor trabaja

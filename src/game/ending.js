@@ -1,4 +1,4 @@
-import { CHARACTER_TYPES } from '../data/characters.js';
+import { CHARACTER_TYPES } from '../data/characters.ts';
 import { log, rule } from './state.js';
 import { scoreGame } from './scoring.js';
 

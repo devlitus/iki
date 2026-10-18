@@ -1,7 +1,7 @@
-import { PLAYER_BOARDS_BY_ID } from '../data/playerBoards.js';
-import { MARKET_BY_ID, describeToken } from '../data/market.js';
-import { SEASONS } from '../data/decks.js';
-import { CHARACTER_TYPES } from '../data/characters.js';
+import { PLAYER_BOARDS_BY_ID } from '../data/playerBoards.ts';
+import { MARKET_BY_ID, describeToken } from '../data/market.ts';
+import { SEASONS } from '../data/decks.ts';
+import { CHARACTER_TYPES } from '../data/characters.ts';
 import { activePlayer } from '../game/setup.js';
 import { playerStats, SPECIALS, MAX_FISH, MAX_TYPES } from '../game/playerStats.js';
 

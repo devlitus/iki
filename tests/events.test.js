@@ -4,7 +4,7 @@ import { newGame, tweak } from './helpers.js';
 import { act, legalActions, whoseTurn } from '../src/game/engine.js';
 import { startEvent, continueEvent, harmonyBonus, FIRE_STRENGTH } from '../src/game/events.js';
 import { KOBUN_PER_PLAYER, OUTER_LOTS } from '../src/game/setup.js';
-import { NAGAYAS, fireTileImage } from '../src/data/zones.js';
+import { NAGAYAS, fireTileImage } from '../src/data/zones.ts';
 import { existsSync } from 'node:fs';
 
 /** Estado al final de la fase B del `month`, con ajustes, y resuelve el Evento. */

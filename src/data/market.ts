@@ -9,7 +9,10 @@
  * - image:  null si no hay escaneo (se dibuja una ficha provisional).
  */
 
-const token = (season, kind, file, cost, extra) => ({
+import type { MarketKind, MarketToken, Resource, SeasonId } from '../types.ts';
+
+const token = (season: SeasonId
+, kind: MarketKind, file: string | null, cost: number, extra: Partial<MarketToken>): MarketToken => ({
   id: `${season}-${file ?? `${kind}-${cost}`}`,
   season,
   kind,
@@ -18,7 +21,7 @@ const token = (season, kind, file, cost, extra) => ({
   ...extra,
 });
 
-export const MARKET_TOKENS = [
+export const MARKET_TOKENS: MarketToken[] = [
   // Primavera
   token('spring', 'fish', 'fish-2', 2, { bonus: 0 }),
   token('spring', 'fish', 'fish-4', 4, { bonus: 1 }),
@@ -49,17 +52,17 @@ export const MARKET_TOKENS = [
   token('winter', 'bag', 'bag-7', 7, { score: { iki: 5 } }),
 ];
 
-export const MARKET_BY_ID = Object.assign(Object.create(null), Object.fromEntries(MARKET_TOKENS.map((t) => [t.id, t]))); // sin prototipo: «constructor» o «__proto__» no son ids
+export const MARKET_BY_ID: Record<string, MarketToken> = Object.assign(Object.create(null), Object.fromEntries(MARKET_TOKENS.map((t) => [t.id, t]))); // sin prototipo: «constructor» o «__proto__» no son ids
 
 /** Fichas de una estación, agrupadas: { fish: [id, id], pipe: [...], bag: [...] }. */
-export function seasonMarket(season) {
-  const out = { fish: [], pipe: [], bag: [] };
+export function seasonMarket(season: SeasonId) {
+  const out: Record<MarketKind, string[]> = { fish: [], pipe: [], bag: [] };
   for (const t of MARKET_TOKENS) if (t.season === season) out[t.kind].push(t.id);
   return out;
 }
 
 /** Reverso de las fichas de cada estación (boca abajo en el calendario). */
-export const MARKET_BACKS = {
+export const MARKET_BACKS: Record<SeasonId, string> = {
   spring: '/tokens/spring/back-dark.webp',
   summer: '/tokens/summer/back-dark.webp',
   autumn: '/tokens/autumn/back-dark.webp',
@@ -67,17 +70,18 @@ export const MARKET_BACKS = {
 };
 
 /** Texto corto del efecto o la puntuación de una ficha, para títulos y diálogos. */
-export function describeToken(t) {
-  const RES = { mon: 'mon', rice: 'arroz', sandal: 'sandalia', wood: 'madera', koban: 'Koban' };
+export function describeToken(t: MarketToken) {
+  const RES: Record<Resource, string> = { mon: 'mon', rice: 'arroz', sandal: 'sandalia', wood: 'madera', koban: 'Koban' };
   if (t.kind === 'fish') return `Pescado · ${t.cost} mons${t.bonus ? ` · +${t.bonus} IKI al final` : ''}`;
   if (t.kind === 'pipe') {
-    const e = t.effect;
+    const e = t.effect!;
+
     const what = e.fire ? `+${e.fire} Extinción de Incendios`
       : e.xp ? '+1 experiencia a uno de tus personajes'
-      : e.gain.map(({ res, n }) => `+${n} ${RES[res]}`).join(', ');
+      : e.gain!.map(({ res, n }) => `+${n} ${RES[res]}`).join(', ');
     return `Pipa · ${t.cost} mons · ${what}`;
   }
-  const PER = { fire2: '1 IKI por cada 2 de Extinción', mostType: '1 IKI por personaje del tipo más contratado',
+  const PER: Record<string, string> = { fire2: '1 IKI por cada 2 de Extinción', mostType: '1 IKI por personaje del tipo más contratado',
     types: '1 IKI por tipo de personaje distinto', mon4: '1 IKI por cada 4 mons' };
-  return `Bolsa de Tabaco · ${t.cost} mons · ${t.score.iki != null ? `${t.score.iki} IKI` : PER[t.score.per]} al final`;
+  return `Bolsa de Tabaco · ${t.cost} mons · ${t.score!.iki != null ? `${t.score!.iki} IKI` : PER[t.score!.per!]} al final`;
 }

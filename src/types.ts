@@ -20,7 +20,8 @@ export type CharacterType = 'vendor' | 'artisan' | 'special' | 'builder' | 'merc
 export type Special = 'hire' | 'move' | 'avoid-fire' | 'wild';
 
 export type AbilityKind = 'gain' | 'trade' | 'fire' | 'xp' | 'build' | 'swap' | 'gainOthers';
-export type Ability = { kind: AbilityKind; pay: Amount[]; gain: Amount[]; discount?: Resource; others?: Amount[] };
+export type Ability = { kind: AbilityKind; pay: Amount[]; gain: Amount[]; discount?: Amount; others?: Amount[] };
+
 
 export type Character = {
   id: string;

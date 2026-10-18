@@ -1,6 +1,6 @@
-import { CHARACTERS_BY_ID, CHARACTER_TYPES } from '../data/characters.js';
-import { BUILDINGS_BY_ID } from '../data/decks.js';
-import { ZONES_BY_ID } from '../data/zones.js';
+import { CHARACTERS_BY_ID, CHARACTER_TYPES } from '../data/characters.ts';
+import { BUILDINGS_BY_ID } from '../data/decks.ts';
+import { ZONES_BY_ID } from '../data/zones.ts';
 import { KOBUN_PER_PLAYER } from './setup.js';
 import { scorePlayer } from './scoring.js';
 

@@ -1,5 +1,5 @@
-import { CHARACTERS_BY_ID } from '../data/characters.js';
-import { NAGAYAS, HARMONY_GROUPS, ZONES_BY_ID } from '../data/zones.js';
+import { CHARACTERS_BY_ID } from '../data/characters.ts';
+import { NAGAYAS, HARMONY_GROUPS, ZONES_BY_ID } from '../data/zones.ts';
 import { startMonth, startNewYear, seasonOf } from './month.js';
 import { createRng } from './random.js';
 import { characterLots, log, receive, removeLot, rule, salaryOf, toCost } from './state.js';

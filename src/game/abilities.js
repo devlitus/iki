@@ -1,5 +1,5 @@
-import { CHARACTERS_BY_ID } from '../data/characters.js';
-import { MARKET_BY_ID } from '../data/market.js';
+import { CHARACTERS_BY_ID } from '../data/characters.ts';
+import { MARKET_BY_ID } from '../data/market.ts';
 import { advanceFire, build, characterLots, gainXp, log, pay, receive, rule, toCost } from './state.js';
 
 /**

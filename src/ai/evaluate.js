@@ -1,5 +1,5 @@
-import { CHARACTERS_BY_ID } from '../data/characters.js';
-import { ZONES_BY_ID } from '../data/zones.js';
+import { CHARACTERS_BY_ID } from '../data/characters.ts';
+import { ZONES_BY_ID } from '../data/zones.ts';
 import { scorePlayer } from '../game/scoring.js';
 import { PAYDAY_MONTHS, FIRE_STRENGTH, harmonyGains } from '../game/events.js';
 import { characterLots, salaryOf } from '../game/state.js';

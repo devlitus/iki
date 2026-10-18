@@ -1,5 +1,5 @@
-import { CHARACTERS_BY_ID } from '../data/characters.js';
-import { ZONES_BY_ID, STREET, STREET_ENTRY, LOT_IDS, NAGAYAS } from '../data/zones.js';
+import { CHARACTERS_BY_ID } from '../data/characters.ts';
+import { ZONES_BY_ID, STREET, STREET_ENTRY, LOT_IDS, NAGAYAS } from '../data/zones.ts';
 import { tryAct } from '../game/engine.js';
 import { FIRE_STRENGTH, PAYDAY_MONTHS } from '../game/events.js';
 import { seasonOf } from '../game/month.js';

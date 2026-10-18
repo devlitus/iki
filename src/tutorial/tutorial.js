@@ -1,5 +1,5 @@
 import './tutorial.css';
-import { ZONES_BY_ID, zoneCenter } from '../data/zones.js';
+import { ZONES_BY_ID, zoneCenter } from '../data/zones.ts';
 import { currentStep, stepAllows, stepZones } from './script.js';
 import { isMobileLayout } from '../view/mobile.js';
 import { openIntro } from './intro.js';

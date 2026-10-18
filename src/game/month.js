@@ -1,4 +1,4 @@
-import { SEASONS } from '../data/decks.js';
+import { SEASONS } from '../data/decks.ts';
 import { log } from './state.js';
 
 /** Estación en curso: 3 meses cada una; el mes 13 (Año Nuevo) sigue siendo Invierno. */

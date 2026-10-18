@@ -1,8 +1,8 @@
 import { createRng } from './random.js';
-import { SEASONS, BUILDINGS } from '../data/decks.js';
-import { CHARACTERS } from '../data/characters.js';
-import { ZONES } from '../data/zones.js';
-import { seasonMarket } from '../data/market.js';
+import { SEASONS, BUILDINGS } from '../data/decks.ts';
+import { CHARACTERS } from '../data/characters.ts';
+import { ZONES } from '../data/zones.ts';
+import { seasonMarket } from '../data/market.ts';
 import { rule } from './state.js';
 
 /**

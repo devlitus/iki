@@ -1,6 +1,6 @@
 import { createBoard } from './board.js';
 import { createZonesOverlay } from './zonesOverlay.js';
-import { ZONES_BY_ID } from './data/zones.js';
+import { ZONES_BY_ID } from './data/zones.ts';
 import './cards/card.css';
 import { createBoardPicker } from './players/boardPicker.js';
 import './players/players.css';
@@ -26,7 +26,7 @@ import { createTutorialGame } from './tutorial/game.js';
 import { createOnline } from './online/online.js';
 import { api } from './online/api.js';
 import { isWaiting } from './view/format.js';
-import { CHARACTERS_BY_ID } from './data/characters.js';
+import { CHARACTERS_BY_ID } from './data/characters.ts';
 import './view/table.css';
 import './view/turn.css';
 import './view/mobile.css';

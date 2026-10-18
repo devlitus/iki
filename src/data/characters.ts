@@ -20,7 +20,9 @@
  * Recursos: mon, rice, sandal, wood, koban, iki.
  */
 
-export const CHARACTER_TYPES = {
+import type { Ability, Amount, CardSeason, Character, CharacterType, Res, Special } from '../types.ts';
+
+export const CHARACTER_TYPES: Record<CharacterType, { label: string; color: string }> = {
   vendor: { label: 'Vendedor Ambulante', color: '#c9962b' },
   artisan: { label: 'Artesano', color: '#5c2a21' },
   special: { label: 'Especial', color: '#6b2a7a' },
@@ -28,7 +30,7 @@ export const CHARACTER_TYPES = {
   merchant: { label: 'Comerciante', color: '#3f7fb5' },
 };
 
-const R = (res) => (n = 1) => ({ res, n });
+const R = (res: Res) => (n = 1): Amount => ({ res, n });
 const mon = R('mon');
 const rice = R('rice');
 const sandal = R('sandal');
@@ -36,17 +38,18 @@ const wood = R('wood');
 const koban = R('koban');
 const iki = R('iki');
 
-const gain = (...g) => ({ kind: 'gain', pay: [], gain: g });
-const trade = (pay, ...g) => ({ kind: 'trade', pay, gain: g });
-const fire = (...g) => ({ kind: 'fire', pay: [], gain: g });
-const xp = () => ({ kind: 'xp', pay: [mon()], gain: [] });
-const build = (discount) => ({ kind: 'build', pay: [], gain: [], discount });
-const swap = () => ({ kind: 'swap', pay: [], gain: [] });
-const gainOthers = (g, others) => ({ kind: 'gainOthers', pay: [], gain: g, others });
+const gain = (...g: Amount[]): Ability => ({ kind: 'gain', pay: [], gain: g });
+const trade = (pay: Amount[], ...g: Amount[]): Ability => ({ kind: 'trade', pay, gain: g });
+const fire = (...g: Amount[]): Ability => ({ kind: 'fire', pay: [], gain: g });
+const xp = (): Ability => ({ kind: 'xp', pay: [mon()], gain: [] });
+const build = (discount: Amount): Ability => ({ kind: 'build', pay: [], gain: [], discount });
+const swap = (): Ability => ({ kind: 'swap', pay: [], gain: [] });
+const gainOthers = (g: Amount[], others: Amount[]): Ability => ({ kind: 'gainOthers', pay: [], gain: g, others });
 
-const SCAN_DIR = { initial: 'initial-cards', spring: 'spring', summer: 'summer', autumn: 'autumn', winter: 'winter' };
+const SCAN_DIR: Record<CardSeason, string> = { initial: 'initial-cards', spring: 'spring', summer: 'summer', autumn: 'autumn', winter: 'winter' };
 
-const card = (season, id, name, type, cost, hireFire, ability, salary, retireToken) => ({
+const card = (season: CardSeason, id: string, name: string, type: CharacterType, cost: number | null, hireFire: number, ability: Ability,
+  salary: Amount[][], retireToken?: Special): Character => ({
   id,
   name,
   season,
@@ -60,9 +63,9 @@ const card = (season, id, name, type, cost, hireFire, ability, salary, retireTok
 });
 
 // Tres espacios de salario sin nada (cartas con ficha de retiro): dos casillas y el círculo.
-const TOKEN_SALARY = [[], [], []];
+const TOKEN_SALARY: Amount[][] = [[], [], []];
 
-export const CHARACTERS = [
+export const CHARACTERS: Character[] = [
   // --- Iniciales ---------------------------------------------------------------------------------
   card('initial', 'boiled-egg-seller', 'Vendedora de Huevos Cocidos', 'vendor', null, 0, gain(rice()), [[mon()], [rice()], [rice()]]),
   card('initial', 'salt-seller', 'Vendedor de Sal', 'vendor', null, 0, gain(rice()), [[mon()], [mon(2)], [rice()]]),
@@ -135,4 +138,5 @@ export const CHARACTERS = [
   card('winter', 'incense-shop', 'Tienda de Incienso', 'merchant', 3, 0, trade([mon(3)], iki(5)), [[mon(4)], [mon(5)]]),
 ];
 
-export const CHARACTERS_BY_ID = Object.assign(Object.create(null), Object.fromEntries(CHARACTERS.map((c) => [c.id, c]))); // sin prototipo: «constructor» o «__proto__» no son ids
+export const CHARACTERS_BY_ID: Record<string, Character> = Object.assign
+(Object.create(null), Object.fromEntries(CHARACTERS.map((c) => [c.id, c]))); // sin prototipo: «constructor» o «__proto__» no son ids

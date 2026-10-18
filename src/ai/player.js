@@ -1,4 +1,4 @@
-import { ZONES_BY_ID, STREET_ENTRY } from '../data/zones.js';
+import { ZONES_BY_ID, STREET_ENTRY } from '../data/zones.ts';
 import { act, candidates, tryAct, whoseTurn, IKIZAMA_SLOTS } from '../game/engine.js';
 import { currentPicker, freeOuterLots } from '../game/setup.js';
 import { receive } from '../game/state.js';

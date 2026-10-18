@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { CHARACTERS, CHARACTERS_BY_ID, CHARACTER_TYPES } from '../src/data/characters.js';
-import { BUILDINGS, SEASONS } from '../src/data/decks.js';
-import { MARKET_TOKENS, seasonMarket } from '../src/data/market.js';
-import { ZONES_BY_ID, STREET, LOT_IDS } from '../src/data/zones.js';
+import { CHARACTERS, CHARACTERS_BY_ID, CHARACTER_TYPES } from '../src/data/characters.ts';
+import { BUILDINGS, SEASONS } from '../src/data/decks.ts';
+import { MARKET_TOKENS, seasonMarket } from '../src/data/market.ts';
+import { ZONES_BY_ID, STREET, LOT_IDS } from '../src/data/zones.ts';
 
 const pub = (p) => existsSync(new URL(`../public${p}`, import.meta.url));
 
