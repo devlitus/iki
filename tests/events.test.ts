@@ -135,9 +135,9 @@ test('varios jugadores sin arroz: se pregunta a cada uno por orden de turno', ()
     }
     d.turnOrder = [1, 0, 2];
   });
-  assert.equal(g.pending.player, 1);
+  assert.equal(g.pending!.player, 1);
   g = act(g, { type: 'resolve', drop: ['lot-top-left-3'] });
-  assert.equal(g.pending.player, 0);
+  assert.equal(g.pending!.player, 0);
   g = act(g, { type: 'resolve', drop: ['lot-top-left-1'] });
   assert.equal(g.pending, null);
 });
@@ -168,7 +168,7 @@ test('cambio de estación: fila y mercado fuera; llega el mercado de la siguient
 
 test('mes 12: el mercado de Invierno se queda, se recogen los Oyakata y llega el Año Nuevo', () => {
   const g = eventOf(12, (d) => {
-    d.market = d.marketFaceDown.winter;
+    d.market = d.marketFaceDown.winter!;
     d.marketFaceDown = {};
     d.row = [{ card: 'samurai', mons: 1 }];
     d.fireStack = [2, 0, 1];
@@ -189,7 +189,7 @@ function burning(month: number, nagaya: string, edit?: (d: Game) => unknown) {
     d.month = month;
     d.lots = {};
     d.players.forEach((p) => (p.kobun = KOBUN_PER_PLAYER));
-    edit(d);
+    edit!(d);
     d.phase = 'event';
     d.event = { kind: 'fire', stage: 'spread', nagaya, index: 0, tile: null };
     continueEvent(d);
@@ -236,7 +236,7 @@ test('incendio: los edificios arden o frenan como los personajes', () => {
 });
 
 test('Evitar un incendio: el dueño decide, la ficha se gasta y el fuego sigue', () => {
-  const setup = (d) => {
+  const setup = (d: Game) => {
     put(d, 'lot-top-left-1', 0, 'dyer');
     put(d, 'lot-top-left-2', 1, 'dyer');
     d.players[0].specials.push('avoid-fire', 'avoid-fire');

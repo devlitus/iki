@@ -24,7 +24,7 @@ export function tweak(g: Game, edit: (draft: Game) => unknown) {
 
 /** Coloca los Ikizama: `slots[k]` es el espacio del k-ésimo jugador en el orden de colocación. */
 export function placeAll(g: Game, slots: IkizamaSlot[]) {
-  const order = [...g.order];
+  const order = [...g.order!];
   slots.forEach((slot) => (g = act(g, { type: 'placeIkizama', slot })));
   return { g, order };
 }
@@ -34,7 +34,7 @@ export function turnOf(g: Game, slot: IkizamaSlot) {
   const all: IkizamaSlot[] = ['1-4', '1', '2', '3', '4'];
   const slots = [slot, ...all.filter((s) => s !== slot)].slice(0, g.players.length);
   g = placeAll(g, slots).g;
-  if (g.turn.slot === slot) return g;
+  if (g.turn!.slot === slot) return g;
   // El turno de ese espacio no es el primero: se salta a él sin jugar los anteriores.
   return tweak(g, (d) => {
     const i = d.players.findIndex((p) => p.ikizama === slot);

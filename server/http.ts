@@ -18,7 +18,7 @@ export function json(data: unknown, status = 200, headers: Record<string, string
   });
 }
 
-export const fail = (status: number, message: string, extra?: Record<string, unknown>): never => {
+export const fail: (status: number, message: string, extra?: Record<string, unknown>) => never = (status, message, extra) => {
   throw new HttpError(status, message, extra);
 };
 

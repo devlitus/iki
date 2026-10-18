@@ -280,7 +280,7 @@ export async function playAction(db: Db, user: User, id: string, rawAction: unkn
   const ended = state.phase === 'ended';
   if (!(await save(db, row, { state, status: ended ? 'ended' : undefined }, actions))) throw conflictWith(await load(db, id), user);
 
-  const saved = { ...row, state, status: ended ? 'ended' : row.status, version: row.version + actions.length };
+  const saved: GameRow = { ...row, state, status: ended ? 'ended' : row.status, version: row.version + actions.length };
   if (ended && row.ranked) await settle(db, saved);
   return getGame(db, user, id);
 }
@@ -313,7 +313,7 @@ export async function settle(db: Db, row: GameRow) {
   const ids = row.seats.map((s) => s.user);
   const users = await db.query('SELECT id, rating FROM users WHERE id = ANY($1::int[])', [ids]);
   const ratingOf = Object.fromEntries(users.map((u) => [u.id, u.rating]));
-  const placed = ids.map((userId, seat) => ({ userId, place: final.ranking.indexOf(seat) + 1, score: final.scores[seat].total, rating: ratingOf[userId] ?? 1000 }));
+  const placed = ids.map((userId, seat) => ({ userId, place: final.ranking.indexOf(seat) + 1, score: final.scores[seat].total, rating: ratingOf[userId!] ?? 1000 }));
   const deltas = eloDeltas(placed);
   const rows = placed.map((p, i) => ({ user_id: p.userId, place: p.place, score: p.score, delta: deltas[i] }));
   await db.query(SETTLE, [row.id, JSON.stringify(rows)]);

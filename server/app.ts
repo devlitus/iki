@@ -84,7 +84,7 @@ export function createApp({ db, secret, now = Date.now }: { db: Db; secret: stri
     }],
     ['GET', /^\/me$/, false, (ctx) => json({ user: ctx.user ? publicUser(ctx.user) : null })],
     ['GET', /^\/ranking$/, false, async () => json({ ranking: await ranking(db) })],
-    ['GET', /^\/games$/, true, async (ctx) => json(await listGames(db, ctx.user))],
+    ['GET', /^\/games$/, true, async (ctx) => json(await listGames(db, ctx.user!))],
     ['POST', /^\/games$/, true, async (ctx) => json(await createLobby(db, ctx.user!, await readJson(ctx.request) as { size: number }), 201)],
     ['GET', /^\/games\/([\w-]+)$/, true, async (ctx, m) => {
       const since = ctx.url.searchParams.get('since');
@@ -114,7 +114,7 @@ export function createApp({ db, secret, now = Date.now }: { db: Db; secret: stri
       await (migrated = migrated.catch(() => migrate(db)));
       const user = await currentUser(request);
       if (route.auth && !user) fail(401, 'Inicia sesión');
-      return await route.run({ request, url, user }, route.m);
+      return await route.run({ request, url, user }, route.m!);
     } catch (error) {
       if (error instanceof HttpError) return json({ error: error.message, ...error.extra }, error.status);
       console.error(`[${requestId}]`, error); // el detalle se queda en el registro del servidor

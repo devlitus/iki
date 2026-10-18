@@ -8,7 +8,7 @@ import type { Ability, Amount, Character, Cost, Game, LogEntry, Res } from '../t
 /** Textos de la interfaz: nombres de jugadores, recursos, habilidades y entradas del registro. */
 
 /** Texto seguro para meter en HTML (los nombres de usuario vienen del servidor). */
-export const esc = (text: unknown) => String(text).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+export const esc = (text: unknown) => String(text).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } as Record<string, string>)[c]);
 
 /** «Amarillo (Ana)», «Amarillo (Hanzō · IA)»; sin nombre, «Amarillo» o «Amarillo (IA)». */
 export const playerName = (g: Game, p: number) => {

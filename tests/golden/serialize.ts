@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto';
  * determinista en JS) y distingue lo que JSON.stringify confunde o pierde (`undefined`, -0, NaN, huecos de un array).
  * Dos valores dan el mismo texto solo si cualquier código que los recorra los vería igual.
  */
-export function serialize(value) {
+export function serialize(value: any): string {
   if (value === undefined) return 'u';
   if (value === null) return 'null';
   switch (typeof value) {
@@ -35,19 +35,19 @@ export function serialize(value) {
 }
 
 /** Huella corta (64 bits) de un valor. */
-export const hash = (value) => createHash('sha256').update(typeof value === 'string' ? value : serialize(value)).digest('hex').slice(0, 16);
+export const hash = (value: unknown): string => createHash('sha256').update(typeof value === 'string' ? value : serialize(value)).digest('hex').slice(0, 16);
 
 /** Resultado de una función que puede lanzar: su huella o el error (clase y mensaje). */
-export function outcome(fn) {
+export function outcome(fn: () => unknown): string {
   try {
     return hash(fn());
   } catch (e) {
-    return `!${e?.constructor?.name}: ${e?.message}`;
+    return `!${(e as Error)?.constructor?.name}: ${(e as Error)?.message}`;
   }
 }
 
 /** Generador con semilla independiente del juego, para sustituir Math.random y crypto en la grabación. */
-export function seeded(seed) {
+export function seeded(seed: number) {
   let a = seed >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;

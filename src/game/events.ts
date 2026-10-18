@@ -174,7 +174,7 @@ function fire(g: Game) {
   if (ev.stage === 'start') {
     const rng = createRng(g.rng!);
     g.fireTiles = rng.shuffle(g.fireTiles);
-    ev.tile = g.fireTiles[0];
+    ev.tile = g.fireTiles[0] as string;
     g.fireTiles = rng.shuffle(g.fireTiles); // la loseta vuelve a mezclarse con las demás
     g.rng = rng.state();
     ev.nagaya = NAGAYAS.find((n) => n.lots[0] === ev.tile)!.id;

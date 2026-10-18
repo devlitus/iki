@@ -14,7 +14,7 @@ const aiGame = (n: number, seed: number, ai: (i: number) => boolean = () => true
 function playOut(g: Game, limit = 2000) {
   for (let steps = 0; g.phase !== 'ended'; steps++) {
     assert.ok(steps < limit, `la partida no termina (fase ${g.phase}, mes ${g.month})`);
-    const action = chooseAction(g, { effort: 'fast' });
+    const action = chooseAction(g, { effort: 'fast' })!;
     assert.ok(action, `la IA no tiene jugada en la fase ${g.phase}`);
     g = act(g, action); // lanza si la jugada no es válida
   }
@@ -36,7 +36,7 @@ test('isAiTurn solo es cierto cuando le toca a un jugador de IA', () => {
 test('la IA elige siempre una jugada legal', () => {
   let g = aiGame(3, 2);
   for (let i = 0; i < 60 && g.phase !== 'ended'; i++) {
-    const action = chooseAction(g, { effort: 'fast' });
+    const action = chooseAction(g, { effort: 'fast' })!;
     if (g.phase !== 'initial-characters') {
       assert.ok(legalActions(g).some((a) => JSON.stringify(a) === JSON.stringify(action)), `jugada ilegal: ${JSON.stringify(action)}`);
     }
@@ -47,19 +47,19 @@ test('la IA elige siempre una jugada legal', () => {
 test('tres IA juegan una partida completa hasta la puntuación final', () => {
   const g = playOut(aiGame(3, 1));
   assert.equal(g.phase, 'ended');
-  assert.equal(g.final.scores.length, 3);
-  assert.ok(g.final.scores.every((s) => s.total > 0));
+  assert.equal(g.final!.scores.length, 3);
+  assert.ok(g.final!.scores.every((s) => s.total! > 0));
 });
 
 test('cuatro IA juegan una partida completa', () => {
   const g = playOut(aiGame(4, 3));
   assert.equal(g.phase, 'ended');
-  assert.equal(g.final.scores.length, 4);
+  assert.equal(g.final!.scores.length, 4);
 });
 
 test('una IA mezclada con jugadores que no lo son: solo decide cuando le toca', () => {
   const g = aiGame(3, 5, (i) => i === 2);
-  assert.equal(chooseAction(g, { effort: 'fast' }) != null, true); // siempre hay una jugada que proponer a quien le toque
+  assert.equal(chooseAction(g, { effort: 'fast' })! != null, true); // siempre hay una jugada que proponer a quien le toque
   assert.equal(chooseAction({ ...g, phase: 'ended' }), null);
 });
 

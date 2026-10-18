@@ -7,7 +7,7 @@ import { BUILDINGS, SEASONS } from '../src/data/decks.ts';
 import { MARKET_TOKENS, seasonMarket } from '../src/data/market.ts';
 import { ZONES_BY_ID, STREET, LOT_IDS } from '../src/data/zones.ts';
 
-const pub = (p) => existsSync(new URL(`../public${p}`, import.meta.url));
+const pub = (p: string) => existsSync(new URL(`../public${p}`, import.meta.url));
 
 test('60 personajes con datos completos', () => {
   assert.equal(CHARACTERS.length, 60);

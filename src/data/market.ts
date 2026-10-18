@@ -77,7 +77,7 @@ export function describeToken(t: MarketToken) {
     const e = t.effect!;
     const what = e.fire ? `+${e.fire} Extinción de Incendios`
       : e.xp ? '+1 experiencia a uno de tus personajes'
-      : e.gain!.map(({ res, n }) => `+${n} ${RES[res]}`).join(', ');
+      : e.gain!.map(({ res, n }) => `+${n} ${RES[res as Resource]}`).join(', ');
     return `Pipa · ${t.cost} mons · ${what}`;
   }
   const PER: Record<string, string> = { fire2: '1 IKI por cada 2 de Extinción', mostType: '1 IKI por personaje del tipo más contratado',

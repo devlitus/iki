@@ -51,7 +51,7 @@ export function act(game: Game, action: Action): Game {
 export function whoseTurn(g: Game): number | null {
   if (g.pending) return g.pending.player;
   if (g.phase === 'ikizama') return currentPlacer(g);
-  if (g.turn) return g.turn.player;
+  if (g.turn) return g.turn!.player;
   return null;
 }
 
@@ -61,7 +61,7 @@ export function whoseTurn(g: Game): number | null {
 function startActions(g: Game) {
   g.phase = 'actions';
   g.turnList = g.players
-    .map((p, i) => ({ i, slot: IKIZAMA_SLOTS.indexOf(p.ikizama) }))
+    .map((p, i) => ({ i, slot: IKIZAMA_SLOTS.indexOf(p.ikizama!) }))
     .sort((a, b) => a.slot - b.slot)
     .map((x) => x.i);
   beginTurn(g, 0);
@@ -115,7 +115,7 @@ const HANDLERS: { [T in ActionType]: Handler<T> } = {
     inPhase(g, 'ikizama');
     rule(IKIZAMA_SLOTS.includes(a.slot), `Espacio de Ikizama desconocido: ${a.slot}`);
     rule(!g.players.some((p) => p.ikizama === a.slot), `El espacio ${a.slot} ya está ocupado`);
-    g.players[currentPlacer(g)].ikizama = a.slot;
+    g.players[currentPlacer(g)!].ikizama = a.slot;
     if (currentPlacer(g) == null) startActions(g);
   },
 
@@ -123,7 +123,7 @@ const HANDLERS: { [T in ActionType]: Handler<T> } = {
     const p = inStep(g, 'b1');
     receive(g, p, { mon: INCOME });
     log(g, { type: 'income', player: p });
-    g.turn.step = 'move';
+    g.turn!.step = 'move';
   },
 
   hire(g, a) {
@@ -136,42 +136,42 @@ const HANDLERS: { [T in ActionType]: Handler<T> } = {
     const def = CHARACTERS_BY_ID[a.card];
     const discount = player.specials.includes('hire') ? 1 : 0;
     receive(g, p, { mon: entry.mons }); // los mons de la carta ayudan a pagarla
-    pay(g, p, { mon: Math.max(0, def.cost - discount) + ZONES_BY_ID[a.lot].extraCost }, def.name);
+    pay(g, p, { mon: Math.max(0, def.cost! - discount) + ZONES_BY_ID[a.lot].extraCost! }, def.name);
     g.row = g.row.filter((r) => r !== entry);
     g.lots[a.lot] = { kind: 'character', card: a.card, owner: p, xp: 0 };
     player.kobun -= 1;
     advanceFire(g, p, def.fire);
     if (def.fire > 0 && player.buildings.includes('fire-tower')) receive(g, p, { iki: 3 });
     log(g, { type: 'hire', player: p, card: a.card, lot: a.lot });
-    g.turn.step = 'move';
+    g.turn!.step = 'move';
   },
 
   move(g, a) {
     const p = inStep(g, 'move');
     const player = g.players[p];
-    const { slot } = g.turn;
+    const { slot } = g.turn!;
     const base = slot === '1-4' ? a.base : Number(slot);
-    rule(Number.isInteger(base) && base >= 1 && base <= 4, 'Elige entre 1 y 4 espacios');
+    rule(Number.isInteger(base) && base! >= 1 && base! <= 4, 'Elige entre 1 y 4 espacios');
     const sandals = a.sandals ?? 0;
     rule(Number.isInteger(sandals) && sandals >= 0, 'Sandalias no válidas');
     rule(!a.bonus || player.specials.includes('move'), 'No tienes la ficha «Mover +1»');
     pay(g, p, { sandal: sandals }, 'mover');
 
     // Desde la zona inicial el primer paso lleva a la calle sin dar la vuelta.
-    let pos = player.oyakata;
+    let pos = player.oyakata!;
     let laps = 0;
-    for (let i = base + sandals + (a.bonus ? 1 : 0); i > 0; i--) {
+    for (let i = base! + sandals + (a.bonus ? 1 : 0); i > 0; i--) {
       if (pos.startsWith('queue-')) pos = STREET_ENTRY;
       else {
         if (pos === LAP_FROM) laps += 1;
-        pos = ZONES_BY_ID[pos].next;
+        pos = ZONES_BY_ID[pos].next!;
       }
     }
     player.oyakata = pos;
     // La vuelta se resuelve durante el movimiento, antes de hacer negocios.
     for (let i = 0; i < laps; i++) characterLots(g, p).forEach((lot) => gainXp(g, lot));
     log(g, { type: 'move', player: p, to: pos, laps });
-    g.turn.step = 'business';
+    g.turn!.step = 'business';
   },
 
   place(g, a) {
@@ -179,22 +179,22 @@ const HANDLERS: { [T in ActionType]: Handler<T> } = {
     rule(STREET.includes(a.zone), `${a.zone} no es una casilla de la calle`);
     g.players[p].oyakata = a.zone;
     log(g, { type: 'place', player: p, to: a.zone });
-    g.turn.step = 'business';
+    g.turn!.step = 'business';
   },
 
   shop(g, a) {
     const p = inStep(g, 'business');
-    rule(!g.turn.didShop, 'Ya has usado la tienda este turno');
-    activateShop(g, p, ZONES_BY_ID[g.players[p].oyakata].shop, a);
-    g.turn.didShop = true;
+    rule(!g.turn!.didShop, 'Ya has usado la tienda este turno');
+    activateShop(g, p, ZONES_BY_ID[g.players[p].oyakata!].shop!, a);
+    g.turn!.didShop = true;
   },
 
   character(g, a) {
     const p = inStep(g, 'business');
-    rule(!g.turn.didChar, 'Ya has activado un personaje este turno');
-    rule(ZONES_BY_ID[g.players[p].oyakata].stalls.includes(a.lot), 'Ese solar no está en los puestos de tu casilla');
+    rule(!g.turn!.didChar, 'Ya has activado un personaje este turno');
+    rule(ZONES_BY_ID[g.players[p].oyakata!].stalls!.includes(a.lot), 'Ese solar no está en los puestos de tu casilla');
     activateCharacter(g, p, a.lot, a);
-    g.turn.didChar = true;
+    g.turn!.didChar = true;
   },
 
   endTurn(g) {
@@ -242,17 +242,17 @@ export function candidates(g: Game): Action[] {
   if (g.pending?.type === 'food') return combinations(characterLots(g, g.pending.player), g.pending.drop).map((drop) => ({ type: 'resolve', drop }));
   if (g.phase === 'ikizama') return IKIZAMA_SLOTS.map((slot) => ({ type: 'placeIkizama', slot }));
   if (g.phase !== 'actions' && g.phase !== 'newyear') return [];
-  if (g.turn.step === 'place') return STREET.map((zone) => ({ type: 'place', zone }));
-  const p = g.turn.player;
+  if (g.turn!.step === 'place') return STREET.map((zone) => ({ type: 'place', zone }));
+  const p = g.turn!.player;
   const player = g.players[p];
 
-  if (g.turn.step === 'b1') {
+  if (g.turn!.step === 'b1') {
     const freeLots = LOT_IDS.filter((id) => !g.lots[id]);
     return [{ type: 'income' }, ...g.row.flatMap((r) => freeLots.map((lot) => ({ type: 'hire' as const, card: r.card, lot })))];
   }
 
-  if (g.turn.step === 'move') {
-    const bases = g.turn.slot === '1-4' ? [1, 2, 3, 4] : [undefined];
+  if (g.turn!.step === 'move') {
+    const bases = g.turn!.slot === '1-4' ? [1, 2, 3, 4] : [undefined];
     const out: Action[] = [];
     for (const base of bases) {
       for (let sandals = 0; sandals <= player.resources.sandal; sandals++) {
@@ -263,10 +263,10 @@ export function candidates(g: Game): Action[] {
     return out;
   }
 
-  const here = ZONES_BY_ID[player.oyakata];
+  const here = ZONES_BY_ID[player.oyakata!];
   const out: Action[] = [{ type: 'endTurn' }];
-  if (!g.turn.didShop) out.push(...shopCandidates(g, here.shop, p));
-  if (!g.turn.didChar) for (const lot of here.stalls) if (g.lots[lot]?.kind === 'character') out.push(...characterCandidates(g, lot, p));
+  if (!g.turn!.didShop) out.push(...shopCandidates(g, here.shop, p));
+  if (!g.turn!.didChar) for (const lot of here.stalls!) if (g.lots[lot]?.kind === 'character') out.push(...characterCandidates(g, lot, p));
   return out;
 }
 

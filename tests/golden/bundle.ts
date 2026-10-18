@@ -17,13 +17,13 @@ const ref = process.argv[2] ?? 'pre-ts';
 const work = mkdtempSync(join(tmpdir(), 'iki-bundle-'));
 const vite = join(root, 'node_modules', 'vite', 'bin', 'vite.js');
 
-function build(dir, out) {
+function build(dir: string, out: string) {
   const entry = ['ts', 'js'].map((ext) => `api/[...path].${ext}`).find((f) => existsSync(join(dir, f)));
   execFileSync(process.execPath, [vite, 'build', '--logLevel', 'error', '--outDir', join(out, 'web')], { cwd: dir, stdio: 'inherit' });
-  execFileSync(process.execPath, [vite, 'build', '--logLevel', 'error', '--ssr', entry, '--minify', 'esbuild', '--outDir', join(out, 'server')], { cwd: dir, stdio: 'inherit' });
+  execFileSync(process.execPath, [vite, 'build', '--logLevel', 'error', '--ssr', entry!, '--minify', 'esbuild', '--outDir', join(out, 'server')], { cwd: dir, stdio: 'inherit' });
 }
 
-const files = (dir) => readdirSync(dir, { recursive: true, withFileTypes: true })
+const files = (dir: string) => readdirSync(dir, { recursive: true, withFileTypes: true })
   .filter((d) => d.isFile()).map((d) => relative(dir, join(d.parentPath, d.name))).sort();
 
 try {
@@ -40,15 +40,15 @@ try {
   if (differ.length) {
     console.log(`✗ ${differ.length} archivos difieren de ${ref}:\n${differ.map((f) => `  ${f}`).join('\n')}`);
     // Los nombres llevan el hash del contenido: se emparejan sin él y el código minificado se parte por sentencias.
-    const unhashed = (f) => f.replace(/-[\w-]{8}(\.\w+)$/, '$1');
+    const unhashed = (f: string) => f.replace(/-[\w-]{8}(\.\w+)$/, '$1');
     const pairs = fa.filter((x) => differ.includes(x)).map((x) => [x, fb.find((y) => differ.includes(y) && unhashed(y) === unhashed(x))]).filter(([, y]) => y);
     for (const [x, y] of pairs.slice(0, 3)) {
-      const split = (dir, f, name) => {
+      const split = (dir: string, f: string, name: string) => {
         const out = join(work, name);
         writeFileSync(out, readFileSync(join(dir, f), 'utf8').replaceAll(';', ';\n'));
         return out;
       };
-      const diff = spawnSync('git', ['diff', '--no-index', '--no-color', '-U1', split(a, x, 'a.txt'), split(b, y, 'b.txt')], { encoding: 'utf8' }).stdout;
+      const diff = spawnSync('git', ['diff', '--no-index', '--no-color', '-U1', split(a, x!, 'a.txt'), split(b, y!, 'b.txt')], { encoding: 'utf8' }).stdout;
       console.log(`\n${x} → ${y}\n${diff.split('\n').slice(4, 60).map((l) => l.slice(0, 300)).join('\n')}`);
     }
 

@@ -5,7 +5,7 @@ import { ZONES_BY_ID, STREET, LOT_IDS } from '../data/zones.ts';
 import { act, whoseTurn, seasonOf, IKIZAMA_SLOTS } from '../game/engine.ts';
 import { characterLots } from '../game/state.ts';
 import { abilityText, cardName, chips, costChips, costText, isWaiting, logLine, playerColor, playerName, shopName, waitingText, who } from './format.ts';
-import type { Action, ActionOf, CharacterType, Game, IkizamaSlot, Target } from '../types.ts';
+import type { Action, ActionOf, CharacterType, Game, IkizamaSlot, MarketToken, Target } from '../types.ts';
 
 
 /** Lo que el jugador va eligiendo antes de confirmar (ver el comentario de abajo). */
@@ -99,7 +99,7 @@ export function boardTargets(game: Game, { ui, dispatch }: Pick<Ctx, 'ui' | 'dis
   }
   if (ui.building?.building && game.turn!.step === 'business') {
     const { via, lot: charLot, building } = ui.building;
-    const make = (lot: string): Action => (via === 'shop' ? { type: 'shop', choice: 'build', building, lot } : { type: 'character', lot: charLot, building, buildLot: lot });
+    const make = (lot: string): Action => (via === 'shop' ? { type: 'shop', choice: 'build', building, lot } : { type: 'character', lot: charLot!, building, buildLot: lot });
     return legalLots(game, make).map((lot) => ({ zone: lot, title: `Construir ${cardName(building)} aquí`, onClick: () => dispatch(make(lot)) }));
   }
   return [];
@@ -119,7 +119,7 @@ export function renderTurnPanel(el: HTMLElement, game: Game, ctx: Ctx) {
     </header>`;
 
   const waiting = isWaiting(game);
-  const body = waiting ? `<p class="ai-thinking" role="status">${waitingText(game, p)}</p>` : game.pending ? pendingBody(game, ctx) : { ikizama: ikizamaBody, actions: actionsBody, newyear: actionsBody, event: () => '', ended: endedBody }[game.phase]?.(game, ctx) ?? '';
+  const body = waiting ? `<p class="ai-thinking" role="status">${waitingText(game, p!)}</p>` : game.pending ? pendingBody(game, ctx) : ({ ikizama: ikizamaBody, actions: actionsBody, newyear: actionsBody, event: () => '', ended: endedBody } as Partial<Record<string, (game: Game, ctx: Ctx) => string>>)[game.phase]?.(game, ctx) ?? '';
 
   el.innerHTML = `
     ${header}
@@ -278,7 +278,7 @@ const canBuildAny = (game: Game, base: ActionOf<'shop'> | ActionOf<'character'>)
 
 function tobaccoBody(game: Game, ui: Ui) {
   const m = game.market;
-  const pipe = ui.pipe && MARKET_BY_ID[ui.pipe];
+  const pipe = (ui.pipe && MARKET_BY_ID[ui.pipe]) as MarketToken | null | undefined;
   const own = characterLots(game, game.turn!.player);
   const action = { type: 'shop', pipe: ui.pipe, bag: ui.bag, target: pipe?.effect!.xp ? ui.target : undefined } as Action;
   const tokens = (ids: string[], key: string) => ids.map((id) => picture(MARKET_BY_ID[id].image ?? '/tokens/winter/back-dark.webp', describeToken(MARKET_BY_ID[id]),

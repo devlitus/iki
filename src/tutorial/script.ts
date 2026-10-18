@@ -179,7 +179,7 @@ const fireSoon = (month: number): Step => ({
     const level = player(g).fire;
     const strength = FIRE_STRENGTH[month];
     const mine = Object.keys(g.lots).filter((id) => g.lots[id].owner === h).map((id) => {
-      const need = strength + ZONES_BY_ID[id].fire;
+      const need = strength + ZONES_BY_ID[id].fire!;
       return `<li><b>${cardName(g.lots[id].card)}</b>: el fuego llegaría con fuerza ${need}, ${level >= need ? 'tu nivel lo apaga' : '<b>arde</b> si llega'}.</li>`;
     });
     return `<p>Este mes acaba con un <b>Incendio de fuerza ${strength}</b> en un Nagaya al azar. Tu Extinción de Incendios está en <b>${level}</b>.</p>
@@ -257,9 +257,9 @@ export const STEPS: Step[] = [
   },
   {
     id: 'placed', kind: 'info', title: 'Tu primer personaje', done: ack('placed'),
-    spots: (g) => { const h = home(g); return [h.lot, h.cell]; },
+    spots: (g) => { const h = home(g)!; return [h.lot, h.cell]; },
     text: (g) => {
-      const h = home(g);
+      const h = home(g)!;
       const def = CHARACTERS_BY_ID[h.card];
       return `<p><b>${def.name}</b> (${typeLabel(def.type)}) ya trabaja para ti, con un Kobun en el primer espacio de experiencia.</p>
         <p>Su solar es un puesto de la casilla <b>${cellName(h.cell)}</b>: cuando tu Oyakata pare ahí podrás activarlo (${abilityText(def)}).
@@ -284,8 +284,8 @@ export const STEPS: Step[] = [
     zones: () => ['turn-1', 'turn-2', 'turn-3', 'turn-4'],
     text: (g) => {
       if (waiting(g)) return '<p>Los demás jugadores colocan su Ikizama…</p>';
-      const h = home(g);
-      const need = stepsBetween(player(g).oyakata, h.cell);
+      const h = home(g)!;
+      const need = stepsBetween(player(g).oyakata!, h.cell)!;
       const tip = need >= 1 && need <= 4
         ? `Tu personaje está en <b>${cellName(h.cell)}</b>, a ${need} casilla(s) de tu Oyakata: el espacio <b>${need}</b> te llevaría justo a sus puestos.`
         : `Tu personaje está en <b>${cellName(h.cell)}</b>, lejos de tu Oyakata: con las sandalias podrías acercarte.`;
@@ -298,7 +298,7 @@ export const STEPS: Step[] = [
     id: 'phase-b', kind: 'info', title: 'B · Acciones', done: ack('phase-b'),
     spots: () => ['turn-1', 'turn-2', 'turn-3', 'turn-4'],
     text: (g) => `<p>Todos han colocado su Ikizama. Ahora juega cada uno su turno, de izquierda a derecha en el marcador; empieza
-      ${who(g, g.turnList[0])}. Las IA juegan solas.</p>
+      ${who(g, g.turnList![0])}. Las IA juegan solas.</p>
       <p>Un turno tiene tres partes: <b>B1</b>, elegir entre ingresos o contratar; <b>B2</b>, mover el Oyakata y hacer negocios;
       y <b>B3</b>, terminar.</p>`,
   },
@@ -325,13 +325,13 @@ export const STEPS: Step[] = [
     id: 'move', kind: 'action', title: 'B2 · Mueve tu Oyakata', done: (g) => !['before', 'b1', 'move'].includes(progress(g)),
     allow: (g, a) => a.type === 'move',
     zones: () => [],
-    spots: (g) => [home(g).cell],
+    spots: (g) => [home(g)!.cell],
     focus: () => ['[data-do="move"]'],
     text: (g) => {
-      const h = home(g);
-      const slot = Number(g.turn.slot);
+      const h = home(g)!;
+      const slot = Number(g.turn!.slot);
       const sandals = player(g).resources.sandal;
-      const need = stepsBetween(player(g).oyakata, h.cell);
+      const need = stepsBetween(player(g).oyakata!, h.cell)!;
       const reach = slot === need ? `Con tus ${slot} paso(s) llegas justo a sus puestos.`
         : slot > need ? `Con ${slot} pasos te pasas de sus puestos: este turno no podrás activarlo, pero sí usar la tienda de donde pares.`
         : slot + sandals >= need ? `Te faltan ${need - slot} paso(s): gasta sandalias con «+» para llegar.`
@@ -350,16 +350,16 @@ export const STEPS: Step[] = [
     spots: (g) => [player(g).oyakata],
     focus: () => ['.turn-body .biz'],
     text: (g) => {
-      const here = ZONES_BY_ID[player(g).oyakata];
-      const { didShop, didChar } = g.turn;
-      const stalls = here.stalls.filter((l) => g.lots[l]?.kind === 'character').map((l) => {
+      const here = ZONES_BY_ID[player(g).oyakata!];
+      const { didShop, didChar } = g.turn!;
+      const stalls = here.stalls!.filter((l) => g.lots[l]?.kind === 'character').map((l) => {
         const lot = g.lots[l];
         return `<li><b>${cardName(lot.card)}</b>, ${lot.owner === humanOf(g) ? 'tuyo' : `de ${who(g, lot.owner)}`}</li>`;
       });
-      const foreign = here.stalls.some((l) => g.lots[l]?.kind === 'character' && g.lots[l].owner !== humanOf(g));
-      const shop = didShop ? 'La tienda ya está usada.' : `Tienda: ${SHOP_HELP[here.shop]}.`;
+      const foreign = here.stalls!.some((l) => g.lots[l]?.kind === 'character' && g.lots[l].owner !== humanOf(g));
+      const shop = didShop ? 'La tienda ya está usada.' : `Tienda: ${SHOP_HELP[here.shop!]}.`;
       const people = didChar ? 'Ya has activado un personaje.' : stalls.length ? 'Personajes en los puestos:' : 'No hay personajes en los puestos.';
-      return `<p>Has llegado a <b>${cellName(player(g).oyakata)}</b>. Aquí puedes hacer <b>dos cosas</b>, en el orden que quieras y sin
+      return `<p>Has llegado a <b>${cellName(player(g).oyakata!)}</b>. Aquí puedes hacer <b>dos cosas</b>, en el orden que quieras y sin
         obligación: usar la <b>tienda</b> y activar <b>un personaje</b> de los puestos.</p>
         <p>${shop}</p><p>${people}</p>${!didChar && stalls.length ? `<ul>${stalls.join('')}</ul>` : ''}
         ${foreign && !didChar ? '<p class="muted">Si activas el de otro jugador, funciona igual para ti, pero su dueño gana 1 de experiencia.</p>' : ''}

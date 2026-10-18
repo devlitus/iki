@@ -47,7 +47,7 @@ test('el estado del motor es JSON puro y act no modifica el original', () => {
 
 test('fase A: coloca por orden de Extinción y no repite espacio', () => {
   let g = newGame();
-  const [first, second] = g.order;
+  const [first, second] = g.order!;
   assert.equal(whoseTurn(g), first);
   g = act(g, { type: 'placeIkizama', slot: '3' });
   assert.equal(g.players[first].ikizama, '3');
@@ -73,7 +73,7 @@ test('fase A: desde el mes 2 el más adelantado en Extinción coloca primero; en
 test('fase B: el orden de turno es el del marcador de Ikizama', () => {
   const { g } = placeAll(newGame(4), ['4', '1', '1-4', '3']);
   assert.equal(g.phase, 'actions');
-  const slots = g.turnList.map((i) => g.players[i].ikizama);
+  const slots = g.turnList!.map((i) => g.players[i].ikizama);
   assert.deepEqual(slots, ['1-4', '1', '3', '4']);
 });
 
@@ -81,7 +81,7 @@ test('fase B: el orden de turno es el del marcador de Ikizama', () => {
 
 test('el espacio 1-4 gana 1 mon, no contrata ni cobra ingresos y elige 1-4 pasos', () => {
   let g = turnOf(newGame(), '1-4');
-  assert.equal(g.turn.step, 'move');
+  assert.equal(g.turn!.step, 'move');
   assert.equal(player(g).resources.mon, 9);
   throws(() => act(g, { type: 'income' }), /toca/);
   throws(() => act(g, { type: 'move', sandals: 0 }), /entre 1 y 4/);
@@ -94,7 +94,7 @@ test('ingresos: +4 mons y pasa al movimiento', () => {
   const mons = player(g).resources.mon;
   g = act(g, { type: 'income' });
   assert.equal(player(g).resources.mon, mons + 4);
-  assert.equal(g.turn.step, 'move');
+  assert.equal(g.turn!.step, 'move');
 });
 
 test('contratar: paga el coste, coge los mons de la carta, usa un Kobun y avanza la Extinción', () => {
@@ -102,9 +102,9 @@ test('contratar: paga el coste, coge los mons de la carta, usa un Kobun y avanza
   const card = 'dice-maker'; // coste 3, fuego 1
   g = tweak(g, (d) => {
     d.row[0] = { card, mons: 2 };
-    d.players[d.turn.player].resources.mon = 1;
+    d.players[d.turn!.player].resources.mon = 1;
   });
-  const p = g.turn.player;
+  const p = g.turn!.player;
   const lot = 'lot-top-left-1';
   g = act(g, { type: 'hire', card, lot });
   assert.equal(g.players[p].resources.mon, 0); // 1 + 2 de la carta - 3
@@ -113,32 +113,32 @@ test('contratar: paga el coste, coge los mons de la carta, usa un Kobun y avanza
   assert.ok(!g.row.some((r) => r.card === card));
   assert.equal(g.players[p].fire, 1);
   assert.equal(g.fireStack[0], p, 'la ficha se pone encima de la pila');
-  assert.equal(g.turn.step, 'move');
+  assert.equal(g.turn!.step, 'move');
 });
 
 test('contratar: esquina +2 mons, ficha «Contratar −1» y errores', () => {
   const base = tweak(turnOf(newGame(), '1'), (d) => {
     d.row[0] = { card: 'carpenter', mons: 0 }; // coste 6
-    d.players[d.turn.player].resources.mon = 7;
+    d.players[d.turn!.player].resources.mon = 7;
   });
   throws(() => act(base, { type: 'hire', card: 'carpenter', lot: 'lot-top-left-4' }), /mon/); // 6 + 2 > 7
-  const withToken = tweak(base, (d) => d.players[d.turn.player].specials.push('hire'));
+  const withToken = tweak(base, (d) => d.players[d.turn!.player].specials.push('hire'));
   const g = act(withToken, { type: 'hire', card: 'carpenter', lot: 'lot-top-left-4' }); // 5 + 2 = 7
-  assert.equal(g.players[g.turn.player].resources.mon, 0);
-  throws(() => act(base, { type: 'hire', card: 'carpenter', lot: OUTER_LOTS.at(-1) }), /ocupado/);
+  assert.equal(g.players[g.turn!.player].resources.mon, 0);
+  throws(() => act(base, { type: 'hire', card: 'carpenter', lot: OUTER_LOTS.at(-1)! }), /ocupado/);
   throws(() => act(base, { type: 'hire', card: 'monk', lot: 'lot-top-left-1' }), /fila/);
-  const noKobun = tweak(base, (d) => (d.players[d.turn.player].kobun = 0));
+  const noKobun = tweak(base, (d) => (d.players[d.turn!.player].kobun = 0));
   throws(() => act(noKobun, { type: 'hire', card: 'carpenter', lot: 'lot-top-left-1' }), /Kobun/);
 });
 
 test('la Torre Antiincendios da 3 IKI al contratar un personaje con fuego, y solo entonces', () => {
   let g = turnOf(newGame(), '1');
   g = tweak(g, (d) => {
-    d.players[d.turn.player].buildings.push('fire-tower');
+    d.players[d.turn!.player].buildings.push('fire-tower');
     d.row[0] = { card: 'book-seller', mons: 0 }; // sin fuego
     d.row[1] = { card: 'dice-maker', mons: 0 }; // fuego 1
   });
-  const p = g.turn.player;
+  const p = g.turn!.player;
   assert.equal(act(g, { type: 'hire', card: 'book-seller', lot: 'lot-top-left-1' }).players[p].iki, 0);
   assert.equal(act(g, { type: 'hire', card: 'dice-maker', lot: 'lot-top-left-1' }).players[p].iki, 3);
 });
@@ -146,13 +146,13 @@ test('la Torre Antiincendios da 3 IKI al contratar un personaje con fuego, y sol
 test('el nivel de Extinción no pasa de 10 y la ficha sube a lo alto de la pila', () => {
   let g = turnOf(newGame(), '1');
   g = tweak(g, (d) => {
-    const p = d.turn.player;
+    const p = d.turn!.player;
     d.players.forEach((x, i) => (x.fire = i === p ? 9 : 10));
     d.fireStack = [...d.fireStack.filter((i) => i !== p), p].sort((a, b) => d.players[b].fire - d.players[a].fire);
     d.row[0] = { card: 'firefighter', mons: 0 }; // fuego 2, coste 6
     d.players[p].resources.mon = 20;
   });
-  const p = g.turn.player;
+  const p = g.turn!.player;
   g = act(g, { type: 'hire', card: 'firefighter', lot: 'lot-top-left-1' });
   assert.equal(g.players[p].fire, 10);
   assert.equal(g.fireStack[0], p);
@@ -163,23 +163,23 @@ test('el nivel de Extinción no pasa de 10 y la ficha sube a lo alto de la pila'
 /** Pone al jugador de turno en `pos`, listo para mover. */
 function at(g: Game, pos: string, edit: (d: Game) => unknown = () => {}) {
   return tweak(g, (d) => {
-    d.turn.step = 'move';
-    d.players[d.turn.player].oyakata = pos;
+    d.turn!.step = 'move';
+    d.players[d.turn!.player].oyakata = pos;
     edit(d);
   });
 }
 
 test('movimiento: casillas exactas siguiendo las flechas', () => {
   const g = turnOf(newGame(), '2');
-  const go = (from: string, steps?: number, extra = {}) => act(at(g, from), { type: 'move', ...extra }).players[g.turn.player].oyakata;
+  const go = (from: string, steps?: number, extra = {}) => act(at(g, from), { type: 'move', ...extra }).players[g.turn!.player].oyakata;
   // Desde la zona inicial el primer paso lleva a street-t2.
   assert.equal(go('queue-1'), 'street-t1'); // slot '2': queue → t2 → t1
-  assert.equal(act(at(g, 'street-t1'), { type: 'move' }).players[g.turn.player].oyakata, 'street-b2');
+  assert.equal(act(at(g, 'street-t1'), { type: 'move' }).players[g.turn!.player].oyakata, 'street-b2');
 });
 
 test('movimiento: sandalias suman casillas, no restan, y no se pueden gastar de más', () => {
   const g = turnOf(newGame(), '1');
-  const p = g.turn.player;
+  const p = g.turn!.player;
   let m = act(at(g, 'street-t1', (d) => (d.players[p].resources.sandal = 2)), { type: 'move', sandals: 2 });
   assert.equal(m.players[p].oyakata, 'street-b3');
   assert.equal(m.players[p].resources.sandal, 0);
@@ -189,7 +189,7 @@ test('movimiento: sandalias suman casillas, no restan, y no se pueden gastar de 
 
 test('movimiento: la ficha «Mover +1» añade un espacio y solo si la tienes', () => {
   const g = turnOf(newGame(), '1');
-  const p = g.turn.player;
+  const p = g.turn!.player;
   throws(() => act(at(g, 'street-t1'), { type: 'move', bonus: true }), /Mover/);
   const m = act(at(g, 'street-t1', (d) => d.players[p].specials.push('move')), { type: 'move', bonus: true });
   assert.equal(m.players[p].oyakata, 'street-b2');
@@ -197,19 +197,19 @@ test('movimiento: la ficha «Mover +1» añade un espacio y solo si la tienes', 
 
 test('movimiento: cruzar de street-t3 a street-t2 da 1 de experiencia a todos tus personajes', () => {
   const g = turnOf(newGame(), '2');
-  const p = g.turn.player;
-  const mine = Object.values(g.lots).find((l) => l.owner === p);
+  const p = g.turn!.player;
+  const mine = Object.values(g.lots).find((l) => l.owner === p)!;
   const m = act(at(g, 'street-t3'), { type: 'move' }); // t3 → t2 → t1
   assert.equal(m.players[p].oyakata, 'street-t1');
-  assert.equal(Object.values(m.lots).find((l) => l.owner === p).xp, mine.xp + 1);
+  assert.equal(Object.values(m.lots).find((l) => l.owner === p)!.xp, mine.xp + 1);
   // No cruza: t2 → t1 → b1
   const n = act(at(g, 'street-t2'), { type: 'move' });
-  assert.equal(Object.values(n.lots).find((l) => l.owner === p).xp, mine.xp);
+  assert.equal(Object.values(n.lots).find((l) => l.owner === p)!.xp, mine.xp);
 });
 
 test('movimiento desde la zona inicial: el primer paso no da vuelta', () => {
-  const g = tweak(turnOf(newGame(), '3'), (d) => (d.turn.step = 'move'));
-  const p = g.turn.player;
+  const g = tweak(turnOf(newGame(), '3'), (d) => (d.turn!.step = 'move'));
+  const p = g.turn!.player;
   const m = act(g, { type: 'move' }); // oyakata en la cola
   assert.equal(m.players[p].oyakata, 'street-b1'); // queue → t2 → t1 → b1
   assert.ok(Object.values(m.lots).every((l) => l.xp === 0));
@@ -217,7 +217,7 @@ test('movimiento desde la zona inicial: el primer paso no da vuelta', () => {
 
 test('retiro al dar la vuelta: recupera el Kobun, la carta va a retirados y llega la ficha especial', () => {
   const g = turnOf(newGame(), '1');
-  const p = g.turn.player;
+  const p = g.turn!.player;
   const m = act(
     at(g, 'street-t3', (d) => {
       d.lots['lot-top-left-1'] = { kind: 'character', card: 'monk', owner: p, xp: 2 };
@@ -238,15 +238,15 @@ test('retiro al dar la vuelta: recupera el Kobun, la carta va a retirados y lleg
 /** Turno del jugador de espacio '1' detenido en `pos`, listo para negocios, con recursos a medida. */
 function shopping(pos: string, res = {}, edit: (d: Game) => unknown = () => {}) {
   return tweak(turnOf(newGame(), '1'), (d) => {
-    d.turn.step = 'business';
-    const p = d.players[d.turn.player];
+    d.turn!.step = 'business';
+    const p = d.players[d.turn!.player];
     p.oyakata = pos;
     Object.assign(p.resources, { mon: 0, rice: 0, sandal: 0, wood: 0, koban: 0 }, res);
     edit(d);
   });
 }
 
-const res = (g: Game) => g.players[g.turn.player].resources;
+const res = (g: Game) => g.players[g.turn!.player].resources;
 
 test('tiendas simples: Sandalias, Arroz, Casa de Empeños, Cambio', () => {
   let g = act(shopping('street-t2', { mon: 5 }), { type: 'shop' });
@@ -269,7 +269,7 @@ test('tiendas simples: Sandalias, Arroz, Casa de Empeños, Cambio', () => {
 
 test('Torre de Incendios: +1 de Extinción; cada tienda solo una vez por turno', () => {
   let g = act(shopping('street-b1'), { type: 'shop' });
-  assert.equal(g.players[g.turn.player].fire, 1);
+  assert.equal(g.players[g.turn!.player].fire, 1);
   throws(() => act(g, { type: 'shop' }), /Ya has usado/);
 });
 
@@ -277,16 +277,16 @@ test('Mercado de Pescado: un pescado por estación y se retira de la oferta', ()
   let g = shopping('street-t4', { mon: 10 });
   g = act(g, { type: 'shop', fish: 'spring-fish-4' });
   assert.equal(res(g).mon, 6);
-  assert.deepEqual(g.players[g.turn.player].fish, ['spring-fish-4']);
+  assert.deepEqual(g.players[g.turn!.player].fish, ['spring-fish-4']);
   assert.deepEqual(g.market.fish, ['spring-fish-2']);
-  const again = tweak(g, (d) => (d.turn.didShop = false));
+  const again = tweak(g, (d) => (d.turn!.didShop = false));
   throws(() => act(again, { type: 'shop', fish: 'spring-fish-2' }), /un Pescado por estación/);
   throws(() => act(shopping('street-t4', { mon: 10 }), { type: 'shop', fish: 'summer-fish-2' }), /a la venta/);
 });
 
 test('Tienda de Tabaco: pipa, bolsa o ambas, con el efecto de la pipa al comprarla', () => {
   let g = act(shopping('street-b2', { mon: 5 }), { type: 'shop', pipe: 'spring-fire-2', bag: 'spring-box-2' });
-  const p = g.players[g.turn.player];
+  const p = g.players[g.turn!.player];
   assert.equal(res(g).mon, 1);
   assert.deepEqual([p.pipes, p.tobacco, p.fire], [['spring-fire-2'], ['spring-box-2'], 1]);
   throws(() => act(shopping('street-b2', { mon: 5 }), { type: 'shop' }), /Elige/);
@@ -297,23 +297,23 @@ test('pipa de Invierno de experiencia: sube un personaje propio', () => {
   const g = shopping('street-b2', { mon: 5 }, (d) => {
     d.market = { fish: [], pipes: ['winter-pipe-2'], bags: [] };
   });
-  const mine = Object.keys(g.lots).find((id) => g.lots[id].owner === g.turn.player);
+  const mine = Object.keys(g.lots).find((id) => g.lots[id].owner === g.turn!.player)!;
   const done = act(g, { type: 'shop', pipe: 'winter-pipe-2', target: mine });
   assert.equal(done.lots[mine].xp, 1);
   throws(() => act(g, { type: 'shop', pipe: 'winter-pipe-2', target: 'lot-top-left-1' }), /tus personajes/);
 
   // Sin personajes en el tablero se puede comprar igual (la pipa dobla el tabaco); la experiencia se pierde.
   const alone = tweak(g, (d) => {
-    for (const [id, l] of Object.entries(d.lots)) if (l.owner === d.turn.player) delete d.lots[id];
+    for (const [id, l] of Object.entries(d.lots)) if (l.owner === d.turn!.player) delete d.lots[id];
   });
-  assert.deepEqual(act(alone, { type: 'shop', pipe: 'winter-pipe-2' }).players[g.turn.player].pipes, ['winter-pipe-2']);
+  assert.deepEqual(act(alone, { type: 'shop', pipe: 'winter-pipe-2' }).players[g.turn!.player].pipes, ['winter-pipe-2']);
 });
 
 test('Lugar de Construcción: 1 mon → arroz, o 1 mon + coste → edificio', () => {
   let g = act(shopping('street-b4', { mon: 1 }), { type: 'shop', choice: 'rice' });
   assert.deepEqual([res(g).mon, res(g).rice], [0, 1]);
   g = shopping('street-b4', { mon: 1, wood: 1, koban: 1 }, (d) => (d.buildings = ['tavern', 'well']));
-  const p = g.turn.player;
+  const p = g.turn!.player;
   const built = act(g, { type: 'shop', choice: 'build', building: 'tavern', lot: 'lot-top-left-1' });
   assert.deepEqual(built.lots['lot-top-left-1'], { kind: 'building', card: 'tavern', owner: p, xp: 0 });
   assert.deepEqual(built.players[p].buildings, ['tavern']);
@@ -358,7 +358,7 @@ test('solo se pueden activar los personajes de los puestos de tu casilla', () =>
 
 test('personaje ajeno que se retira devuelve el Kobun a su dueño al instante', () => {
   const g = act(withCharacter('street-t1', 'other', 'book-seller', 2), { type: 'character', lot: stallLot });
-  const owner = (g.turn.player + 1) % g.players.length;
+  const owner = (g.turn!.player + 1) % g.players.length;
   assert.equal(g.lots[stallLot], undefined);
   assert.deepEqual(g.players[owner].retired, ['book-seller']);
   assert.equal(g.players[owner].kobun, KOBUN_PER_PLAYER - 1); // solo el personaje inicial sigue en el tablero
@@ -367,14 +367,14 @@ test('personaje ajeno que se retira devuelve el Kobun a su dueño al instante', 
 test('habilidades de intercambio: pagar o fallar sin cambiar el estado', () => {
   const g = withCharacter('street-t1', 'other', 'dyer', 0, { mon: 2 });
   const done = act(g, { type: 'character', lot: stallLot });
-  assert.deepEqual([res(done).mon, done.players[done.turn.player].iki], [0, 4]);
+  assert.deepEqual([res(done).mon, done.players[done.turn!.player].iki], [0, 4]);
   throws(() => act(withCharacter('street-t1', 'other', 'dyer', 0, { mon: 1 }), { type: 'character', lot: stallLot }), /mon/);
 });
 
 test('Costurera: paga 1 mon y da experiencia a un personaje propio', () => {
   const g = withCharacter('street-t1', 'me', 'seamstress', 0, { mon: 1 });
-  const p = g.turn.player;
-  const target = Object.keys(g.lots).find((id) => id !== stallLot && g.lots[id].owner === p);
+  const p = g.turn!.player;
+  const target = Object.keys(g.lots).find((id) => id !== stallLot && g.lots[id].owner === p)!;
   const done = act(g, { type: 'character', lot: stallLot, target });
   assert.equal(done.lots[target].xp, 1);
   assert.equal(res(done).mon, 0);
@@ -390,7 +390,7 @@ test('Carpintero: construye con 1 madera menos', () => {
 
 test('Cometas: intercambia 2 cartas; los Kobun siguen con su carta', () => {
   const g = tweak(withCharacter('street-t1', 'me', 'kite-maker'), (d) => {
-    d.lots['lot-top-left-2'] = { kind: 'character', card: 'dyer', owner: (d.turn.player + 1) % d.players.length, xp: 1 };
+    d.lots['lot-top-left-2'] = { kind: 'character', card: 'dyer', owner: (d.turn!.player + 1) % d.players.length, xp: 1 };
   });
   const done = act(g, { type: 'character', lot: stallLot, lots: [stallLot, 'lot-top-left-2'] });
   assert.equal(done.lots[stallLot].card, 'dyer');
@@ -401,7 +401,7 @@ test('Cometas: intercambia 2 cartas; los Kobun siguen con su carta', () => {
 
 test('Fuegos Artificiales: 4 IKI para ti y 2 mons a cada oponente', () => {
   const g = withCharacter('street-t1', 'me', 'fireworks-maker');
-  const p = g.turn.player;
+  const p = g.turn!.player;
   const done = act(g, { type: 'character', lot: stallLot });
   assert.equal(done.players[p].iki, 4);
   done.players.forEach((q, i) => i !== p && assert.equal(q.resources.mon, g.players[i].resources.mon + 2));
@@ -412,11 +412,11 @@ test('Fuegos Artificiales: 4 IKI para ti y 2 mons a cada oponente', () => {
 test('fin de turno: recupera el Ikizama y pasa al siguiente; no se puede terminar sin mover', () => {
   let g = turnOf(newGame(), '1');
   throws(() => act(g, { type: 'endTurn' }), /toca/);
-  const first = g.turn.player;
+  const first = g.turn!.player;
   g = act(act(act(g, { type: 'income' }), { type: 'move' }), { type: 'endTurn' });
   assert.equal(g.players[first].ikizama, null);
-  assert.notEqual(g.turn.player, first);
-  assert.equal(g.turn.step, g.turn.slot === '1-4' ? 'move' : 'b1');
+  assert.notEqual(g.turn!.player, first);
+  assert.equal(g.turn!.step, g.turn!.slot === '1-4' ? 'move' : 'b1');
 });
 
 test('mes con evento simple: +1 mon en las cartas que quedan y empieza el mes siguiente', () => {
@@ -435,7 +435,7 @@ function playMonth(g: Game) {
   while (g.month === month && g.phase !== 'event') {
     const options = legalActions(g);
     const pick = options.find((a) => a.type === 'placeIkizama') ?? options.find((a) => a.type === 'income') ?? options.find((a) => a.type === 'move') ?? options.find((a) => a.type === 'endTurn');
-    g = act(g, pick);
+    g = act(g, pick!);
   }
   return g;
 }

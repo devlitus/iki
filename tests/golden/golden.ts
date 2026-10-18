@@ -19,27 +19,27 @@ const mode = process.argv[2];
 const filter = (mode === '--worker' ? process.argv[6] : process.argv[3]) ?? '';
 
 /** Un escenario por archivo; los arrays de primer nivel, un elemento por línea (así un diff de git es legible). */
-const format = (data) => `{\n${Object.entries(data).map(([k, v]) => `${JSON.stringify(k)}: ${Array.isArray(v)
+const format = (data: Record<string, unknown>) => `{\n${Object.entries(data).map(([k, v]) => `${JSON.stringify(k)}: ${Array.isArray(v)
   ? `[\n${v.map((x) => JSON.stringify(x)).join(',\n')}\n]`
   : JSON.stringify(v)}`).join(',\n')}\n}\n`;
 
-async function worker(outDir, index, count) {
+async function worker(outDir: string, index: number, count: number) {
   const { scenarios } = await import('./capture.ts');
   const list = scenarios().filter(([name]) => name.includes(filter)).filter((_, i) => i % count === index);
   for (const [name, run] of list) {
     const started = performance.now();
-    let data;
+    let data: any;
     try {
       data = await run();
     } catch (e) {
-      data = { crashed: `${e?.constructor?.name}: ${e?.message}` };
+      data = { crashed: `${(e as Error)?.constructor?.name}: ${(e as Error)?.message}` };
     }
     await writeFile(join(outDir, `${name}.json`), format(data));
     process.stdout.write(`  ${name} (${Math.round(performance.now() - started)} ms)\n`);
   }
 }
 
-function runWorkers(outDir) {
+function runWorkers(outDir: string) {
   const count = Math.max(1, Math.min(8, availableParallelism() - 1));
   return Promise.all(Array.from({ length: count }, (_, i) => new Promise<void>((resolve, reject) => {
     const child = spawn(process.execPath, [fileURLToPath(import.meta.url), '--worker', outDir, String(i), String(count), filter], { stdio: 'inherit' });
@@ -48,7 +48,7 @@ function runWorkers(outDir) {
 }
 
 /** Primera diferencia entre dos valores JSON, como ruta legible. */
-function firstDiff(a, b, path = '') {
+function firstDiff(a: any, b: any, path = ''): string | null {
   if (JSON.stringify(a) === JSON.stringify(b)) return null;
   if (a && b && typeof a === 'object' && typeof b === 'object') {
     for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {

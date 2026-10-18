@@ -61,7 +61,7 @@ const FIRE_TAB_Y: Record<string, number[]> = { top: [273, 306], bottom: [1570, 1
 const fireTabs: Zone[] = [];
 for (const [row, [y0, y1]] of Object.entries(FIRE_TAB_Y)) {
   FIRE_TAB_X.forEach(([x0, x1], i) => {
-    const lot = lots.find((z) => z.id.startsWith(`lot-${row}-`) && z.x === LOT_COLUMNS[i][0]);
+    const lot = lots.find((z) => z.id.startsWith(`lot-${row}-`) && z.x === LOT_COLUMNS[i][0])!;
     fireTabs.push(rect(`fire-tab-${lot.id}`, 'fire', `Incendio ${lot.fire || '<'} · ${lot.label}`, x0 / 2048, y0 / 1870, (x1 - x0) / 2048, (y1 - y0) / 1870, { lot: lot.id }));
   });
 }

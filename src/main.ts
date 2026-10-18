@@ -158,7 +158,7 @@ function runAi() {
   }
   if (game === before) {
     aiStalled = true;
-    clearTimeout(aiTimer as ReturnType<typeof setTimeout>);
+    clearTimeout(aiTimer as unknown as number); // dispatch() puede haber programado otro turno
   }
 }
 
@@ -273,7 +273,7 @@ function showOnlineChange(before: Game | null) {
   selectedCard = null;
   ui = {};
   render();
-  showEvent(before);
+  showEvent(before!);
   if (game!.phase === 'ended' && before!.phase !== 'ended') finalTable.open(game!);
 }
 
@@ -289,7 +289,7 @@ async function playOnline(id: string) {
     cover.hide();
     render();
     pollTimer = setInterval(pollOnline, POLL_MS);
-    if (game.phase === 'ended') finalTable.open(game);
+    if (game!.phase === 'ended') finalTable.open(game!);
   } catch (error) {
     cover.show(Boolean(game));
     toast.textContent = (error as Error).message;
@@ -357,7 +357,7 @@ function startTutorial() {
   endTutorial();
   leaveOnline();
   tutorial = createTutorial({
-    coach: document.getElementById('coach'),
+    coach: document.getElementById('coach')!,
     board,
     onChange: render,
     onExit: ({ keep }) => exitTutorial({ keep }),

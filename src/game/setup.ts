@@ -43,7 +43,7 @@ export function rollForStarter(rng: Rng, n: number) {
   const rolls = Array.from({ length: n }, () => [rng.roll()]);
   let tied = [...rolls.keys()];
   for (;;) {
-    const top = Math.max(...tied.map((i) => rolls[i].at(-1)));
+    const top = Math.max(...tied.map((i) => rolls[i].at(-1)!));
     tied = tied.filter((i) => rolls[i].at(-1) === top);
     if (tied.length === 1) return { rolls, starter: tied[0] };
     for (const i of tied) rolls[i].push(rng.roll());

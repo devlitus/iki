@@ -140,7 +140,7 @@ export type Pending =
   | { type: 'wildType'; player: number };
 
 export type PaydayEvent = { kind: 'payday'; stage: string; who: number };
-export type FireEvent = { kind: 'fire'; stage: string; tile?: string; nagaya?: string; index?: number };
+export type FireEvent = { kind: 'fire'; stage: string; tile?: string | null; nagaya?: string; index?: number };
 export type GameEvent = { kind: 'plain' } | PaydayEvent | FireEvent;
 
 export type Score = { track: number; variety: number; fish: number; tobacco: number; buildings: number; resources: number; total?: number };

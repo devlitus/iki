@@ -19,20 +19,20 @@ const humanOptions = (g: Game): Action[] => (g.phase === 'initial-characters'
 function playThrough(choose = (options: Action[]) => options[0], until = (step: Step) => step.last) {
   let g = createTutorialGame();
   const acked = new Set<string>();
-  const seen = [];
+  const seen: string[] = [];
   for (let i = 0; i < 5000; i++) {
-    const step = currentStep(g, acked);
+    const step = currentStep(g, acked)!;
     assert.ok(step, 'el tutorial se queda sin pasos');
     if (seen.at(-1) !== step.id) seen.push(step.id);
     if (until(step)) return { g, seen };
     for (const mobile of [false, true]) assert.doesNotThrow(() => step.text(g, { mobile }), `el texto de «${step.id}» falla`);
     if (step.kind === 'info') acked.add(step.id);
-    else if (isAiTurn(g) || step.kind === 'free') g = act(g, chooseAction(g, { effort: 'fast' }));
+    else if (isAiTurn(g) || step.kind === 'free') g = act(g, chooseAction(g, { effort: 'fast' })!);
     else {
       const options = humanOptions(g).filter((a) => stepAllows(step, g, a));
       assert.ok(options.length, `en «${step.id}» el humano no tiene ninguna jugada permitida`);
       const preferred = options.find((a) => a.type === 'endTurn');
-      g = act(g, step.id === 'business' ? preferred : choose(options));
+      g = act(g, step.id === 'business' ? preferred! : choose(options));
     }
   }
   assert.fail('el tutorial no termina');
@@ -48,7 +48,7 @@ test('la partida del tutorial empieza con un humano que elige el último y dos I
   assert.ok(HUMAN_LOTS.every((lot) => !g.lots[lot]));
 });
 
-const afterMonth1 = (step) => step.id === 'on-your-own';
+const afterMonth1 = (step: Step) => step.id === 'on-your-own';
 
 test('seguir las indicaciones lleva del principio al final del año', () => {
   const { g, seen } = playThrough();
@@ -63,10 +63,10 @@ test('los avisos del año salen en su mes', () => {
   const acked = new Set<string>();
   const at: Record<string, number> = {};
   for (let i = 0; i < 5000 && g.phase !== 'ended'; i++) {
-    const step = currentStep(g, acked);
+    const step = currentStep(g, acked)!;
     at[step.id] ??= g.month;
     if (step.kind === 'info') acked.add(step.id);
-    else if (isAiTurn(g) || step.kind === 'free') g = act(g, chooseAction(g, { effort: 'fast' }));
+    else if (isAiTurn(g) || step.kind === 'free') g = act(g, chooseAction(g, { effort: 'fast' })!);
     else g = act(g, humanOptions(g).filter((a) => stepAllows(step, g, a)).find((a) => a.type === 'endTurn') ?? humanOptions(g).filter((a) => stepAllows(step, g, a))[0]);
   }
   assert.equal(g.phase, 'ended');
@@ -82,7 +82,7 @@ test('los avisos del año salen en su mes', () => {
 
 test('en el juego libre se acepta cualquier jugada y no se para a la IA', () => {
   const { g } = playThrough(undefined, (step) => step.kind === 'free');
-  const step = currentStep(g, new Set(STEPS.filter((s) => s.kind === 'info' && !s.done(g, new Set())).map((s) => s.id)));
+  const step = currentStep(g, new Set(STEPS.filter((s) => s.kind === 'info' && !s.done!(g, new Set())).map((s) => s.id)))!;
   assert.equal(step.kind, 'free');
   assert.ok(legalActions(g).every((a) => stepAllows(step, g, a)));
   assert.equal(stepZones(step, g), null);
@@ -99,10 +99,10 @@ test('cualquier espacio de Ikizama y cualquier personaje inicial permiten acabar
     for (const card of createTutorialGame().initialCharacters) {
       let g = createTutorialGame();
       const acked = new Set<string>();
-      for (let i = 0; i < 400 && !afterMonth1(currentStep(g, acked)); i++) {
-        const step = currentStep(g, acked);
+      for (let i = 0; i < 400 && !afterMonth1(currentStep(g, acked)!); i++) {
+        const step = currentStep(g, acked)!;
         if (step.kind === 'info') acked.add(step.id);
-        else if (isAiTurn(g)) g = act(g, chooseAction(g, { effort: 'fast' }));
+        else if (isAiTurn(g)) g = act(g, chooseAction(g, { effort: 'fast' })!);
         else {
           const options = humanOptions(g).filter((a) => stepAllows(step, g, a));
           const wanted = options.find((a) => (a as { slot?: string }).slot === slot || (a as { card?: string }).card === card) ?? options.find((a) => a.type === 'endTurn') ?? options[0];
@@ -118,18 +118,18 @@ test('cualquier espacio de Ikizama y cualquier personaje inicial permiten acabar
 test('el espacio «1-4» y las jugadas de otro paso se rechazan', () => {
   const { g } = playThrough(undefined, afterMonth1);
   const fresh = createTutorialGame();
-  const initial = currentStep(fresh, new Set(['welcome', 'street', 'lots', 'you']));
+  const initial = currentStep(fresh, new Set(['welcome', 'street', 'lots', 'you']))!;
   assert.equal(initial.id, 'initial');
   assert.equal(stepAllows(initial, fresh, { type: 'income' }), false);
 
-  const ikizama = STEPS.find((s) => s.id === 'ikizama');
-  assert.equal(ikizama.allow(g, { type: 'placeIkizama', slot: '1-4' }), false);
-  assert.equal(ikizama.allow(g, { type: 'placeIkizama', slot: '2' }), true);
+  const ikizama = STEPS.find((s) => s.id === 'ikizama')!;
+  assert.equal(ikizama.allow!(g, { type: 'placeIkizama', slot: '1-4' }), false);
+  assert.equal(ikizama.allow!(g, { type: 'placeIkizama', slot: '2' }), true);
 });
 
 test('los pasos de información no aceptan jugadas ni zonas pulsables', () => {
   const g = createTutorialGame();
-  const welcome = currentStep(g, new Set());
+  const welcome = currentStep(g, new Set())!;
   assert.equal(welcome.kind, 'info');
   assert.equal(stepAllows(welcome, g, { type: 'placeInitial', card: 'cotton-seller', lot: HUMAN_LOTS[0] }), false);
   assert.deepEqual(stepZones(welcome, g), []);

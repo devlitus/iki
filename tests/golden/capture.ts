@@ -109,7 +109,7 @@ function tutorialScenario(pick: (options: Action[]) => Action) {
       });
       if (step.last) break;
       if (step.kind === 'info') acked.add(step.id);
-      else if (M.isAiTurn(g) || step.kind === 'free') g = M.act(g, M.chooseAction(g, { effort: 'fast' }));
+      else if (M.isAiTurn(g) || step.kind === 'free') g = M.act(g, M.chooseAction(g, { effort: 'fast' })!);
       else {
         const allowed = options.filter((a) => M.stepAllows(step, g, a));
         g = M.act(g, step.id === 'business' ? allowed.find((a) => a.type === 'endTurn')! : pick(allowed));
@@ -208,7 +208,7 @@ async function serverScenario() {
   // La semilla secreta de las partidas sale de crypto.getRandomValues: se fija para que los mazos salgan siempre igual.
   const fixed = seeded(99);
   const original = globalThis.crypto.getRandomValues;
-  Object.defineProperty(globalThis.crypto, 'getRandomValues', { configurable: true, value: (arr) => { for (let i = 0; i < arr.length; i++) arr[i] = Math.floor(fixed() * 2 ** 32); return arr; } });
+  Object.defineProperty(globalThis.crypto, 'getRandomValues', { configurable: true, value: (arr: Uint32Array) => { for (let i = 0; i < arr.length; i++) arr[i] = Math.floor(fixed() * 2 ** 32); return arr; } });
   const quiet = console.error;
   console.error = () => {};
 
@@ -216,12 +216,12 @@ async function serverScenario() {
   let clock = Date.parse('2026-10-17T10:00:00Z');
   const app = M.createApp({ db, secret: 's'.repeat(40), now: () => clock });
   const ORIGIN = 'http://iki.test';
-  const transcript = [];
+  const transcript: string[] = [];
   // Ids de partida (node:crypto) y fechas de la base de datos cambian en cada ejecución: se sustituyen por marcadores.
   const ids = new Map();
-  const norm = (text) => text
+  const norm = (text: string) => text
     .replace(/\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?(Z|[+-]\d\d:?\d\d)?/g, 'FECHA')
-    .replace(/[A-Za-z0-9_-]{8}(?=["/?\s]|$)/g, (m) => (ids.has(m) ? ids.get(m) : m));
+    .replace(/[A-Za-z0-9_-]{8}(?=["/?\s]|$)/g, (m) => (ids.has(m) ? ids.get(m)! : m));
 
   function browser() {
     let cookie = '';
@@ -274,12 +274,12 @@ async function serverScenario() {
     await a('GET', '/games');
     await a('POST', `/games/${room.id}/start`, {});
     const seats = { a, b, c };
-    const users = Object.fromEntries(await Promise.all(Object.entries({ a: 'ana', b: 'beto', c: 'cris' }).map(async ([k, name]) => [(await db.query('SELECT id FROM users WHERE name = $1', [name]))[0].id, seats[k]])));
+    const users = Object.fromEntries(await Promise.all(Object.entries({ a: 'ana', b: 'beto', c: 'cris' }).map(async ([k, name]) => [(await db.query('SELECT id FROM users WHERE name = $1', [name]))[0].id, seats[k as keyof typeof seats]])));
     for (let i = 0; i < MAX_STEPS; i++) {
       const row = await dbGame(room.id);
       if (!row) throw new Error(transcript.slice(-8).join("\n"));
       if (row.status !== 'playing') break;
-      const who = users[row.seats[M.deciderOf(row.state)].user];
+      const who = users[row.seats[M.deciderOf(row.state)!].user];
       const action = M.chooseAction(row.state, { effort: 'fast' });
       if (i % 25 === 0) {
         await who('POST', `/games/${room.id}/action`, { action: { ...action, hack: 1 }, version: row.version });
@@ -303,7 +303,7 @@ async function serverScenario() {
       const row = await dbGame(mixed.id);
       if (!row) throw new Error(transcript.slice(-8).join("\n"));
       if (row.status !== 'playing') break;
-      const who = users[row.seats[M.deciderOf(row.state)].user];
+      const who = users[row.seats[M.deciderOf(row.state)!].user];
       await who('POST', `/games/${mixed.id}/action`, { action: M.chooseAction(row.state, { effort: 'fast' }), version: row.version });
     }
     await c('POST', `/games/${mixed.id}/leave`, {});
@@ -324,7 +324,7 @@ async function serverScenario() {
 export const scenarios = (): Scenario[] => [
   ...engineScenarios(),
   ['tutorial-first', tutorialScenario((options) => options[0])],
-  ['tutorial-last', tutorialScenario((options) => options.at(-1))],
+  ['tutorial-last', tutorialScenario((options) => options.at(-1)!)],
   ...viewScenarios(),
   ['server', serverScenario],
 ];

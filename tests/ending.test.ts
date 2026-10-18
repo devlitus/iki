@@ -115,14 +115,14 @@ test('mes 13: juegan por orden de Extinción, sin mover ni contratar', () => {
   assert.equal(g.phase, 'newyear');
   assert.equal(g.month, 13);
   assert.equal(whoseTurn(g), 1);
-  assert.equal(g.turn.step, 'place');
+  assert.equal(g.turn!.step, 'place');
   assert.throws(() => act(g, { type: 'income' }), /toca/);
   assert.throws(() => act(g, { type: 'move' }), /toca/);
   assert.throws(() => act(g, { type: 'shop' }), /toca/);
   assert.throws(() => act(g, { type: 'place', zone: 'queue-1' }), /calle/);
   g = act(g, { type: 'place', zone: 'street-b3' });
   assert.equal(g.players[1].oyakata, 'street-b3');
-  assert.equal(g.turn.step, 'business');
+  assert.equal(g.turn!.step, 'business');
   assert.equal(legalActions(g).some((a) => a.type === 'place'), false);
 });
 
@@ -156,8 +156,8 @@ test('al terminar el último turno se recogen las cartas y se puntúa', () => {
   assert.equal(g.pending, null);
   assert.deepEqual(g.players[0].retired, ['dyer'], 'el personaje del tablero se recoge');
   assert.ok(g.lots['lot-top-left-2'], 'el edificio sigue en su solar');
-  assert.equal(g.final.scores[0].total, 12 + 1 + 2, 'Taberna + 1 tipo de personaje + 8 mons iniciales');
-  assert.equal(g.final.winner, 0);
+  assert.equal(g.final!.scores[0].total, 12 + 1 + 2, 'Taberna + 1 tipo de personaje + 8 mons iniciales');
+  assert.equal(g.final!.winner, 0);
   assert.deepEqual(legalActions(g), []);
   assert.throws(() => act(g, { type: 'endTurn' }), /Ahora no/);
 });
@@ -177,7 +177,7 @@ test('Comodín: al final se pregunta el tipo del Marionetista y cuenta en la pun
   g = act(g, { type: 'resolve', cardType: 'artisan' });
   assert.equal(g.phase, 'ended');
   assert.equal(g.players[1].wildType, 'artisan');
-  assert.equal(g.final.scores[1].variety, 4); // vendedor + artesano
+  assert.equal(g.final!.scores[1].variety, 4); // vendedor + artesano
 });
 
 // --- Partidas completas ------------------------------------------------------------------------
@@ -193,9 +193,9 @@ test('partidas al azar completas: terminan con puntuación y un ganador', () => 
       g = act(g, options[Math.floor(rng.next() * options.length)]);
     }
     assert.equal(g.phase, 'ended', `la semilla ${seed} no terminó`);
-    assert.equal(g.final.ranking.length, g.players.length);
-    assert.ok(g.final.scores.every((s) => Number.isInteger(s.total) && s.total >= 0));
-    assert.equal(g.final.winner, g.final.ranking[0]);
+    assert.equal(g.final!.ranking.length, g.players.length);
+    assert.ok(g.final!.scores.every((s) => Number.isInteger(s.total) && s.total! >= 0));
+    assert.equal(g.final!.winner, g.final!.ranking[0]);
     assert.equal(Object.values(g.lots).filter((l) => l.kind === 'character').length, 0);
     g.players.forEach((p, i) => assert.equal(p.kobun + Object.values(g.lots).filter((l) => l.owner === i).length, KOBUN_PER_PLAYER));
   }

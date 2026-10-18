@@ -133,11 +133,11 @@ export function createMobileLayout({ app, side, players, turn }: { app: HTMLElem
     /** Después de cada render: avisos de la barra y, al empezar a elegir el personaje inicial, se abre la Mesa. */
     update(game: Game | null, { selectedCard, tutorialFocus = false }: { selectedCard?: string | null; tutorialFocus?: boolean } = {}) {
       if (!preview.hidden && !source?.isConnected) closePreview(); // la carta se redibujó: la ampliación ya no vale
-      const playing = Boolean(game) && game.phase !== 'initial-characters';
+      const playing = Boolean(game) && game!.phase !== 'initial-characters';
       btnTurn.hidden = !playing;
-      const humanActs = Boolean(game) && !isWaiting(game) && game.phase !== 'ended';
-      const picking = Boolean(game) && currentPicker(game) != null && humanActs && !selectedCard;
-      const hiring = playing && humanActs && game.turn?.step === 'b1';
+      const humanActs = Boolean(game) && !isWaiting(game!) && game!.phase !== 'ended';
+      const picking = Boolean(game) && currentPicker(game!) != null && humanActs && !selectedCard;
+      const hiring = playing && humanActs && game!.turn?.step === 'b1';
       mustAct = playing && humanActs;
       btnTurn.classList.toggle('attn', mustAct && collapsed);
       btnSide.classList.toggle('attn', picking || hiring);

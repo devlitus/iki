@@ -9,7 +9,7 @@ const win = new Window({ url: 'http://iki.test/', width: 1440, height: 900 });
 for (const key of ['window', 'document', 'navigator', 'matchMedia', 'getComputedStyle', 'requestAnimationFrame', 'cancelAnimationFrame',
   'HTMLElement', 'HTMLDialogElement', 'Element', 'Node', 'Event', 'CustomEvent', 'DocumentFragment', 'MutationObserver', 'ResizeObserver']) {
   if (!(key in globalThis) || key === 'window' || key === 'document' || key === 'navigator') {
-    Object.defineProperty(globalThis, key, { value: key === 'window' ? win : win[key], configurable: true, writable: true });
+    Object.defineProperty(globalThis, key, { value: key === 'window' ? win : (win as any)[key], configurable: true, writable: true });
   }
 }
 

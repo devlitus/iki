@@ -9,8 +9,8 @@ import { chooseAction, deciderOf } from '../src/ai/player.ts';
 
 const SECRET = 'x'.repeat(40);
 const ORIGIN = 'http://iki.test';
-let db;
-let app;
+let db: Awaited<ReturnType<typeof localDb>>;
+let app: ReturnType<typeof createApp>;
 let clock = Date.parse('2026-10-17T10:00:00Z');
 
 before(async () => {
@@ -45,7 +45,7 @@ async function signUp(prefix = 'jugador') {
 }
 
 /** Sala con `humans` personas + `ais` IA, empezada. Devuelve los navegadores y el id. */
-async function startedGame(humans, ais = 0) {
+async function startedGame(humans: number, ais = 0) {
   const players = [];
   for (let i = 0; i < humans; i++) players.push(await signUp());
   const [host, ...others] = players;
@@ -59,7 +59,7 @@ async function startedGame(humans, ais = 0) {
   return { id, players, game: started.body };
 }
 
-const dbGame = async (id) => (await db.query('SELECT * FROM games WHERE id = $1', [id]))[0];
+const dbGame = async (id: string) => (await db.query('SELECT * FROM games WHERE id = $1', [id]))[0];
 
 // --- Cuentas -----------------------------------------------------------------------------------
 
@@ -68,8 +68,8 @@ test('registro, sesión, cierre de sesión y nombre repetido', async () => {
   assert.equal((await a.call('GET', '/me')).body.user, null);
   const reg = await a.call('POST', '/register', { name: 'Hiroshige', password: 'una-clave-larga' });
   assert.equal(reg.status, 200);
-  assert.match(reg.headers.get('set-cookie'), /HttpOnly/);
-  assert.match(reg.headers.get('set-cookie'), /SameSite=Lax/);
+  assert.match(reg.headers.get('set-cookie')!, /HttpOnly/);
+  assert.match(reg.headers.get('set-cookie')!, /SameSite=Lax/);
   assert.equal((await a.call('GET', '/me')).body.user.name, 'Hiroshige');
   assert.equal(JSON.stringify(reg.body).includes('pass'), false, 'nunca se devuelve el hash');
 
@@ -104,7 +104,7 @@ test('la cookie no se puede falsificar ni cambiar de usuario ni alargar', async 
   const attacker = await signUp('atacante');
   const [id, ver, exp, mac] = attacker.b.cookie.split('=')[1].split('.');
 
-  const forge = async (cookie) => { const b = browser(); b.cookie = cookie; return (await b.call('GET', '/me')).body.user; };
+  const forge = async (cookie: string) => { const b = browser(); b.cookie = cookie; return (await b.call('GET', '/me')).body.user; };
   assert.equal((await forge(attacker.b.cookie)).name, attacker.name, 'la propia sí vale');
   assert.equal(await forge(`iki_session=${victim.id}.${exp}.${attacker.b.cookie.split('.')[2]}`), null, 'cambiar el id');
   assert.equal(await forge(`iki_session=${id}.${ver}.${Number(exp) + 9e9}.${mac}`), null, 'alargar la caducidad');
@@ -143,11 +143,11 @@ test('sala: crear, unirse, IA, dejar, y solo el anfitrión empieza', async () =>
   const guest = await signUp();
   const { body: room } = await host.b.call('POST', '/games', { size: 3 });
   assert.equal(room.status, 'lobby');
-  assert.equal(room.seats.filter((s) => s.free).length, 2);
+  assert.equal(room.seats.filter((s: any) => s.free).length, 2);
   assert.ok(room.isHost);
 
   assert.equal((await host.b.call('POST', `/games/${room.id}/join`, {})).status, 409, 'ya está dentro');
-  assert.equal((await guest.b.call('GET', '/games')).body.open.some((g) => g.id === room.id), true, 'aparece en las abiertas');
+  assert.equal((await guest.b.call('GET', '/games')).body.open.some((g: any) => g.id === room.id), true, 'aparece en las abiertas');
   assert.equal((await guest.b.call('POST', `/games/${room.id}/join`, {})).status, 200);
   assert.equal((await guest.b.call('POST', `/games/${room.id}/ai`, { add: true })).status, 403, 'solo el anfitrión pone IA');
   assert.equal((await host.b.call('POST', `/games/${room.id}/start`, {})).status, 409, 'faltan jugadores');
@@ -186,8 +186,8 @@ test('lo que viaja al navegador no lleva semilla ni el orden de los mazos', asyn
   assert.ok(real.seed.length === 4, 'el servidor sí la tiene (128 bits)');
   for (const c of Object.values(real.decks).flat()) assert.ok(!wire.includes(`"${c}"`), `${c} (de un mazo) no debería viajar`);
   for (const t of real.fireTiles) assert.ok(!wire.includes(`"${t}"`), `${t} (loseta de Incendio) no debería viajar`);
-  assert.ok(res.body.view.decks.winter.every((c) => c === null));
-  assert.ok(res.body.view.fireTiles.every((t) => t === null));
+  assert.ok(res.body.view.decks.winter.every((c: unknown) => c === null));
+  assert.ok(res.body.view.fireTiles.every((t: unknown) => t === null));
   assert.equal(wire.includes(JSON.stringify(real.seed)), false);
   assert.equal(wire.includes(String(real.rng)), false);
 });
@@ -195,11 +195,11 @@ test('lo que viaja al navegador no lleva semilla ni el orden de los mazos', asyn
 test('solo juega quien tiene el turno, con la versión al día y una acción válida', async () => {
   const { id, players } = await startedGame(3);
   const state = (await dbGame(id)).state;
-  const seat = deciderOf(state);
+  const seat = deciderOf(state)!;
   const seats = (await dbGame(id)).seats;
-  const turnUser = players.find((p) => p.id === seats[seat].user);
-  const other = players.find((p) => p !== turnUser);
-  const action = chooseAction(state, { effort: 'fast' });
+  const turnUser = players.find((p) => p.id === seats[seat].user)!;
+  const other = players.find((p) => p !== turnUser)!;
+  const action = chooseAction(state, { effort: 'fast' })!;
   const version = (await dbGame(id)).version;
 
   assert.equal((await other.b.call('POST', `/games/${id}/action`, { action, version })).status, 409, 'no es su turno');
@@ -220,9 +220,9 @@ test('solo juega quien tiene el turno, con la versión al día y una acción vá
 test('acciones manipuladas: campos que no existen, tipos raros, valores imposibles', async () => {
   const { id, players } = await startedGame(3);
   const row = await dbGame(id);
-  const turnUser = players.find((p) => p.id === row.seats[deciderOf(row.state)].user);
-  const send = (action) => turnUser.b.call('POST', `/games/${id}/action`, { action, version: row.version });
-  const good = chooseAction(row.state, { effort: 'fast' });
+  const turnUser = players.find((p) => p.id === row.seats[deciderOf(row.state)!].user)!;
+  const send = (action: unknown) => turnUser.b.call('POST', `/games/${id}/action`, { action, version: row.version });
+  const good = chooseAction(row.state, { effort: 'fast' })!;
 
   for (const bad of [
     null, 'placeInitial', [], { type: 'constructor' }, { type: '__proto__' }, { type: 'start' }, { type: 'toString' },
@@ -251,8 +251,8 @@ test('cleanAction: copia solo campos conocidos con valores simples', () => {
 test('dos peticiones a la vez con la misma versión: una gana y la otra recibe el conflicto', async () => {
   const { id, players } = await startedGame(3);
   const row = await dbGame(id);
-  const turnUser = players.find((p) => p.id === row.seats[deciderOf(row.state)].user);
-  const action = chooseAction(row.state, { effort: 'fast' });
+  const turnUser = players.find((p) => p.id === row.seats[deciderOf(row.state)!].user)!;
+  const action = chooseAction(row.state, { effort: 'fast' })!;
   const results = await Promise.all(Array.from({ length: 4 }, () => turnUser.b.call('POST', `/games/${id}/action`, { action, version: row.version })));
   const statuses = results.map((r) => r.status).sort();
   assert.deepEqual(statuses, [200, 409, 409, 409]);
@@ -281,14 +281,14 @@ test('una persona y dos IA: las IA juegan solas hasta que vuelve a tocar a la pe
   const [me] = players;
   for (let step = 0; step < 40; step++) {
     const row = await dbGame(id);
-    assert.equal(row.state.players[deciderOf(row.state)].ai, false, 'la partida se detiene solo ante una persona');
-    const action = chooseAction(row.state, { effort: 'fast' });
+    assert.equal(row.state.players[deciderOf(row.state)!].ai, false, 'la partida se detiene solo ante una persona');
+    const action = chooseAction(row.state, { effort: 'fast' })!;
     const res = await me.b.call('POST', `/games/${id}/action`, { action, version: row.version });
     assert.equal(res.status, 200, JSON.stringify(res.body));
     assert.ok(res.body.version >= row.version + 1);
   }
   const log = await db.query('SELECT seat FROM game_actions WHERE game_id = $1', [id]);
-  assert.ok(new Set(log.map((l) => l.seat)).size === 3, 'el registro tiene también las jugadas de las IA');
+  assert.ok(new Set(log.map((l: any) => l.seat)).size === 3, 'el registro tiene también las jugadas de las IA');
 });
 
 // --- Ranking -----------------------------------------------------------------------------------
@@ -312,7 +312,7 @@ test('una partida clasificatoria completa entre tres personas termina, puntúa y
     const row = await dbGame(id);
     if (row.status === 'ended') break;
     const seat = deciderOf(row.state);
-    const res = await byUser.get(row.seats[seat].user).b.call('POST', `/games/${id}/action`, { action: chooseAction(row.state, { effort: 'fast' }), version: row.version });
+    const res = await byUser.get(row.seats[seat!].user)!.b.call('POST', `/games/${id}/action`, { action: chooseAction(row.state, { effort: 'fast' })!, version: row.version });
     assert.equal(res.status, 200, `paso ${step}: ${JSON.stringify(res.body)}`);
   }
   const ended = await dbGame(id);
@@ -321,13 +321,13 @@ test('una partida clasificatoria completa entre tres personas termina, puntúa y
 
   const results = await db.query('SELECT * FROM results WHERE game_id = $1 ORDER BY place', [id]);
   assert.equal(results.length, 3);
-  assert.deepEqual(results.map((r) => r.place), [1, 2, 3]);
+  assert.deepEqual(results.map((r: any) => r.place), [1, 2, 3]);
   assert.ok(results[0].rating_after > 1000 && results[2].rating_after < 1000);
-  assert.equal(results[0].user_id, ended.seats[ended.state.final.winner].user, 'gana quien dice el motor');
+  assert.equal(results[0].user_id, ended.seats[ended.state.final!.winner].user, 'gana quien dice el motor');
 
   const view = await players[0].b.call('GET', `/games/${id}`);
   assert.equal(view.body.results.length, 3);
-  assert.equal(view.body.view.final.winner, ended.state.final.winner);
+  assert.equal(view.body.view.final.winner, ended.state.final!.winner);
 
   const before = await db.query('SELECT id, rating, games, wins FROM users ORDER BY id');
   await settle(db, ended); // una segunda liquidación no cuenta otra vez
@@ -335,13 +335,13 @@ test('una partida clasificatoria completa entre tres personas termina, puntúa y
   assert.equal((await db.query('SELECT count(*)::int AS n FROM results WHERE game_id = $1', [id]))[0].n, 3);
 
   const board = (await browser().call('GET', '/ranking')).body.ranking;
-  assert.equal(board[0].name, players.find((p) => p.id === results[0].user_id).name);
-  assert.ok(board.every((r) => r.games >= 1));
+  assert.equal(board[0].name, players.find((p) => p.id === results[0].user_id)!.name);
+  assert.ok(board.every((r: any) => r.games >= 1));
 
   // El registro de jugadas reproduce la partida: misma semilla + mismas jugadas = mismo final.
   const log = await db.query('SELECT action FROM game_actions WHERE game_id = $1 ORDER BY seq', [id]);
   const { createGame } = await import('../src/game/setup.ts');
-  let replay = createGame({ players: ended.state.players.map((p) => ({ boardId: p.boardId, ai: p.ai })), seed: ended.state.seed });
+  let replay = createGame({ players: ended.state.players.map((p: any) => ({ boardId: p.boardId, ai: p.ai })), seed: ended.state.seed });
   for (const { action } of log) replay = act(replay, action);
   assert.deepEqual(replay.final, ended.state.final);
 });

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import type { Action, Game } from '../src/types.ts';
+import type { Action, Game, SeasonId } from '../src/types.ts';
 import { createRng, secretSeed } from '../src/game/random.ts';
 import { createGame } from '../src/game/setup.ts';
 import { act, legalActions } from '../src/game/engine.ts';
@@ -41,7 +41,7 @@ test('una partida con semilla de 128 bits se juega entera y es repetible', () =>
   const seed = [11, 22, 33, 44];
   const play = () => {
     let g = createGame({ players: players(), seed });
-    for (let i = 0; i < 5000 && g.phase !== 'ended'; i++) g = act(g, chooseAction(g, { effort: 'fast' }));
+    for (let i = 0; i < 5000 && g.phase !== 'ended'; i++) g = act(g, chooseAction(g, { effort: 'fast' })!);
     return g;
   };
   const g = play();
@@ -57,7 +57,7 @@ test('la vista pública no lleva semilla, estado del generador ni el orden de lo
   assert.equal(view.seed, undefined);
   assert.equal(view.rng, null);
   for (const [season, cards] of Object.entries(view.decks)) {
-    assert.equal(cards.length, g.decks[season].length, 'se ve cuántas quedan');
+    assert.equal(cards.length, g.decks[season as SeasonId].length, 'se ve cuántas quedan');
     assert.ok(cards.every((c) => c === HIDDEN));
   }
   assert.equal(view.fireTiles.length, g.fireTiles.length);
@@ -73,17 +73,17 @@ test('la vista pública no lleva semilla, estado del generador ni el orden de lo
 
 test('la vista pública conserva lo que se ve en la mesa: fila, mercado, solares y jugadores', () => {
   let g = createGame({ players: players(), seed: [5, 6, 7, 8] });
-  for (let i = 0; i < 30; i++) g = act(g, chooseAction(g, { effort: 'fast' }));
+  for (let i = 0; i < 30; i++) g = act(g, chooseAction(g, { effort: 'fast' })!);
   const view = publicView(g);
   for (const key of ['row', 'market', 'lots', 'players', 'buildings', 'log', 'month', 'phase', 'turn', 'fireStack']) {
-    assert.deepEqual(view[key], g[key], key);
+    assert.deepEqual(view[key as keyof Game], g[key as keyof Game], key);
   }
   assert.deepEqual(Object.keys(view.marketFaceDown), Object.keys(g.marketFaceDown));
 });
 
 test('las jugadas dentro del turno se pueden comprobar sobre la vista pública', () => {
   let g = createGame({ players: players(), seed: secretSeed() });
-  while (g.phase !== 'actions') g = act(g, chooseAction(g, { effort: 'fast' }));
+  while (g.phase !== 'actions') g = act(g, chooseAction(g, { effort: 'fast' })!);
   const real = legalActions(g).filter((a) => a.type !== 'endTurn');
   const seen = legalActions(publicView(g)).filter((a) => a.type !== 'endTurn');
   assert.deepEqual(seen, real);
@@ -107,24 +107,24 @@ function assertSane(g: Game) {
 
 test('acciones basura: el motor las rechaza con un error de regla o las acepta sin romper el estado', () => {
   const rng = createRng(2026);
-  const pick = (list) => list[Math.floor(rng.next() * list.length)];
+  const pick = <T,>(list: T[]) => list[Math.floor(rng.next() * list.length)];
   let g = createGame({ players: players(4), seed: [9, 9, 9, 9] });
   let accepted = 0;
   for (let step = 0; step < 4000 && g.phase !== 'ended'; step++) {
-    const hostile = { type: pick(TYPES) };
+    const hostile: Record<string, unknown> = { type: pick(TYPES) };
     for (const f of FIELDS) if (rng.next() < 0.25) hostile[f] = pick(GARBAGE);
     const before = JSON.stringify(g);
     try {
-      const next = act(g, hostile);
+      const next = act(g, hostile as Action);
       accepted += 1;
       assertSane(next);
     } catch (error) {
       // Rechazada: solo vale un error de regla (los TypeError serían un fallo del motor ante datos hostiles).
-      assert.equal(error.constructor.name, 'RuleError', `${JSON.stringify(hostile)} → ${error.stack}`);
+      assert.equal((error as Error).constructor.name, 'RuleError', `${JSON.stringify(hostile)} → ${(error as Error).stack}`);
     }
     assert.equal(JSON.stringify(g), before, 'una acción rechazada o aceptada no toca el estado original');
     // Cada cierto tiempo avanza con una jugada buena para llegar a más fases.
-    if (step % 3 === 0 && deciderOf(g) != null) g = act(g, chooseAction(g, { effort: 'fast' }));
+    if (step % 3 === 0 && deciderOf(g) != null) g = act(g, chooseAction(g, { effort: 'fast' })!);
   }
   assert.ok(g.month > 1, 'la partida ha avanzado');
   assert.ok(accepted >= 0);
@@ -132,23 +132,23 @@ test('acciones basura: el motor las rechaza con un error de regla o las acepta s
 
 test('jugadas legales con un campo manipulado: error de regla o estado coherente, nunca un fallo del motor', () => {
   const rng = createRng(77);
-  const pick = (list) => list[Math.floor(rng.next() * list.length)];
+  const pick = <T,>(list: T[]) => list[Math.floor(rng.next() * list.length)];
   let g = createGame({ players: players(4), seed: [3, 1, 4, 1] });
   let mutated = 0;
   for (let step = 0; step < 1500 && g.phase !== 'ended'; step++) {
     for (const legal of legalActions(g).slice(0, 40)) {
-      const hostile = { ...legal };
+      const hostile: Record<string, unknown> = { ...legal };
       const field = pick([...Object.keys(legal), ...FIELDS]);
       hostile[field] = pick(rng.next() < 0.5 ? GARBAGE : [...GARBAGE, ...Object.values(legal).filter((v) => v !== undefined)]);
       try {
-        assertSane(act(g, hostile));
+        assertSane(act(g, hostile as Action));
       } catch (error) {
-        assert.equal(error.constructor.name, 'RuleError', `${JSON.stringify(hostile)} → ${error.stack}`);
+        assert.equal((error as Error).constructor.name, 'RuleError', `${JSON.stringify(hostile)} → ${(error as Error).stack}`);
       }
       mutated += 1;
     }
     if (deciderOf(g) == null) break;
-    g = act(g, chooseAction(g, { effort: 'fast' }));
+    g = act(g, chooseAction(g, { effort: 'fast' })!);
   }
   assert.ok(g.month > 6, `la partida ha avanzado (mes ${g.month})`);
   assert.ok(mutated > 1000, `se han probado ${mutated} jugadas manipuladas`);

@@ -7,14 +7,13 @@
     "moduleResolution": "nodenext",
     "types": ["node"],
     "noEmit": true,
-    "allowJs": true,
-    "checkJs": false,
+    "allowJs": false,
     "allowImportingTsExtensions": true,
     "erasableSyntaxOnly": true,
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "skipLibCheck": true,
-    "strict": false
+    "strict": true
   },
   "include": ["src", "server", "api", "tests", "vite.config.*"]
 }

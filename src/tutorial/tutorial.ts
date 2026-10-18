@@ -149,10 +149,10 @@ export function createTutorial({ coach, board, onChange, onExit }: {
       top = vp.bottom - h - GAP;
       coach.dataset.tail = 'none';
     } else {
-      const cx = (a.left + a.right) / 2;
-      const cy = (a.top + a.bottom) / 2;
-      left = side === 'right' ? a.right + GAP : side === 'left' ? a.left - GAP - w : cx - w / 2;
-      top = side === 'bottom' ? a.bottom + GAP : side === 'top' ? a.top - GAP - h : cy - h / 2;
+      const cx = (a!.left + a!.right) / 2;
+      const cy = (a!.top + a!.bottom) / 2;
+      left = side === 'right' ? a!.right + GAP : side === 'left' ? a!.left - GAP - w : cx - w / 2;
+      top = side === 'bottom' ? a!.bottom + GAP : side === 'top' ? a!.top - GAP - h : cy - h / 2;
       left = clamp(left, MARGIN, W - w - MARGIN);
       top = clamp(top, MARGIN, H - h - MARGIN);
       // El rabito apunta al centro de lo señalado, sin salirse de la esquina redondeada de la burbuja.
