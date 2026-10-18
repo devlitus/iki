@@ -16,8 +16,8 @@ function makeDialog(id: string) {
   return dialog;
 }
 
-/** Entradas del Día de Pago que son cobros (columna Salario); el resto es el pago en arroz. */
-const PAYDAY_INCOME = ['salary', 'harmony'];
+/** Entradas del Día de Pago que son cobros (columna Salario: también la Granja y la Villa Imperial); el resto es el pago en arroz. */
+const PAYDAY_INCOME = ['salary', 'harmony', 'perk'];
 
 const list = (game: Game, lines: LogEntry[]) => lines.length
   ? `<ul>${lines.map((e) => `<li>${logLine(game, e)}</li>`).join('')}</ul>`
