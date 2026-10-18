@@ -1,50 +1,45 @@
 /**
- * Pergamino de entrada al tutorial: antes de la primera burbuja se desenrolla un kakejiku (rollo colgante) que cuenta el
- * objetivo del juego. Al cerrarlo (botón, Esc o fuera del rollo) se llama a `onClose`; `remove()` lo quita sin avisar.
+ * Pergamino de entrada: antes del tutorial y de cada Nueva partida se desenrolla un kakejiku (rollo colgante) que cuenta
+ * el Edo de los artesanos y el objetivo del juego. Con `tutorial` añade la nota del tutorial. Al cerrarlo (botón, Esc o fuera del rollo) se llama a `onClose`; `remove()` lo quita sin avisar.
  */
 
-// Flor de cerezo de cinco pétalos, como las fichas de IKI del juego.
-const flower = (color) => `<svg viewBox="-12 -12 24 24" aria-hidden="true">${[0, 72, 144, 216, 288]
-  .map((a) => `<path d="M0 0C-5-3-5-9-1.6-10.6L0-9 1.6-10.6C5-9 5-3 0 0Z" fill="${color}" transform="rotate(${a})"/>`).join('')}
-  <circle r="2.2" fill="#ffe7a3"/></svg>`;
-
-const SEASONS = [['春', 'Primavera'], ['夏', 'Verano'], ['秋', 'Otoño'], ['冬', 'Invierno']];
-
-const PATH = [
-  ['雇', 'Contrata', 'artesanos y comerciantes y ponlos a vivir en los solares de la calle.'],
-  ['商', 'Hazlos trabajar', 'mientras tu Oyakata recorre Nihonbashi y hace negocios con ellos.'],
-  ['隠', 'Retíralos', 'cuando acumulen experiencia: cada jubilación te da IKI.'],
+// Algunos de los 700-800 oficios de Edo que aparecen en las cartas, cada uno con su noren (cortina de tienda).
+const TRADES = [
+  ['提灯', 'Linternas'], ['扇', 'Abanicos'], ['畳', 'Tatamis'], ['版', 'Impresores'], ['棒手振', 'Vendedores'],
+  ['鮨', 'Sushi'], ['天麩羅', 'Tempura'], ['芸者', 'Geishas'], ['歌舞伎', 'Kabuki'],
 ];
+// Los kanji van en columna, uno por línea, como se pintan en la tela.
+const noren = ([k, name]) => `<li><span class="noren-cloth" lang="ja">${[...k].join('<br>')}</span>${name}</li>`;
 
-const HTML = `
+// Texto de «Bienvenidos a Edo» y «Objetivo del juego» del reglamento; las reglas las cuentan después las burbujas.
+const html = (tutorial) => `
   <div class="scroll-rod top"></div>
   <article class="scroll-paper">
     <span class="scroll-seal" aria-hidden="true">粋</span>
-    <p class="scroll-kicker">Nihonbashi · Edo</p>
-    <h2>El camino del Edokko</h2>
-    <p class="scroll-lead">Vive <b>un año entero</b> en Edo y conviértete en el mejor <b>Edokko</b>, «hijo de Edo»,
-      ayudando a que la ciudad y sus gentes prosperen.</p>
-    <ol class="scroll-seasons" aria-label="Un año: cuatro estaciones de tres meses">
-      ${SEASONS.map(([k, name]) => `<li><span lang="ja">${k}</span>${name}</li>`).join('')}
-    </ol>
-    <ol class="scroll-path">
-      ${PATH.map(([k, verb, rest]) => `<li><span class="scroll-kanji" lang="ja" aria-hidden="true">${k}</span>
-        <p><b>${verb}</b> ${rest}</p></li>`).join('')}
-    </ol>
-    <div class="scroll-goal">
-      <p>Gana quien termine el año con más <b>IKI</b>, el arte de vivir con estilo.</p>
-      <p class="scroll-flowers"><span>${flower('#f39bb5')} durante la partida</span><span>${flower('#c8323a')} al final</span></p>
+    <p class="scroll-kicker">Periodo Edo · 1603–1868</p>
+    <h2>Bienvenidos a Edo</h2>
+    <p class="scroll-lead">Edo era el nombre de Tokio en aquel tiempo. En <b>Nihonbashi</b> latía el mercado más concurrido de la ciudad:
+      a lo largo de su calle principal, comerciantes de todo tipo abrían sus tiendas e invitaban a pasar a sus clientes,
+      y en el muelle cercano los barcos descargaban sus capturas entre las voces de vendedores y compradores de pescado.</p>
+    <p class="scroll-cry" aria-hidden="true"><span lang="ja">いらっしゃい！</span> <i>¡Pasen, pasen!</i></p>
+    <p class="scroll-lead">En las <b>Nagayas</b>, junto a la calle, vivían los artesanos y comerciantes que sostenían a la gente común.
+      Se decía que había <b>entre 700 y 800 oficios</b>, y muchos te esperan en las cartas:</p>
+    <div class="scroll-street">
+      <ul class="scroll-noren" aria-label="Oficios de Edo">${TRADES.map(noren).join('')}</ul>
+      <ul class="scroll-noren" aria-hidden="true">${TRADES.map(noren).join('')}</ul>
     </div>
-    <p class="scroll-note">En este tutorial jugarás <b>el año entero</b>: el primer mes paso a paso y el resto con avisos.</p>
+    <p class="scroll-goal">Vive <b>un año entero</b> en Edo y conviértete en el mejor <b>Edokko</b>, «hijo de Edo».
+      Gana quien reúna más <b>粋 IKI</b>, la forma ideal de vivir con estilo en la ciudad.</p>
+    ${tutorial ? '<p class="scroll-note">En este tutorial jugarás un año entero; te iremos guiando.</p>' : ''}
     <button type="button" class="btn primary scroll-go">Entrar en Edo</button>
   </article>
   <div class="scroll-rod bottom"></div>`;
 
-export function openIntro({ onClose }) {
+export function openIntro({ onClose, tutorial = true }) {
   const dialog = document.createElement('dialog');
   dialog.id = 'tut-scroll';
-  dialog.setAttribute('aria-label', 'Objetivo del juego');
-  dialog.innerHTML = HTML;
+  dialog.setAttribute('aria-label', 'Bienvenidos a Edo');
+  dialog.innerHTML = html(tutorial);
   document.body.append(dialog);
 
   let closing = false;
