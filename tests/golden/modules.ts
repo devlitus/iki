@@ -1,0 +1,33 @@
+import './dom.ts';
+
+/**
+ * Todo lo que usa la grabación de referencia, en un solo sitio: al migrar a TypeScript solo cambian estas rutas, y la
+ * grabación y la comprobación siguen siendo exactamente el mismo código.
+ */
+export { createGame, MIN_PLAYERS, MAX_PLAYERS, OUTER_LOTS } from '../../src/game/setup.ts';
+export { act, tryAct, candidates, legalActions, whoseTurn } from '../../src/game/engine.ts';
+export { publicView } from '../../src/game/view.ts';
+export { scoreGame } from '../../src/game/scoring.ts';
+export { playerStats } from '../../src/game/playerStats.ts';
+export { createRng } from '../../src/game/random.ts';
+export { chooseAction, deciderOf, isAiTurn } from '../../src/ai/player.ts';
+export { evaluate, evaluateAgainstOthers } from '../../src/ai/evaluate.ts';
+export { createTutorialGame, HUMAN_LOTS } from '../../src/tutorial/game.ts';
+export { STEPS, TIPS, currentStep, progress, stepAllows, stepZones, humanOf } from '../../src/tutorial/script.ts';
+export { renderTurnPanel, boardTargets, hireableCards, isLegal } from '../../src/view/turnPanel.ts';
+export { renderDecks, renderSupply, renderPlayers, renderSpecialsInfo } from '../../src/view/table.ts';
+export { renderBoardPieces } from '../../src/view/boardPieces.ts';
+export { createPlayerModal } from '../../src/view/playerModal.ts';
+export { createEventSummary, createFinalTable } from '../../src/view/dialogs.ts';
+export { logLine, abilityText, cardSummary } from '../../src/view/format.ts';
+export { CHARACTERS } from '../../src/data/characters.ts';
+import * as characters from '../../src/data/characters.ts';
+import * as decks from '../../src/data/decks.ts';
+import * as market from '../../src/data/market.ts';
+import * as playerBoards from '../../src/data/playerBoards.ts';
+import * as zones from '../../src/data/zones.ts';
+export const data = { characters, decks, market, playerBoards, zones };
+export { localDb } from '../../server/db-local.ts';
+export { createApp } from '../../server/app.ts';
+export { cleanAction } from '../../server/games.ts';
+export { eloDeltas } from '../../server/rating.ts';
