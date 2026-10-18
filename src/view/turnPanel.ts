@@ -3,8 +3,9 @@ import { BUILDINGS_BY_ID } from '../data/decks.ts';
 import { MARKET_BY_ID, describeToken } from '../data/market.ts';
 import { ZONES_BY_ID, STREET, LOT_IDS } from '../data/zones.ts';
 import { act, whoseTurn, seasonOf, IKIZAMA_SLOTS } from '../game/engine.ts';
+import { FIRE_STRENGTH } from '../game/events.ts';
 import { buildCost, characterLots } from '../game/state.ts';
-import { abilityText, cardName, chips, costChips, costText, isWaiting, logLine, playerColor, playerName, shopName, waitingText, who } from './format.ts';
+import { abilityText, cardName, chip, chips, count, resText, costChips, costText, isWaiting, logByMonth, playerColor, playerName, shopName, theShop, toShop, waitingText, who } from './format.ts';
 import type { Action, ActionOf, CharacterType, Game, IkizamaSlot, MarketToken, Target } from '../types.ts';
 
 
@@ -32,6 +33,7 @@ export type Ctx = {
   canUndo?: boolean;
   game?: Game;
   openFinal?: () => void;
+  openLog?: () => void;
 };
 
 /**
@@ -60,6 +62,9 @@ const freeLots = (game: Game) => LOT_IDS.filter((id) => !game.lots[id]);
 /** Solares libres donde se puede hacer `make(lot)` ahora. */
 const legalLots = (game: Game, make: (lot: string) => Action) => freeLots(game).filter((lot) => isLegal(game, make(lot)));
 
+/** Etiqueta de los solares de las esquinas, que cuestan 2 mons más (en táctil no se ve el `title`). */
+const cornerBadge = (lot: string) => (ZONES_BY_ID[lot].extraCost ? `+${chip('mon', ZONES_BY_ID[lot].extraCost!)}` : undefined);
+
 /** Coste en mons de contratar `card` en `lot` (ya descontados los mons de la carta), para los títulos. */
 function hireCost(game: Game, p: number, card: string, lot: string) {
   const entry = game.row.find((r) => r.card === card)!;
@@ -68,7 +73,7 @@ function hireCost(game: Game, p: number, card: string, lot: string) {
 }
 
 /** Un coste de contratar: si los mons de la carta lo superan, no cuesta nada y sobran mons. */
-const hireCostText = (cost: number) => cost > 0 ? `${cost} mons` : cost < 0 ? `gratis, te quedas ${-cost} mons` : 'gratis';
+const hireCostText = (cost: number) => cost > 0 ? resText('mon', cost) : cost < 0 ? `gratis, te quedas ${resText('mon', -cost)}` : 'gratis';
 
 /** Cartas de la fila que el jugador de turno puede contratar en algún solar libre. */
 export function hireableCards(game: Game): Set<string> {
@@ -90,20 +95,21 @@ export function boardTargets(game: Game, { ui, dispatch }: Pick<Ctx, 'ui' | 'dis
   }
   if (game.pending) return [];
   if (game.phase === 'newyear' && game.turn!.step === 'place') {
-    return STREET.map((zone) => ({ zone, title: `Colocar el Oyakata en ${ZONES_BY_ID[zone].label} · ${shopName(zone)}`, onClick: () => dispatch({ type: 'place', zone }) }));
+    return STREET.map((zone) => ({ zone, title: `Colocar el Oyakata en ${theShop(zone)}`, onClick: () => dispatch({ type: 'place', zone }) }));
   }
   if (game.phase !== 'actions' && game.phase !== 'newyear') return [];
 
   if (ui.hire && game.turn!.step === 'b1') {
     return legalLots(game, (lot) => ({ type: 'hire', card: ui.hire!, lot })).map((lot) => ({
       zone: lot, title: `Contratar a ${cardName(ui.hire!)} aquí · ${hireCostText(hireCost(game, p!, ui.hire!, lot))}`,
-      onClick: () => dispatch({ type: 'hire', card: ui.hire!, lot }),
+      onClick: () => dispatch({ type: 'hire', card: ui.hire!, lot }), badge: cornerBadge(lot),
     }));
   }
   if (ui.building?.building && game.turn!.step === 'business') {
     const { via, lot: charLot, building } = ui.building;
     const make = (lot: string): Action => (via === 'shop' ? { type: 'shop', choice: 'build', building, lot } : { type: 'character', lot: charLot!, building, buildLot: lot });
-    return legalLots(game, make).map((lot) => ({ zone: lot, title: `Construir ${cardName(building)} aquí`, onClick: () => dispatch(make(lot)) }));
+    return legalLots(game, make).map((lot) => ({ zone: lot, title: `Construir ${cardName(building)} aquí${ZONES_BY_ID[lot].extraCost ? ` · ${resText('mon', ZONES_BY_ID[lot].extraCost!)} más` : ''}`,
+      onClick: () => dispatch(make(lot)), badge: cornerBadge(lot) }));
   }
   return [];
 }
@@ -119,10 +125,11 @@ export function renderTurnPanel(el: HTMLElement, game: Game, ctx: Ctx) {
       <span class="label">Mes ${game.month}/13 · ${season.name}</span>
       <h2>${PHASE[game.phase] ?? ''}</h2>
       ${p != null ? `<p class="turn-who" style="--player-color:${playerColor(game, p)}">Juega ${who(game, p)}${game.turn?.slot ? ` · Ikizama ${game.turn.slot}` : ''}</p>` : ''}
+      ${fireWarning(game, p)}
     </header>`;
 
   const waiting = isWaiting(game);
-  const body = waiting ? `<p class="ai-thinking" role="status">${waitingText(game, p!)}</p>` : game.pending ? pendingBody(game, ctx) : ({ ikizama: ikizamaBody, actions: actionsBody, newyear: actionsBody, event: () => '', ended: endedBody } as Partial<Record<string, (game: Game, ctx: Ctx) => string>>)[game.phase]?.(game, ctx) ?? '';
+  const body = waiting ? `<p class="ai-thinking">${waitingText(game, p!)}</p>` : game.pending ? pendingBody(game, ctx) : ({ ikizama: ikizamaBody, actions: actionsBody, newyear: actionsBody, event: () => '', ended: endedBody } as Partial<Record<string, (game: Game, ctx: Ctx) => string>>)[game.phase]?.(game, ctx) ?? '';
 
   el.innerHTML = `
     ${header}
@@ -131,18 +138,31 @@ export function renderTurnPanel(el: HTMLElement, game: Game, ctx: Ctx) {
     ${ctx.canUndo && !waiting ? '<button type="button" class="btn btn-sm" data-do="undo">↶ Deshacer</button>' : ''}
     <details class="turn-log" open>
       <summary class="label">Registro</summary>
-      <ul>${recentLog(game)}</ul>
+      ${recentLog(game)}
+      ${btn('Ver todo el registro', 'data-do="log"', { cls: 'btn-sm' })}
     </details>`;
 }
 
-/** Las últimas entradas, de la más reciente a la más antigua, con la cabecera «Mes N» encima de las de cada mes. */
+/**
+ * En los meses de Incendio, aviso de que al final del mes habrá uno y de su fuerza, con el nivel de Extinción de quien
+ * juega (o, si juega la IA, de las personas), para elegir Ikizama y solar sabiéndolo.
+ */
+function fireWarning(game: Game, p: number | null) {
+  const strength = FIRE_STRENGTH[game.month];
+  if (!strength || (game.phase !== 'ikizama' && game.phase !== 'actions')) return '';
+  const humans = p != null && !game.players[p].ai ? [p] : game.players.flatMap((q, i) => (q.ai ? [] : [i]));
+  const levels = humans.map((q) => `${who(game, q)}: ${game.players[q].fire}`).join(' · ');
+  return `<p class="fire-warning"><span aria-hidden="true">🔥</span> Incendio al final del mes · fuerza <b>${strength}</b>
+    ${levels ? `<br><span>Extinción de ${levels}</span>` : ''}</p>`;
+}
+
+/** Lo jugado en el mes en curso y, mientras este apenas ha empezado, también en el anterior (lo último, arriba). */
+const RECENT_MIN = 4;
 function recentLog(game: Game) {
-  let month: number | null = null;
-  return game.log.slice(-8).reverse().filter((e) => e.type !== 'month').map((e) => {
-    const head = e.month !== month ? `<li>${logLine(game, { ...e, type: 'month' })}</li>` : '';
-    month = e.month;
-    return `${head}<li>${logLine(game, e)}</li>`;
-  }).join('');
+  const played = game.log.filter((e) => e.type !== 'month');
+  const now = played.filter((e) => e.month === game.month).length;
+  const from = now >= RECENT_MIN ? game.month : game.month - 1;
+  return logByMonth(game, played.filter((e) => e.month >= from));
 }
 
 const btn = (label: string | number, attrs: string, { disabled = false, cls = '' } = {}) =>
@@ -176,7 +196,7 @@ function actionsBody(game: Game, ctx: Ctx) {
   if (step === 'move') return moveBody(game, ctx);
   if (step === 'place') {
     return `<p>Coloca tu Oyakata en cualquier casilla de la calle (pulsa el tablero o elige aquí).</p>
-      <div class="zone-list">${STREET.map((z) => btn(`${ZONES_BY_ID[z].label} · ${shopName(z)}`, `data-do="place" data-zone="${z}"`)).join('')}</div>`;
+      <div class="zone-list">${STREET.map((z) => btn(`${shopName(z)}`, `data-do="place" data-zone="${z}"`)).join('')}</div>`;
   }
   return businessBody(game, ctx);
 }
@@ -197,13 +217,30 @@ function b1Body(game: Game, { ui }: Ctx) {
     ${ui.hire ? btn('Cancelar contratación', 'data-do="cancel"', { cls: 'btn-sm' }) : ''}`;
 }
 
+/** El movimiento que el jugador tiene elegido ahora (espacios, sandalias y «Mover +1»). */
+function moveAction(game: Game, ui: Ui): ActionOf<'move'> {
+  const choose = game.turn!.slot === '1-4';
+  const sandals = Math.min(ui.sandals ?? 0, game.players[game.turn!.player].resources.sandal);
+  return { type: 'move', base: choose ? ui.base ?? 1 : undefined, sandals, bonus: ui.bonus || undefined };
+}
+
+/** Casilla a la que llegaría el Oyakata con el movimiento elegido, para marcarla en el tablero (o null). */
+export function moveDestination(game: Game, ui: Ui) {
+  if (game.phase !== 'actions' || game.turn?.step !== 'move' || game.pending || isWaiting(game)) return null;
+  try {
+    return act(game, moveAction(game, ui)).players[game.turn.player].oyakata;
+  } catch {
+    return null;
+  }
+}
+
 function moveBody(game: Game, { ui }: Ctx) {
   const p = game.turn!.player;
   const player = game.players[p];
   const choose = game.turn!.slot === '1-4';
   const base = ui.base ?? 1;
-  const sandals = Math.min(ui.sandals ?? 0, player.resources.sandal);
-  const action: Action = { type: 'move', base: choose ? base : undefined, sandals, bonus: ui.bonus || undefined };
+  const action = moveAction(game, ui);
+  const sandals = action.sandals!;
 
   let preview = '';
   try {
@@ -212,7 +249,7 @@ function moveBody(game: Game, { ui }: Ctx) {
     const laps = next.log.at(-1)!.laps as number;
     const here = ZONES_BY_ID[to];
     const stalls = here.stalls!.map((l) => next.lots[l]).filter((l) => l?.kind === 'character').map((l) => cardName(l.card));
-    preview = `<p class="preview">Llegas a <b>${here.label}</b> · ${shopName(to)}${laps ? ` · <b>+${laps} experiencia</b> a todos tus personajes` : ''}
+    preview = `<p class="preview">Llegas <b>${toShop(to)}</b>${laps ? ` · <b>+${laps} experiencia</b> a todos tus personajes` : ''}
       ${stalls.length ? `<br><span class="muted">Puestos: ${stalls.join(', ')}</span>` : ''}</p>`;
   } catch (e) {
     preview = `<p class="turn-error">${(e as Error).message}</p>`;
@@ -222,12 +259,12 @@ function moveBody(game: Game, { ui }: Ctx) {
   return `
     <p>Mueve tu Oyakata en el sentido de las flechas.</p>
     ${choose ? `<div class="stepper"><span>Espacios</span>${[1, 2, 3, 4].map((n) => btn(n, `data-do="base" data-n="${n}"`, { cls: n === base ? 'on' : '' })).join('')}</div>`
-      : `<p class="muted">Tu Ikizama marca ${game.turn!.slot} espacio(s).</p>`}
+      : `<p class="muted">Tu Ikizama marca ${count(Number(game.turn!.slot), 'espacio')}.</p>`}
     <div class="stepper"><span>Sandalias ${chips([{ res: 'sandal', n: sandals }])} / ${player.resources.sandal}</span>
       ${btn('−', 'data-do="sandals" data-d="-1"', { disabled: sandals <= 0 })}${btn('+', 'data-do="sandals" data-d="1"', { disabled: sandals >= player.resources.sandal })}</div>
     ${player.specials.includes('move') ? `<label class="check"><input type="checkbox" data-do="bonus"${ui.bonus ? ' checked' : ''}> Usar «Mover +1»</label>` : ''}
     ${preview}
-    ${btn(`Mover ${total} espacio(s)`, 'data-do="move"', { cls: 'wide primary' })}`;
+    ${btn(`Mover ${count(total, 'espacio')}`, 'data-do="move"', { cls: 'wide primary' })}`;
 }
 
 // --- Negocios -----------------------------------------------------------------------------------
@@ -239,7 +276,7 @@ function businessBody(game: Game, ctx: Ctx) {
   const shop = ZONES_BY_ID[here.shop!];
   const stalls = here.stalls!.filter((l) => game.lots[l]?.kind === 'character');
   return `
-    <p class="muted">Estás en <b>${here.label}</b>. Puedes usar la tienda y un personaje de sus puestos, en cualquier orden.</p>
+    <p class="muted">Estás en <b>${theShop(game.players[p].oyakata!)}</b>. Puedes usar la tienda y un personaje de sus puestos, en cualquier orden.</p>
     <section class="biz">
       <h3>${shop.label}${game.turn!.didShop ? ' <span class="muted">· hecho</span>' : ''}</h3>
       ${game.turn!.didShop ? '' : shopBody(game, here.shop!, ctx)}
@@ -394,7 +431,7 @@ export function bindTurnPanel(el: HTMLElement, getCtx: () => Ctx) {
   });
 }
 
-function handle(b: Control, { ui, set, dispatch, undo, game, openFinal }: Ctx) {
+function handle(b: Control, { ui, set, dispatch, undo, game, openFinal, openLog }: Ctx) {
   const d = b.dataset as Record<string, string>;
   const num = (v: string) => Number(v);
   switch (d.do) {
@@ -405,7 +442,7 @@ function handle(b: Control, { ui, set, dispatch, undo, game, openFinal }: Ctx) {
     case 'place': return dispatch({ type: 'place', zone: d.zone });
     case 'base': return set({ base: num(d.n) });
     case 'sandals': return set({ sandals: Math.max(0, (ui.sandals ?? 0) + num(d.d)) });
-    case 'move': return dispatch({ type: 'move', base: game!.turn!.slot === '1-4' ? ui.base ?? 1 : undefined, sandals: Math.min(ui.sandals ?? 0, game!.players[game!.turn!.player].resources.sandal), bonus: ui.bonus || undefined });
+    case 'move': return dispatch(moveAction(game!, ui));
     case 'endTurn': return dispatch({ type: 'endTurn' });
     case 'shop': return dispatch({ type: 'shop', ...pick(d, ['fish', 'choice']) });
     case 'building': return set({ building: ui.building?.building === d.building && ui.building.lot === d.lot ? null : { via: d.via, lot: d.lot, building: d.building } });
@@ -422,6 +459,7 @@ function handle(b: Control, { ui, set, dispatch, undo, game, openFinal }: Ctx) {
     case 'avoid': return dispatch({ type: 'resolve', use: d.use === 'true' });
     case 'wild': return dispatch({ type: 'resolve', cardType: d.type as CharacterType });
     case 'final': return openFinal!();
+    case 'log': return openLog!();
   }
 }
 

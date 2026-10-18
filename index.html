@@ -37,7 +37,7 @@
           <details id="specials-info" hidden></details>
           <button type="button" class="btn" id="open-menu">Menú</button>
         </header>
-        <section id="turn" class="panel" aria-live="polite" hidden></section>
+        <section id="turn" class="panel" aria-label="Turno" hidden></section>
         <section id="decks" class="panel"></section>
         <div id="supply"></div>
         <p class="hint">Rueda: zoom · Arrastrar: mover · Doble clic: encajar · Alt + clic: coordenadas · Z: zonas</p>
@@ -48,6 +48,8 @@
           <div id="pieces"></div>
         </div>
         <div id="toast" hidden></div>
+        <div id="board-banner" role="status"></div>
+        <div id="announcer" class="sr-only" aria-live="polite"></div>
       </main>
       <section id="players" aria-label="Jugadores"></section>
     </div>

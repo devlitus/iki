@@ -69,8 +69,12 @@ function placeFireTile(board: Board, game: Game, nagaya: string, put: Put, img: 
   }
 }
 
-/** `fireNagaya`: Nagaya cuya loseta de Incendio está boca arriba en el tablero (el incendio en curso o recién contado). */
-export function renderBoardPieces(board: Board, game: Game, { targets = [], fireNagaya = null }: { targets?: Target[]; fireNagaya?: string | null } = {}) {
+/**
+ * `fireNagaya`: Nagaya cuya loseta de Incendio está boca arriba en el tablero (el incendio en curso o recién contado).
+ * `current`: jugador de turno, cuyo Oyakata se resalta; `destination`: casilla a la que llegaría con el movimiento elegido.
+ */
+export function renderBoardPieces(board: Board, game: Game, { targets = [], fireNagaya = null, current = null, destination = null }:
+  { targets?: Target[]; fireNagaya?: string | null; current?: number | null; destination?: string | null } = {}) {
   board.pieces.replaceChildren();
   const boardId = (i: number) => game.players[i].boardId;
   const color = (i: number) => PLAYER_BOARDS_BY_ID[boardId(i)].color;
@@ -129,7 +133,9 @@ export function renderBoardPieces(board: Board, game: Game, { targets = [], fire
   game.players.forEach((player, pi) => {
     if (player.oyakata) {
       const k = stackAt(`oyakata-${player.oyakata}`);
-      put(img(`/pawns/oyakata-${boardId(pi)}.webp`, 'piece piece-oyakata', `z-index:${5 + k}`), player.oyakata, '10', { du: k * 0.008, dv: k * -0.002, title: 'Oyakata' });
+      const mark = pi === current ? ' current' : '';
+      put(img(`/pawns/oyakata-${boardId(pi)}.webp`, `piece piece-oyakata${mark}`, `z-index:${5 + k}${mark ? `;--player-color:${color(pi)}` : ''}`), player.oyakata, '10',
+        { du: k * 0.008, dv: k * -0.002, title: `Oyakata de ${PLAYER_BOARDS_BY_ID[boardId(pi)].name}${mark ? ' (juega ahora)' : ''}` });
     }
     if (player.ikizama) put(img(`/pawns/ikizama-${boardId(pi)}.webp`, 'piece piece-ikizama'), `turn-${player.ikizama}`, null, { title: 'Ikizama' });
   });
@@ -159,8 +165,21 @@ export function renderBoardPieces(board: Board, game: Game, { targets = [], fire
 
   if (fireNagaya) placeFireTile(board, game, fireNagaya, put, img);
 
+  // Destino del movimiento que se está eligiendo (solo se mira: se confirma desde el panel).
+  if (destination) {
+    const zone = ZONES_BY_ID[destination];
+    const mark = document.createElement('div');
+    mark.className = 'zone-mark';
+    mark.setAttribute('aria-hidden', 'true');
+    mark.style.width = `${zone.w! * 100}%`;
+    mark.style.height = `${zone.h! * 100}%`;
+    if (current != null) mark.style.setProperty('--player-color', color(current));
+    const { u, v } = zoneCenter(zone);
+    board.place(mark, u, v);
+  }
+
   // Zonas pulsables: un botón encima de la zona, con su mismo tamaño.
-  for (const { zone: id, title, onClick } of targets) {
+  for (const { zone: id, title, onClick, badge } of targets) {
     const zone = ZONES_BY_ID[id];
     const target = document.createElement('button');
     target.type = 'button';
@@ -175,6 +194,7 @@ export function renderBoardPieces(board: Board, game: Game, { targets = [], fire
       target.style.aspectRatio = '1';
       target.style.borderRadius = '50%';
     }
+    if (badge) target.innerHTML = `<span class="lot-badge" aria-hidden="true">${badge}</span>`; // el coste ya va en aria-label
     target.addEventListener('pointerdown', (e) => e.stopPropagation()); // que no arrastre el tablero
     target.addEventListener('click', onClick);
     const { u, v } = zoneCenter(zone);

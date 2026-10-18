@@ -48,6 +48,9 @@
 /* El tablero ocupa su celda; el zoom y el arrastre siguen funcionando dentro. */
 #viewport { grid-area: board; position: relative; min-height: 0; border-radius: 6px; }
 #viewport #hint, #viewport #toast { position: absolute; }
+#board-banner { position: absolute; z-index: 5; left: 50%; top: 8px; /* sobre el calendario: abajo taparía solares exteriores */ translate: -50% 0; width: max-content; max-width: calc(100% - 16px); display: flex; align-items: center; gap: 10px; padding: 6px 8px 6px 12px; color: var(--ink); border: 1px solid #ffd27a; border-radius: 8px; background: rgba(29, 18, 10, 0.92); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55); }
+#board-banner[hidden] { display: none; }
+#board-banner .btn { flex: none; }
 
 /* Mazos y personajes iniciales */
 .decks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
@@ -210,6 +213,14 @@
 .oyakata { width: 2.4%; background: var(--player-color); border: 3px solid #fff; border-radius: 50% 50% 40% 40% !important; }
 .kobun-on-card { position: absolute; left: 50%; bottom: 7%; width: 14%; transform: translateX(-50%); background: var(--player-color); border: 2px solid #fff; }
 .lot-target { border: 3px dashed rgba(255, 255, 255, 0.7); border-radius: 6px; background: rgba(255, 210, 122, 0.1); cursor: default; }
+/* Oyakata de quien juega y casilla a la que llegaría con el movimiento elegido */
+#pieces .piece-oyakata.current { filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 5px var(--player-color)) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8)); animation: oyakata-bob 0.9s ease-in-out infinite alternate; }
+@keyframes oyakata-bob { to { translate: 0 -12%; } }
+.zone-mark { border: 3px solid var(--player-color, #ffd27a); border-radius: 6px; background: rgba(255, 255, 255, 0.18); box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.55), 0 0 12px var(--player-color, #ffd27a); pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { #pieces .piece-oyakata.current { animation: none; } }
+.lot-badge { position: absolute; top: 4%; right: 4%; display: inline-flex; align-items: center; padding: 1px 5px; font-size: clamp(9px, 1vw, 14px); font-weight: 700; color: #1d120a; border-radius: 99px; background: #ffd27a; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); pointer-events: none; }
+.lot-badge .res { gap: 1px; }
+.lot-badge .ic { width: 1.2em; height: 1.2em; }
 .lot-target.armed { border-color: #ffd27a; background: rgba(255, 210, 122, 0.3); cursor: pointer; animation: lot-pulse 1.2s ease-in-out infinite alternate; }
 @keyframes lot-pulse { to { background: rgba(255, 210, 122, 0.08); } }
 

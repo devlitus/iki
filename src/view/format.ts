@@ -1,9 +1,10 @@
 import { CHARACTERS_BY_ID, CHARACTER_TYPES } from '../data/characters.ts';
-import { BUILDINGS_BY_ID } from '../data/decks.ts';
+import { BUILDINGS_BY_ID, SEASONS_BY_ID } from '../data/decks.ts';
 import { PLAYER_BOARDS_BY_ID } from '../data/playerBoards.ts';
+import { MARKET_BY_ID, MARKET_TOKENS } from '../data/market.ts';
 import { NAGAYAS_BY_ID, ZONES_BY_ID } from '../data/zones.ts';
 import { deciderOf, isAiTurn } from '../ai/player.ts';
-import type { Ability, Amount, Character, Cost, Game, LogEntry, Res } from '../types.ts';
+import type { Ability, Amount, Character, Cost, Game, LogEntry, MarketToken, Res } from '../types.ts';
 
 /** Textos de la interfaz: nombres de jugadores, recursos, habilidades y entradas del registro. */
 
@@ -32,11 +33,17 @@ export const playerColor = (g: Game, p: number) => PLAYER_BOARDS_BY_ID[g.players
 export const who = (g: Game, p: number) => `<b class="who-name" style="--player-color:${playerColor(g, p)}">${playerName(g, p)}</b>`;
 
 const RES_LABEL: Record<string, string> = { mon: 'mons', rice: 'arroz', sandal: 'sandalias', wood: 'madera', koban: 'Koban', iki: 'IKI' };
+const RES_ONE: Record<string, string> = { mon: 'mon', rice: 'arroz', sandal: 'sandalia', wood: 'madera', koban: 'Koban', iki: 'IKI' };
 
-/** n + icono del recurso (`iki` va como texto: no tiene ficha). */
+/** «1 espacio», «3 espacios»: el número con la palabra en singular o plural. */
+export const count = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+/** «1 mon», «4 mons», «2 sandalias», en texto plano. */
+export const resText = (res: string, n: number) => `${n} ${n === 1 ? RES_ONE[res] : RES_LABEL[res]}`;
+
+/** n + icono del recurso (`iki` va como texto: no tiene ficha); el lector de pantalla lee el nombre del recurso. */
 export const chip = (res: string, n: number) => (res === 'iki'
   ? `<span class="res" title="IKI">${n} IKI</span>`
-  : `<span class="res" title="${RES_LABEL[res]}">${n}<span class="ic ic-${res}"></span></span>`);
+  : `<span class="res" title="${RES_LABEL[res]}">${n}<span class="ic ic-${res}" aria-hidden="true"></span><span class="sr-only"> ${n === 1 ? RES_ONE[res] : RES_LABEL[res]}</span></span>`);
 
 /** [{ res, n }] → chips; un IKI negativo se muestra con su signo. */
 export const chips = (list: Amount[]) => list.map(({ res, n }) => chip(res, n)).join(' ');
@@ -45,7 +52,7 @@ export const chips = (list: Amount[]) => list.map(({ res, n }) => chip(res, n)).
 export const costChips = (cost: Cost) => Object.entries(cost).filter(([, n]) => n > 0).map(([res, n]) => chip(res, n)).join(' · ');
 
 /** Coste de un edificio en texto plano (para `title` y `alt`, donde no cabe HTML). */
-export const costText = (cost: Cost) => Object.entries(cost).filter(([, n]) => n > 0).map(([res, n]) => `${n} ${RES_LABEL[res]}`).join(', ');
+export const costText = (cost: Cost) => Object.entries(cost).filter(([, n]) => n > 0).map(([res, n]) => resText(res, n)).join(', ');
 
 /** Lo que hace un personaje al activarlo, en una línea. */
 export function abilityText(def: Character) {
@@ -88,7 +95,27 @@ const BUILDING_EFFECT: Record<string, string> = {
   fire: 'Al final, 2 IKI por cada espacio de Extinción de Incendios.',
 };
 
+const BAG_SCORE: Record<string, string> = { fire2: '1 IKI por cada 2 espacios de Extinción de Incendios', mostType: '1 IKI por cada personaje del tipo que más tengas',
+  types: '1 IKI por cada tipo de personaje distinto', mon4: '1 IKI por cada 4 mons' };
+
+/** Resumen de una ficha de Pescado, Pipa o Tabaco, como el de las cartas. */
+function tokenSummary(t: MarketToken) {
+  const head = `<h3>${TOKEN_NAME[t.kind].replace(/^una? /, '')}</h3>
+    <p class="meta">${SEASONS_BY_ID[t.season].name} · cuesta ${chip('mon', t.cost)}</p>`;
+  if (t.kind === 'fish') {
+    return `${head}<p><b>Al final:</b> los Pescados de estaciones distintas puntúan juntos (3, 6, 10 o 15 IKI)${t.bonus ? `, y este da <b>${t.bonus} IKI</b> más` : ''}.</p>
+      <p>Solo uno por estación.</p>`;
+  }
+  if (t.kind === 'pipe') {
+    const e = t.effect!;
+    const what = e.fire ? `+${e.fire} en Extinción de Incendios` : e.xp ? '+1 de experiencia a uno de tus personajes' : `recibes ${chips(e.gain!)}`;
+    return `${head}<p><b>Al comprarla:</b> ${what}.</p><p><b>Al final:</b> con una Pipa, tu Tabaco puntúa el doble.</p>`;
+  }
+  return `${head}<p><b>Al final:</b> ${t.score!.iki != null ? `${t.score!.iki} IKI` : BAG_SCORE[t.score!.per!]}; el doble si tienes una Pipa.</p>`;
+}
+
 const SUMMARY_BY_IMAGE = new Map<string, () => string>([
+  ...MARKET_TOKENS.filter((t) => t.image).map((t) => [t.image!, () => tokenSummary(t)] as [string, () => string]),
   ...Object.values(CHARACTERS_BY_ID).map((c) => [c.scan, () => `
     <h3>${c.name}</h3>
     <p class="meta">${typeLabel(c.type)} · ${c.cost == null ? 'Personaje inicial' : `cuesta ${chip('mon', c.cost)}`}</p>
@@ -106,6 +133,10 @@ const SUMMARY_BY_IMAGE = new Map<string, () => string>([
 export const cardSummary = (src: string) => SUMMARY_BY_IMAGE.get(src)?.() ?? '';
 
 export const shopName = (zoneId: string) => ZONES_BY_ID[ZONES_BY_ID[zoneId].shop!].label;
+/** «el Mercado de Pescado», «la Tienda de Arroz»: la casilla de la calle por su tienda (su nombre interno no dice nada). */
+export const theShop = (zoneId: string) => `${/^(Mercado|Lugar)/.test(shopName(zoneId)) ? 'el' : 'la'} ${shopName(zoneId)}`;
+/** «al Mercado de Pescado», «a la Tienda de Arroz». */
+export const toShop = (zoneId: string) => `a ${theShop(zoneId)}`.replace(/^a el /, 'al ');
 export const typeLabel = (type: string) => CHARACTER_TYPES[type as keyof typeof CHARACTER_TYPES]?.label ?? type;
 
 const name = (id: string): string => CHARACTERS_BY_ID[id]?.name ?? BUILDINGS_BY_ID[id]?.name ?? id;
@@ -116,6 +147,28 @@ const nagayaOfLot = (lot: string) => NAGAYAS_BY_ID[lot.replace(/^lot-|-\d$/g, ''
 /** Entradas del registro que cuentan lo que pasó en el Evento del mes (para el resumen). */
 export const EVENT_LOG_TYPES = ['salary', 'harmony', 'perk', 'starve', 'food', 'fire-start', 'fire-stopped', 'fire-avoided', 'burned'];
 
+const TOKEN_NAME: Record<string, string> = { fish: 'un Pescado', pipe: 'una Pipa', bag: 'una Bolsa de Tabaco' };
+
+/** Lo que hizo un jugador en una tienda, con lo que pagó y lo que se llevó (sin el sujeto). */
+function shopDeal(e: Entry) {
+  const at = ZONES_BY_ID[e.shop].label;
+  const token = (id: string) => `${TOKEN_NAME[MARKET_BY_ID[id].kind]} de ${chip('mon', MARKET_BY_ID[id].cost)}`;
+  switch (e.shop) {
+    case 'shop-sandals': return `compra ${chip('sandal', 2)} por ${chip('mon', 2)}`;
+    case 'shop-rice': return `compra ${chip('rice', 2)} por ${chip('mon', 3)}`;
+    case 'shop-pawn': return e.choice ? `empeña ${chip(e.choice, 1)} por ${chip('mon', 4)}` : `usa ${at}`;
+    case 'shop-exchange': return e.choice === 'mons' ? `cobra ${chip('mon', 2)} en ${at}`
+      : e.choice ? `cambia ${chip('mon', e.choice === 'koban1' ? 6 : 10)} por ${chip('koban', e.choice === 'koban1' ? 1 : 2)}` : `usa ${at}`;
+    case 'shop-construction': return e.choice === 'rice' ? `compra ${chip('rice', 1)} por ${chip('mon', 1)} en ${at}` : `usa ${at}`;
+    case 'shop-fish': return e.fish ? `compra ${token(e.fish)}` : `usa ${at}`;
+    case 'shop-tobacco': {
+      const bought = [e.pipe, e.bag].filter(Boolean).map(token);
+      return bought.length ? `compra ${bought.join(' y ')}` : `usa ${at}`;
+    }
+    default: return `usa ${at}`;
+  }
+}
+
 /** Una entrada del registro como frase (HTML); `g` da los nombres de los jugadores. */
 /** Campos de una entrada del registro: dependen de `type` (ver los `log(g, …)` del motor). */
 type Entry = { [field: string]: any } & Pick<LogEntry, 'seq' | 'month' | 'type'>;
@@ -125,12 +178,12 @@ export function logLine(g: Game, e: Entry) {
 
   const p = e.player != null ? who(g, e.player) : '';
   switch (e.type) {
-    case 'month': return `<b>Mes ${e.month}</b>`;
+    case 'month': return `<b>${monthLabel(e.month)}</b>`;
     case 'income': return `${p} cobra ingresos (+4 mons)`;
     case 'hire': return `${p} contrata a ${name(e.card)}`;
-    case 'move': return `${p} se mueve a ${ZONES_BY_ID[e.to].label}${e.laps ? ` y da la vuelta (+${e.laps} exp.)` : ''}`;
-    case 'place': return `${p} coloca su Oyakata en ${ZONES_BY_ID[e.to].label}`;
-    case 'shop': return `${p} usa ${ZONES_BY_ID[e.shop].label}`;
+    case 'move': return `${p} se mueve ${toShop(e.to)}${e.laps ? ` y da la vuelta (+${e.laps} exp.)` : ''}`;
+    case 'place': return `${p} coloca su Oyakata en ${theShop(e.to)}`;
+    case 'shop': return `${p} ${shopDeal(e)}`;
     case 'character': return `${p} activa a ${name(e.card)}${e.owner !== e.player ? ` de ${who(g, e.owner)}` : ''}${e.swapped ? ` e intercambia ${
       (e.swapped as { card: string; from: string }[]).map((s) => `${name(s.card)} (Nagaya ${nagayaOfLot(s.from)})`).join(' y ')}` : ''}`;
     case 'build': return `${p} construye ${name(e.card)}`;
@@ -139,16 +192,33 @@ export function logLine(g: Game, e: Entry) {
     case 'salary': return `${p} cobra ${Object.entries(e.gain as Cost).filter(([, n]) => n).map(([r, n]) => chip(r, n)).join(' ') || 'nada'} de salario`;
     case 'perk': return `${p} gana ${Object.entries(e.gain as Cost).map(([r, n]) => chip(r, n)).join(' ')} por ${name(e.building)}`;
     case 'harmony': return `${p} gana ${e.iki} IKI por Armonía`;
-    case 'food': return `${p} alimenta a ${e.fed} personaje(s)${e.dropped ? ` y pierde ${e.dropped}` : ''}`;
+    case 'food': return `${p} alimenta a ${count(e.fed, 'personaje')}${e.dropped ? ` y pierde ${e.dropped}` : ''}`;
     case 'starve': return `${p} pierde a ${name(e.card)} por falta de arroz`;
     case 'fire-start': return `Incendio de fuerza ${e.strength} en el Nagaya ${NAGAYAS_BY_ID[e.nagaya].name}`;
-    case 'fire-stopped': return `El fuego se detiene en el solar de ${p}`;
-    case 'fire-avoided': return `${p} evita el incendio`;
+    case 'fire-stopped': return e.card
+      ? `El fuego se detiene en ${name(e.card)} de ${p}: Extinción ${e.level} contra fuerza ${e.strength}`
+      : `El fuego se detiene en el solar de ${p}`;
+    case 'fire-avoided': return `${p} evita que arda ${e.card ? name(e.card) : 'su personaje'} («Evitar un incendio»)`;
     case 'burned': return `Arde ${name(e.card)} de ${p}`;
     case 'wild': return `${p} elige el tipo ${typeLabel(e.cardType)} para el Comodín`;
     case 'end': return `Fin de la partida: gana ${who(g, e.winner)}`;
     default: return e.type;
   }
+}
+
+/** Cabecera de un mes en el registro («Mes 3», y el 13 es el Día de Año Nuevo). */
+export const monthLabel = (month: number) => (month === 13 ? 'Día de Año Nuevo' : `Mes ${month}`);
+
+/**
+ * Entradas del registro agrupadas por mes, del más reciente al más antiguo y, dentro de cada mes, lo último arriba;
+ * `heading` es la etiqueta de la cabecera de cada grupo (h3, h4…).
+ */
+export function logByMonth(g: Game, entries: LogEntry[], heading = 'h4') {
+  const months = new Map<number, LogEntry[]>();
+  for (const e of entries) if (e.type !== 'month') months.set(e.month, [...(months.get(e.month) ?? []), e]);
+  return [...months].reverse().map(([month, list]) => `<section class="log-month">
+    <${heading}>${monthLabel(month)}</${heading}>
+    <ul>${list.reverse().map((e) => `<li>${logLine(g, e)}</li>`).join('')}</ul></section>`).join('');
 }
 
 export { lotName, name as cardName };

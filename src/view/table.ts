@@ -1,9 +1,10 @@
 import { PLAYER_BOARDS_BY_ID } from '../data/playerBoards.ts';
 import { SEASONS, BUILDINGS_BY_ID, BUILDING_BACK } from '../data/decks.ts';
 import { CHARACTERS_BY_ID } from '../data/characters.ts';
+import { ZONES_BY_ID } from '../data/zones.ts';
 import { currentPicker, activePlayer } from '../game/setup.ts';
 import { seasonOf } from '../game/engine.ts';
-import { esc, isWaiting, playerName } from './format.ts';
+import { count, esc, isWaiting, playerName, resText, shopName } from './format.ts';
 import { playerStats, SPECIALS, MAX_FISH, MAX_TYPES } from '../game/playerStats.ts';
 import type { Game, Resources } from '../types.ts';
 
@@ -34,7 +35,7 @@ export function renderDecks(el: HTMLElement, game: Game, { selectedCard, onSelec
   const current = SEASONS.indexOf(seasonOf(game.month));
   const decks = SEASONS.map((s, i) => `
     <div class="deck${i === current ? ' current' : i < current ? ' past' : ''}"
-      title="Mazo de ${s.name}: ${game.decks[s.id].length} cartas${i === current ? ' · estación en curso' : ''}">
+      title="Mazo de ${s.name}: ${count(game.decks[s.id].length, 'carta')}${i === current ? ' · estación en curso' : ''}">
       <div class="pile"><img src="${s.back}" alt=""><img src="${s.back}" alt=""><img src="${s.back}" alt="Mazo de ${s.name}"></div>
       <span>${s.name}<br>${game.decks[s.id].length}</span>
     </div>`).join('');
@@ -55,9 +56,9 @@ export function renderDecks(el: HTMLElement, game: Game, { selectedCard, onSelec
     lower = `<div class="initial-row"><span class="label">Fila de personajes · ${game.row.length}</span>
         <div class="initial-cards row-cards${choosing ? ' choosing' : ''}">${game.row.map(({ card, mons }) => `
           <button type="button" class="initial-card${card === hiring ? ' selected' : ''}" data-hire="${card}" data-zoom="${CHARACTERS_BY_ID[card].scan}"
-            ${hireable.has(card) ? '' : 'disabled'} title="${CHARACTERS_BY_ID[card].name} · cuesta ${CHARACTERS_BY_ID[card].cost} mons${mons ? ` (con ${mons} mons encima)` : ''}">
+            ${hireable.has(card) ? '' : 'disabled'} title="${CHARACTERS_BY_ID[card].name} · cuesta ${resText('mon', CHARACTERS_BY_ID[card].cost!)}${mons ? ` (con ${resText('mon', mons)} encima)` : ''}">
             <img src="${CHARACTERS_BY_ID[card].scan}" alt="${CHARACTERS_BY_ID[card].name}" draggable="false">
-            ${mons ? `<span class="mons-on-card" title="${mons} mons encima: ayudan a pagar la carta"><span class="ic ic-mon"></span>${mons}</span>` : ''}
+            ${mons ? `<span class="mons-on-card" title="${resText('mon', mons)} encima: ayudan a pagar la carta"><span class="ic ic-mon" aria-hidden="true"></span>${mons}</span>` : ''}
           </button>`).join('')}</div>
         <p class="muted">${game.row.length ? 'Los mons de encima se los queda quien la contrate.' : 'No quedan cartas este mes.'}</p></div>`;
   } else {
@@ -109,7 +110,11 @@ export function renderPlayers(el: HTMLElement, game: Game, { onOpenBoard }: { on
     : (game.phase === 'actions' || game.phase === 'newyear') && game.turnList ? game.turnList
     : game.phase === 'ikizama' ? game.order! : game.turnOrder;
   const from = sequence.indexOf(active);
-  const order = [...sequence.slice(from), ...sequence.slice(0, from)];
+  const rotated = [...sequence.slice(from), ...sequence.slice(0, from)];
+  // Contra la IA (o en línea), la ficha propia va la primera: es la que más se consulta.
+  const humans = game.players.flatMap((p, i) => (p.ai ? [] : [i]));
+  const me = game.viewer ?? (humans.length === 1 ? humans[0] : null);
+  const order = me == null ? rotated : [me, ...rotated.filter((i) => i !== me)];
 
   el.innerHTML = order.map((index) => {
     const p = game.players[index];
@@ -142,7 +147,7 @@ export function renderPlayers(el: HTMLElement, game: Game, { onOpenBoard }: { on
             ? `${CHARACTERS_BY_ID[lot[1].card].name}`
             : picker === index ? '<b>Elige personaje inicial</b>' : `Elige personaje ${game.pickOrder.indexOf(index) + 1}.º`}</span>` : `
           <span title="Casilla del marcador de Ikizama">Ikizama: ${p.ikizama ?? 'en su tablero'}</span>
-          <span title="Casilla de la calle donde está su Oyakata">${st.oyakata}</span>`}
+          <span title="Casilla de la calle donde está su Oyakata">${p.oyakata && ZONES_BY_ID[p.oyakata]?.shop ? shopName(p.oyakata) : st.oyakata}</span>`}
         </p>
       </article>`;
   }).join('');

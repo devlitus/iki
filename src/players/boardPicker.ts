@@ -31,7 +31,7 @@ export function createBoardPicker({ onDone, onCancel }: { onDone?: (players: Pic
   overlay.innerHTML = `
     <div class="picker-panel" role="dialog" aria-modal="true" aria-labelledby="picker-title">
       <header>
-        <h2 id="picker-title"></h2>
+        <h2 id="picker-title" aria-live="polite"></h2>
         <button type="button" class="picker-close" aria-label="Cerrar">×</button>
       </header>
       <p class="label picker-col picker-col-boards">Color</p>
@@ -133,9 +133,10 @@ export function createBoardPicker({ onDone, onCancel }: { onDone?: (players: Pic
 
   function update() {
     const full = players.length >= MAX_PLAYERS;
-    title.textContent = full
-      ? 'Todos los tableros elegidos'
-      : `Jugador ${players.length + 1}: elige tu color`;
+    // Con los mínimos ya elegidos, otro color es opcional: el título no debe parecer que obliga a añadirlo.
+    title.textContent = full ? 'Todos los tableros elegidos'
+      : players.length >= MIN_PLAYERS ? `${players.length} jugadores: pulsa Empezar o añade otro color`
+      : `Jugador ${players.length + 1}: elige tu color${players.length ? '' : ` (mínimo ${MIN_PLAYERS} jugadores)`}`;
     for (const opt of list.children as HTMLCollectionOf<HTMLButtonElement>) {
       const owner = ownerOf(opt.dataset.id);
       opt.classList.toggle('taken', Boolean(owner));
@@ -147,7 +148,7 @@ export function createBoardPicker({ onDone, onCancel }: { onDone?: (players: Pic
       const name = p.ai
         ? `<span class="picker-ai-name">${esc(p.name)}</span>
            <button type="button" class="picker-reroll" title="Sortear otro nombre" aria-label="Sortear otro nombre para la IA">⚄</button>`
-        : `<input type="text" maxlength="${NAME_MAX}" value="${esc(p.name)}" placeholder="Jugador ${p.player}"
+        : `<input type="text" maxlength="${NAME_MAX}" value="${esc(p.name)}" placeholder="Tu nombre (opcional)"
              aria-label="Nombre del jugador ${p.player} (${board.name})" autocomplete="off" spellcheck="false">`;
       return `
         <div class="picker-seat${p.ai ? ' ai' : ''}" data-seat="${p.player}" style="--player-color:${board.color}">

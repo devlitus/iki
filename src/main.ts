@@ -10,9 +10,9 @@ import { randomSeed } from './game/random.ts';
 import { chooseAction, isAiTurn } from './ai/player.ts';
 import { renderDecks, renderSupply, renderPlayers, renderSpecialsInfo } from './view/table.ts';
 import { renderBoardPieces } from './view/boardPieces.ts';
-import { renderTurnPanel, bindTurnPanel, boardTargets, hireableCards } from './view/turnPanel.ts';
+import { renderTurnPanel, bindTurnPanel, boardTargets, hireableCards, moveDestination } from './view/turnPanel.ts';
 import { createCover } from './view/cover.ts';
-import { createEventSummary, createFinalTable, initZoom } from './view/dialogs.ts';
+import { createEventSummary, createFinalTable, createLogDialog, initZoom } from './view/dialogs.ts';
 import { initTooltips } from './view/tooltip.ts';
 import { createPlayerModal } from './view/playerModal.ts';
 import { createDiceRoll } from './view/diceRoll.ts';
@@ -25,7 +25,7 @@ import { openIntro } from './tutorial/intro.ts';
 import { createTutorialGame } from './tutorial/game.ts';
 import { createOnline } from './online/online.ts';
 import { api, type ApiError } from './online/api.ts';
-import { isWaiting } from './view/format.ts';
+import { EVENT_LOG_TYPES, isWaiting, logLine, playerName } from './view/format.ts';
 import { CHARACTERS_BY_ID } from './data/characters.ts';
 import './view/table.css';
 import './view/turn.css';
@@ -87,11 +87,12 @@ const mobile = createMobileLayout({ app, side: document.getElementById('side')!,
 let fireTileShown: string | null = null;
 const eventSummary = createEventSummary({ onClose: () => { if (fireTileShown) { fireTileShown = null; render(); } } });
 const finalTable = createFinalTable({ onNewGame: () => openPicker() });
+const logDialog = createLogDialog();
 initZoom();
 initTooltips();
 
 /** Todo lo que el panel de turno necesita para pintar y para actuar. */
-const turnCtx = () => ({ game: game!, ui, set, dispatch, undo, canUndo: history.length > 0, openFinal: () => finalTable.open(game!) });
+const turnCtx = () => ({ game: game!, ui, set, dispatch, undo, canUndo: history.length > 0, openFinal: () => finalTable.open(game!), openLog: () => logDialog.open(game!) });
 bindTurnPanel(turnEl, turnCtx);
 
 /** Deja la mesa vacía, como antes de empezar ninguna partida. */
@@ -119,15 +120,35 @@ function render() {
     selectedCard, onSelectCard: (id) => { selectedCard = id; render(); },
     hireable: hireableCards(game), hiring: ui.hire, onSelectHire: (card) => set({ hire: card, building: null }),
   });
+  renderBanner();
   renderSupply(document.getElementById('supply')!, game);
   renderPlayers(document.getElementById('players')!, game, { onOpenBoard: (i) => playerModal.open(game!, i) });
   playerModal.update(game);
   const fireNagaya = game.event?.kind === 'fire' ? game.event.nagaya : fireTileShown;
-  renderBoardPieces(board, game, { targets: targets(), fireNagaya });
+  const current = playing && game.phase !== 'ended' ? whoseTurn(game) : null;
+  renderBoardPieces(board, game, { targets: targets(), fireNagaya, current, destination: moveDestination(game, ui) });
   tutorial?.update(game);
   if (tutorial) mobile.reveal(document.getElementById('coach')!.textContent!);
   mobile.update(game, { selectedCard, tutorialFocus: Boolean(tutorial) });
   scheduleAi();
+}
+
+/**
+ * Aviso sobre el tablero mientras se coloca el personaje inicial elegido: en móvil el panel de la Mesa se cierra y
+ * solo quedarían los bordes discontinuos de los solares.
+ */
+const banner = document.getElementById('board-banner')!;
+banner.addEventListener('pointerdown', (e) => e.stopPropagation()); // que no arrastre el tablero (ni se pierda el clic)
+banner.addEventListener('click', (e) => {
+  if (!(e.target as Element).closest('[data-banner="change"]')) return;
+  selectedCard = null;
+  render(); // en móvil, mobile.update() vuelve a abrir la Mesa para elegir otra
+});
+function renderBanner() {
+  const placing = game!.phase === 'initial-characters' && selectedCard && !isWaiting(game!);
+  banner.hidden = !placing;
+  banner.innerHTML = placing ? `<span>Coloca a <b>${CHARACTERS_BY_ID[selectedCard!].name}</b>: toca un solar exterior libre (borde discontinuo).</span>
+    <button type="button" class="btn btn-sm" data-banner="change">Cambiar de carta</button>` : '';
 }
 
 // --- Jugadores de IA ---------------------------------------------------------------------------
@@ -207,13 +228,37 @@ function dispatch(action: Action, { auto = false } = {}) {
   ui = {};
   persist();
   render();
+  announce(before);
   showEvent(before);
   if (game.phase === 'ended' && before.phase !== 'ended') finalTable.open(game);
 }
 
-/** Cuenta el Evento ocurrido desde `before`; si fue un Incendio, su loseta queda en el Nagaya hasta cerrar el resumen. */
+/**
+ * Para lectores de pantalla: lo nuevo del registro desde `before` y, si ahora le toca decidir a una persona, quién
+ * juega. El panel de turno se redibuja entero a cada cambio y no puede ser una región viva: lo leería todo cada vez.
+ */
+const announcer = document.getElementById('announcer')!;
+const plain = (html: string) => Object.assign(document.createElement('div'), { innerHTML: html }).textContent!.replace(/\s+/g, ' ').trim();
+function announce(before: Game) {
+  const lines = game!.log.filter((e) => e.seq > (before.logSeq ?? 0)).map((e) => plain(logLine(game!, e)));
+  const p = whoseTurn(game!);
+  if (p != null && !isWaiting(game!) && turnKey(before) !== turnKey(game!)) lines.push(`Juega ${plain(playerName(game!, p))}.`);
+  announcer.textContent = lines.slice(-6).join('. ');
+}
+
+/**
+ * Cuenta el Evento ocurrido desde `before`; si fue un Incendio, su loseta queda en el Nagaya hasta cerrar el resumen.
+ * Si el Evento espera una decisión (comida, «Evitar un incendio»), no se cuenta a medias: se cuenta entero al terminar,
+ * con lo que ya había pasado antes de la decisión (las últimas entradas del Evento en el registro de `before`).
+ */
 function showEvent(before: Game) {
-  const nagaya = eventSummary.show(game!, game!.log.filter((e) => e.seq > (before.logSeq ?? 0)));
+  if (game!.event && game!.pending) return;
+  let since = before.logSeq ?? 0;
+  if (before.event && before.pending) {
+    const start = before.log.findLastIndex((e) => !EVENT_LOG_TYPES.includes(e.type));
+    since = before.log[start]?.seq ?? 0;
+  }
+  const nagaya = eventSummary.show(game!, game!.log.filter((e) => e.seq > since));
   if (nagaya) {
     fireTileShown = nagaya;
     render();
@@ -273,6 +318,7 @@ function showOnlineChange(before: Game | null) {
   selectedCard = null;
   ui = {};
   render();
+  if (before) announce(before);
   showEvent(before!);
   if (game!.phase === 'ended' && before!.phase !== 'ended') finalTable.open(game!);
 }

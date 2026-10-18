@@ -215,6 +215,7 @@ export type ActionOf<T extends ActionType> = Extract<Action, { type: T }>;
 // --- Interfaz ----------------------------------------------------------------------------------
 
 /** Zona del tablero que se puede pulsar ahora (view/turnPanel.js). */
-export type Target = { zone: string; title: string; onClick: () => void };
+/** Zona pulsable del tablero; `badge` es una etiqueta corta encima (p. ej., el +2 mons de las esquinas). */
+export type Target = { zone: string; title: string; onClick: () => void; badge?: string };
 
 

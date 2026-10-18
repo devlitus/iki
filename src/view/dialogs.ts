@@ -1,4 +1,4 @@
-import { EVENT_LOG_TYPES, cardSummary, logLine, playerColor, playerName, typeLabel } from './format.ts';
+import { EVENT_LOG_TYPES, cardSummary, logByMonth, logLine, playerColor, playerName, typeLabel } from './format.ts';
 import { CHARACTERS_BY_ID } from '../data/characters.ts';
 import { BUILDINGS_BY_ID } from '../data/decks.ts';
 import { NAGAYAS_BY_ID, fireTileImage } from '../data/zones.ts';
@@ -52,6 +52,23 @@ export function createEventSummary({ onClose = () => {} } = {}) {
   };
 }
 
+/** El registro entero de la partida, por meses (el panel de turno solo enseña el mes en curso). */
+export function createLogDialog() {
+  const dialog = makeDialog('log-dialog');
+  dialog.setAttribute('aria-labelledby', 'log-dialog-title');
+  return {
+    open(game: Game) {
+      dialog.innerHTML = `
+        <h2 id="log-dialog-title">Registro de la partida</h2>
+        ${game.log[0]?.seq > 1 ? `<p class="muted">Solo se guardan las últimas ${game.log.length} entradas.</p>` : ''}
+        <div class="log-full">${logByMonth(game, game.log, 'h3')}</div>
+        <footer><button type="button" class="btn close">Cerrar</button></footer>`;
+      if (!dialog.open) dialog.showModal();
+      dialog.scrollTop = 0;
+    },
+  };
+}
+
 /** Filas de la tabla de puntuación, como la libreta del juego. */
 const ROWS = [
   ['track', 'Marcador', 'IKI del marcador'],
@@ -70,10 +87,11 @@ export function createFinalTable({ onNewGame }: { onNewGame: () => void }) {
       const { scores, ranking, winner } = game.final!;
       const order = game.turnOrder;
       const place = (p: number) => ranking.indexOf(p) + 1;
+      const tied = ranking.filter((p) => scores[p].total === scores[winner].total).length > 1;
       dialog.innerHTML = `
         <h2>Puntuación final</h2>
-        <p class="muted">Gana <b style="color:${playerColor(game, winner)}">${playerName(game, winner)}</b> con ${scores[winner].total} IKI.
-          Desempate: Extinción de Incendios y posición en la pila.</p>
+        <p class="muted">Gana <b style="color:${playerColor(game, winner)}">${playerName(game, winner)}</b> con ${scores[winner].total} IKI.${tied ? `
+          Empate a ${scores[winner].total}: gana quien tiene más Extinción de Incendios y, si sigue, quien está más arriba en la pila.` : ''}</p>
         <table class="score-table">
           <thead><tr><th></th>${order.map((p) => `<th class="${p === winner ? 'winner' : ''}" style="--player-color:${playerColor(game, p)}">
             ${playerName(game, p)}</th>`).join('')}</tr></thead>
