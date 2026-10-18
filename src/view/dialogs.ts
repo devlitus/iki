@@ -16,8 +16,8 @@ function makeDialog(id: string) {
   return dialog;
 }
 
-/** Entradas del Día de Pago que son cobros (columna Salario); el resto es el pago en arroz. */
-const PAYDAY_INCOME = ['salary', 'harmony'];
+/** Entradas del Día de Pago que son cobros (columna Salario: también la Granja y la Villa Imperial); el resto es el pago en arroz. */
+const PAYDAY_INCOME = ['salary', 'harmony', 'perk'];
 
 const list = (game: Game, lines: LogEntry[]) => lines.length
   ? `<ul>${lines.map((e) => `<li>${logLine(game, e)}</li>`).join('')}</ul>`
@@ -87,6 +87,7 @@ export function createFinalTable({ onNewGame }: { onNewGame: () => void }) {
         <div class="final-detail">${order.map((p) => detail(game, p)).join('')}</div>
         <footer><button type="button" class="btn close">Cerrar</button><button type="button" class="btn new-game">Nueva partida</button></footer>`;
       if (!dialog.open) dialog.showModal();
+      dialog.scrollTop = 0; // el foco va al botón «Cerrar» del final: en pantallas bajas, se vuelve arriba para ver quién gana
     },
   };
 }

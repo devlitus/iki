@@ -126,3 +126,8 @@
   .cover-box { width: min(60vw, calc((100dvh - 16px) * 1.0458)); }
   .cover-seal { width: 44px; height: 44px; font-size: 30px; border-width: 2px; }
 }
+
+/* En vertical en el móvil la portada no cabe: se deja ver el aviso de girar el teléfono (table.css). */
+@media (orientation: portrait) and (pointer: coarse) and (max-width: 900px) {
+  #cover { display: none; }
+}

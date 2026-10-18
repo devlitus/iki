@@ -67,6 +67,9 @@ function hireCost(game: Game, p: number, card: string, lot: string) {
   return Math.max(0, CHARACTERS_BY_ID[card].cost! - discount) + ZONES_BY_ID[lot].extraCost! - entry.mons;
 }
 
+/** Un coste de contratar: si los mons de la carta lo superan, no cuesta nada y sobran mons. */
+const hireCostText = (cost: number) => cost > 0 ? `${cost} mons` : cost < 0 ? `gratis, te quedas ${-cost} mons` : 'gratis';
+
 /** Cartas de la fila que el jugador de turno puede contratar en algún solar libre. */
 export function hireableCards(game: Game): Set<string> {
   if (game.phase !== 'actions' || game.turn!.step !== 'b1' || isWaiting(game)) return new Set();
@@ -93,7 +96,7 @@ export function boardTargets(game: Game, { ui, dispatch }: Pick<Ctx, 'ui' | 'dis
 
   if (ui.hire && game.turn!.step === 'b1') {
     return legalLots(game, (lot) => ({ type: 'hire', card: ui.hire!, lot })).map((lot) => ({
-      zone: lot, title: `Contratar a ${cardName(ui.hire!)} aquí · ${hireCost(game, p!, ui.hire!, lot)} mons`,
+      zone: lot, title: `Contratar a ${cardName(ui.hire!)} aquí · ${hireCostText(hireCost(game, p!, ui.hire!, lot))}`,
       onClick: () => dispatch({ type: 'hire', card: ui.hire!, lot }),
     }));
   }
@@ -128,8 +131,18 @@ export function renderTurnPanel(el: HTMLElement, game: Game, ctx: Ctx) {
     ${ctx.canUndo && !waiting ? '<button type="button" class="btn btn-sm" data-do="undo">↶ Deshacer</button>' : ''}
     <details class="turn-log" open>
       <summary class="label">Registro</summary>
-      <ul>${game.log.slice(-8).reverse().map((e) => `<li>${logLine(game, e)}</li>`).join('')}</ul>
+      <ul>${recentLog(game)}</ul>
     </details>`;
+}
+
+/** Las últimas entradas, de la más reciente a la más antigua, con la cabecera «Mes N» encima de las de cada mes. */
+function recentLog(game: Game) {
+  let month: number | null = null;
+  return game.log.slice(-8).reverse().filter((e) => e.type !== 'month').map((e) => {
+    const head = e.month !== month ? `<li>${logLine(game, { ...e, type: 'month' })}</li>` : '';
+    month = e.month;
+    return `${head}<li>${logLine(game, e)}</li>`;
+  }).join('');
 }
 
 const btn = (label: string | number, attrs: string, { disabled = false, cls = '' } = {}) =>
