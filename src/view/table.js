@@ -8,8 +8,7 @@ import { playerStats, MAX_FISH, MAX_TYPES } from '../game/playerStats.js';
 
 /**
  * Mesa alrededor del tablero: mazos, edificios y reserva en la columna izquierda; los jugadores en la
- * derecha, en fichas compactas con el activo arriba. Todo lo que dibuja un paso de la preparación lleva `data-steps` para que el
- * panel de pasos lo pueda resaltar.
+ * derecha, en fichas compactas con el activo arriba.
  */
 
 export const resourceChips = ({ mon, rice, sandal, wood, koban }) => [
@@ -27,7 +26,7 @@ export function renderDecks(el, game, { selectedCard, onSelectCard, hireable = n
   // La estación en curso se resalta y las ya pasadas se apagan.
   const current = SEASONS.indexOf(seasonOf(game.month));
   const decks = SEASONS.map((s, i) => `
-    <div class="deck${i === current ? ' current' : i < current ? ' past' : ''}" data-steps="8"
+    <div class="deck${i === current ? ' current' : i < current ? ' past' : ''}"
       title="Mazo de ${s.name}: ${game.decks[s.id].length} cartas${i === current ? ' · estación en curso' : ''}">
       <div class="pile"><img src="${s.back}" alt=""><img src="${s.back}" alt=""><img src="${s.back}" alt="Mazo de ${s.name}"></div>
       <span>${s.name}<br>${game.decks[s.id].length}</span>
@@ -35,7 +34,7 @@ export function renderDecks(el, game, { selectedCard, onSelectCard, hireable = n
 
   let lower;
   if (game.initialCharacters.length) {
-    lower = `<div class="initial-row" data-steps="13">
+    lower = `<div class="initial-row">
         <span class="label">Personajes iniciales${picker != null ? ` · elige ${playerName(game, picker)}` : ''}</span>
         <div class="initial-cards">${game.initialCharacters.map((id) => `
           <button type="button" class="initial-card${id === selectedCard ? ' selected' : ''}" data-card="${id}" data-zoom="${CHARACTERS_BY_ID[id].scan}"
@@ -46,7 +45,7 @@ export function renderDecks(el, game, { selectedCard, onSelectCard, hireable = n
       </div>`;
   } else if (game.phase !== 'initial-characters') {
     const choosing = game.phase === 'actions' && game.turn?.step === 'b1';
-    lower = `<div class="initial-row" data-steps="13"><span class="label">Fila de personajes · ${game.row.length}</span>
+    lower = `<div class="initial-row"><span class="label">Fila de personajes · ${game.row.length}</span>
         <div class="initial-cards row-cards${choosing ? ' choosing' : ''}">${game.row.map(({ card, mons }) => `
           <button type="button" class="initial-card${card === hiring ? ' selected' : ''}" data-hire="${card}" data-zoom="${CHARACTERS_BY_ID[card].scan}"
             ${hireable.has(card) ? '' : 'disabled'} title="${CHARACTERS_BY_ID[card].name} · cuesta ${CHARACTERS_BY_ID[card].cost} mons${mons ? ` (con ${mons} mons encima)` : ''}">
@@ -70,7 +69,7 @@ export function renderDecks(el, game, { selectedCard, onSelectCard, hireable = n
 /** Edificios (paso 6) y reserva (paso 7). */
 export function renderSupply(el, game) {
   el.innerHTML = `
-    <section class="panel" data-steps="6">
+    <section class="panel">
       <span class="label">Edificios · ${game.buildings.length} al azar</span>
       <div class="buildings">${game.buildings.map((id) =>
         `<img src="${BUILDINGS_BY_ID[id].image}" alt="${BUILDINGS_BY_ID[id].name}" title="${BUILDINGS_BY_ID[id].name}" data-zoom="${BUILDINGS_BY_ID[id].image}" draggable="false">`).join('')}</div>
@@ -78,7 +77,7 @@ export function renderSupply(el, game) {
         <img src="${BUILDING_BACK}" alt="">Los otros ${game.buildingsBox.length} vuelven a la caja
       </div>
     </section>
-    <section class="panel" data-steps="7">
+    <section class="panel">
       <span class="label">Reserva · sin límite</span>
       <div class="reserve">
         <span class="res"><span class="ic ic-mon"></span>Mons</span>
@@ -111,7 +110,7 @@ export function renderPlayers(el, game, { onOpenBoard }) {
     const st = playerStats(game, index);
     const lot = Object.entries(game.lots).find(([, l]) => l.owner === index && l.initial);
     return `
-      <article class="seat${index === active ? ' active' : ''}${picker === index ? ' picking' : ''}" data-player="${index}" data-steps="9 10 11 12 13" style="--player-color: ${board.color}" title="Ver el tablero de ${board.name}">
+      <article class="seat${index === active ? ' active' : ''}${picker === index ? ' picking' : ''}" data-player="${index}" style="--player-color: ${board.color}" title="Ver el tablero de ${board.name}">
         <header class="who">
           <h3>${board.name}</h3>
           ${p.ai ? '<span class="badge" title="Lo juega la IA">IA</span>' : ''}
@@ -144,58 +143,17 @@ export function renderPlayers(el, game, { onOpenBoard }) {
   el.querySelectorAll('.seat').forEach((s) => s.addEventListener('click', () => onOpenBoard(Number(s.dataset.player))));
 }
 
-/** Panel lateral ocultable con los pasos de preparación; al pulsar uno se resaltan sus piezas. */
-export const SETUP_STEPS = [
-  [1, 'Tablero', 'Lado de 3-4 jugadores en el centro.'],
-  [2, 'Calendario', 'Ficha en el mes 1.'],
-  [3, 'Fichas 30/60 IKI', 'Una por jugador al final del marcador.'],
-  [4, 'Losetas de Incendio', 'Las 4 mezcladas, boca abajo.'],
-  [5, 'Pescado, Pipas y Tabaco', 'Primavera boca arriba; el resto boca abajo en el calendario.'],
-  [6, 'Edificios', '6 de 10 al azar junto al tablero.'],
-  [7, 'Reserva', 'Mons, sandalias, arroz, madera, Koban y fichas especiales.'],
-  [8, 'Mazos de Personaje', 'Separados por estación.'],
-  [9, 'Material del jugador', 'Tablero, peones, 8 mons, 1 arroz y 1 sandalia.'],
-  [10, 'Jugador inicial y Oyakatas', 'Dados: el más alto empieza y elige primero personaje inicial; los empatados repiten. Oyakatas en la zona inicial.'],
-  [11, 'Extinción de Incendios', 'Fichas apiladas en el 0, la del inicial arriba.'],
-  [12, 'Puntuación', 'Fichas en el 0 del marcador de IKI.'],
-  [13, 'Personaje inicial', 'Empieza el inicial y sigue en sentido antihorario; cada uno pone uno en un solar exterior con un Kobun.'],
+/** Las fichas especiales de la reserva y lo que hace cada una (reglamento, «Fichas especiales»). */
+const SPECIAL_TOKENS = [
+  ['move-plus-1', 'Mover +1', 'Tu Oyakata puede moverse un espacio más en la fase de Acciones.'],
+  ['hire-minus-1', 'Contratar −1', 'Contratar personajes te cuesta 1 mon menos.'],
+  ['fire-ward', 'Evitar un incendio (×2)', 'Una vez por partida, descártala para que uno de tus personajes no muera en un incendio.'],
+  ['wildcard', 'Comodín', 'Va sobre el Marionetista: al final eliges de qué tipo es y en qué columna de tu tablero va.'],
 ];
 
-export function createStepsDrawer({ drawer, toggle, root }) {
-  let current = null;
-  drawer.innerHTML = `
-    <div class="steps-head"><span class="label">Pasos de preparación</span>
-      <button type="button" class="steps-close" aria-label="Cerrar pasos">×</button></div>
-    <ol>${SETUP_STEPS.map(([n, title, text]) => `
-      <li><button type="button" class="step" data-step="${n}" aria-pressed="false">
-        <span class="n">${n}</span><span><b>${title}</b><span class="d">${text}</span></span>
-      </button></li>`).join('')}</ol>`;
-
-  function highlight() {
-    root.classList.toggle('focus', current != null);
-    root.querySelectorAll('[data-steps]').forEach((el) =>
-      el.classList.toggle('on', current != null && el.dataset.steps.split(' ').includes(String(current))));
-    drawer.querySelectorAll('.step').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.step) === current)));
-  }
-
-  function setOpen(open) {
-    drawer.classList.toggle('open', open);
-    drawer.inert = !open;
-    toggle.setAttribute('aria-expanded', String(open));
-    if (!open) { current = null; highlight(); }
-  }
-
-  drawer.addEventListener('click', (e) => {
-    if (e.target.closest('.steps-close')) return setOpen(false);
-    const step = e.target.closest('.step');
-    if (!step) return;
-    current = current === Number(step.dataset.step) ? null : Number(step.dataset.step);
-    highlight();
-  });
-  toggle.addEventListener('click', () => setOpen(!drawer.classList.contains('open')));
-  window.addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false); });
-  setOpen(false);
-
-  // Tras redibujar la mesa, vuelve a aplicar el resaltado del paso abierto.
-  return { refresh: highlight };
+/** Desplegable de la barra lateral con las fichas especiales y su efecto. */
+export function renderSpecialsInfo(el) {
+  el.innerHTML = `<summary class="btn">Fichas especiales</summary>
+    <ul>${SPECIAL_TOKENS.map(([file, name, text]) => `
+      <li><img src="/tokens/special/${file}.webp" alt="" draggable="false"><span><b>${name}</b><span class="d">${text}</span></span></li>`).join('')}</ul>`;
 }

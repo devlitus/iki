@@ -8,7 +8,7 @@ import { createGame, freeOuterLots, MIN_PLAYERS, GAME_VERSION } from './game/set
 import { act, whoseTurn } from './game/engine.js';
 import { randomSeed } from './game/random.js';
 import { chooseAction, isAiTurn } from './ai/player.js';
-import { renderDecks, renderSupply, renderPlayers, createStepsDrawer } from './view/table.js';
+import { renderDecks, renderSupply, renderPlayers, renderSpecialsInfo } from './view/table.js';
 import { renderBoardPieces } from './view/boardPieces.js';
 import { renderTurnPanel, bindTurnPanel, boardTargets, hireableCards } from './view/turnPanel.js';
 import { createCover } from './view/cover.js';
@@ -73,13 +73,9 @@ let online = null; // partida alojada en el servidor ({ id, version, me, seats, 
 
 const app = document.getElementById('app');
 const turnEl = document.getElementById('turn');
-const steps = createStepsDrawer({
-  drawer: document.getElementById('steps'),
-  toggle: document.getElementById('open-steps'),
-  root: app,
-});
-const btnSteps = document.getElementById('open-steps');
 const btnPicker = document.getElementById('open-picker');
+const specialsInfo = document.getElementById('specials-info');
+renderSpecialsInfo(specialsInfo);
 const playerModal = createPlayerModal();
 const diceRoll = createDiceRoll();
 const mobile = createMobileLayout({ app, side: document.getElementById('side'), players: document.getElementById('players'), turn: turnEl });
@@ -99,6 +95,8 @@ function clearTable() {
   app.classList.remove('playing');
   mobile.update(null);
   turnEl.hidden = true;
+  btnPicker.hidden = Boolean(tutorial) || Boolean(online);
+  specialsInfo.hidden = true;
   ['decks', 'supply', 'players'].forEach((id) => document.getElementById(id).replaceChildren());
   board.pieces.replaceChildren();
 }
@@ -108,8 +106,9 @@ function render() {
   const playing = game.phase !== 'initial-characters';
   app.classList.toggle('playing', playing);
   turnEl.hidden = !playing;
-  btnSteps.hidden = playing || Boolean(tutorial) || Boolean(online);
-  btnPicker.hidden = Boolean(tutorial) || Boolean(online);
+  // Con la partida ya repartida no se cambia de jugadores: en su sitio, la ayuda de las fichas especiales.
+  btnPicker.hidden = true;
+  specialsInfo.hidden = false;
   if (playing) renderTurnPanel(turnEl, game, turnCtx());
 
   renderDecks(document.getElementById('decks'), game, {
@@ -124,7 +123,6 @@ function render() {
   tutorial?.update(game);
   if (tutorial) mobile.reveal(document.getElementById('coach').textContent);
   mobile.update(game, { selectedCard, tutorialFocus: Boolean(tutorial) });
-  steps.refresh();
   scheduleAi();
 }
 
@@ -398,7 +396,7 @@ function openPicker({ fromCover = false } = {}) {
 btnPicker.addEventListener('click', () => openPicker());
 document.getElementById('open-menu').addEventListener('click', () => cover.show(Boolean(game)));
 window.addEventListener('keydown', (e) => {
-  if ((e.key === 'j' || e.key === 'J') && !tutorial && !online && !e.target.closest?.('#board-picker, #player-modal, #cover, select, input')) openPicker();
+  if ((e.key === 'j' || e.key === 'J') && !btnPicker.hidden && !e.target.closest?.('#board-picker, #player-modal, #cover, select, input')) openPicker();
 });
 if (game) render();
 cover.show(Boolean(game));
