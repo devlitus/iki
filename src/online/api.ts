@@ -1,15 +1,19 @@
 /** Cliente de la API del servidor (/api). Las cookies de sesión las gestiona el navegador. */
 
 export class ApiError extends Error {
-  constructor(status, message, data = null) {
+  declare status: number;
+  declare data: any;
+
+  constructor(status: number, message: string, data: any = null) {
     super(message);
     this.status = status;
     this.data = data;
   }
 }
 
-export async function api(method, path, body) {
-  let res;
+/** Respuesta JSON del servidor (ver server/app.js): cada pantalla sabe qué forma tiene la suya. */
+export async function api(method: string, path: string, body?: unknown): Promise<any> {
+  let res: Response;
   try {
     res = await fetch(`/api${path}`, {
       method,
@@ -20,7 +24,8 @@ export async function api(method, path, body) {
   } catch {
     throw new ApiError(0, 'No hay conexión con el servidor');
   }
-  let data = null;
+  let data: any = null;
+
   try {
     data = await res.json();
   } catch {

@@ -2,26 +2,45 @@ import './online.css';
 import { api, ApiError } from './api.js';
 import { esc } from '../view/format.js';
 
+type User = { id: number; name: string; rating: number; games: number; wins: number };
+type Seat = { free?: boolean; name?: string; ai?: boolean; host?: boolean };
+type Room = { id: string; status: string; size: number; ranked: boolean; version: number; isHost: boolean; me?: number; seats: Seat[]; unchanged?: boolean };
+type GameLists = { mine: Room[]; open: Room[] };
+type Screen = 'auth' | 'hub' | 'room' | 'ranking';
+/** Campos del formulario de cuenta. */
+type Fields = HTMLFormControlsCollection & { name?: HTMLInputElement; password?: HTMLInputElement };
+type AuthForm = HTMLFormElement & { elements: Fields };
+type State = {
+  screen: Screen;
+  mode: string;
+  user: User | null;
+  games: GameLists | null;
+  room: Room | null;
+  ranking: User[] | null;
+  error: string | null;
+  busy: boolean;
+};
+
 /**
  * Diálogo «Jugar en línea»: cuenta (entrar / crear), partidas (las mías, las salas abiertas), sala de espera y ranking.
  * Solo gestiona las pantallas y habla con la API; cuando hay que jugar avisa con `onPlay(id)` y main.js se encarga.
  */
 
-const STATUS = { lobby: 'Sala de espera', playing: 'En curso', ended: 'Terminada', cancelled: 'Cancelada' };
-const POLL = { hub: 5000, room: 2000 };
+const STATUS: Record<string, string> = { lobby: 'Sala de espera', playing: 'En curso', ended: 'Terminada', cancelled: 'Cancelada' };
+const POLL: Partial<Record<Screen, number>> = { hub: 5000, room: 2000 };
 
-export function createOnline({ onPlay, onClose }) {
+export function createOnline({ onPlay, onClose }: { onPlay: (id: string) => void; onClose: () => void }) {
   const dialog = document.createElement('dialog');
   dialog.id = 'online';
   dialog.className = 'iki-dialog online';
   document.body.append(dialog);
 
-  let s = { screen: 'auth', mode: 'login', user: null, games: null, room: null, ranking: null, error: null, busy: false };
-  let timer = null;
+  let s: State = { screen: 'auth', mode: 'login', user: null, games: null, room: null, ranking: null, error: null, busy: false };
+  let timer: ReturnType<typeof setTimeout> | null = null;
   let entering = false;
 
-  const set = (patch) => { s = { ...s, ...patch }; draw(); };
-  const fail = (error) => set({ error: error instanceof ApiError ? error.message : 'Algo ha fallado', busy: false });
+  const set = (patch: Partial<State>) => { s = { ...s, ...patch }; draw(); };
+  const fail = (error: unknown) => set({ error: error instanceof ApiError ? error.message : 'Algo ha fallado', busy: false });
 
   // --- Pantallas ---------------------------------------------------------------------------------
 
@@ -38,10 +57,10 @@ export function createOnline({ onPlay, onClose }) {
       <button type="submit" class="btn primary" ${s.busy ? 'disabled' : ''}>${s.mode === 'login' ? 'Entrar' : 'Crear cuenta'}</button>
     </form>`;
 
-  const seatLine = (seat) => seat.free ? '<li class="free">Libre</li>'
+  const seatLine = (seat: Seat) => seat.free ? '<li class="free">Libre</li>'
     : `<li>${esc(seat.name)}${seat.ai ? ' <span class="badge">IA</span>' : ''}${seat.host ? ' <span class="badge">anfitrión</span>' : ''}</li>`;
 
-  const gameLine = (g, { join = false } = {}) => `
+  const gameLine = (g: Room, { join = false } = {}) => `
     <li class="game-row">
       <span class="game-seats">${g.seats.map((x) => (x.free ? '·' : esc(x.name))).join(', ')}</span>
       <span class="badge">${STATUS[g.status]}</span>${g.ranked ? '<span class="badge">clasificatoria</span>' : ''}
@@ -49,8 +68,8 @@ export function createOnline({ onPlay, onClose }) {
     </li>`;
 
   const hubScreen = () => `
-    <h2>Hola, ${esc(s.user.name)}</h2>
-    <p class="muted">Puntuación ${s.user.rating} · ${s.user.games} partidas · ${s.user.wins} victorias</p>
+    <h2>Hola, ${esc(s.user!.name)}</h2>
+    <p class="muted">Puntuación ${s.user!.rating} · ${s.user!.games} partidas · ${s.user!.wins} victorias</p>
     <div class="actions">
       <button type="button" class="btn primary" data-do="create" data-size="3" ${s.busy ? 'disabled' : ''}>Nueva partida de 3</button>
       <button type="button" class="btn primary" data-do="create" data-size="4" ${s.busy ? 'disabled' : ''}>Nueva partida de 4</button>
@@ -63,7 +82,7 @@ export function createOnline({ onPlay, onClose }) {
     <footer><button type="button" class="btn close">Cerrar</button><button type="button" class="btn" data-do="logout">Salir de la cuenta</button></footer>`;
 
   const roomScreen = () => {
-    const r = s.room;
+    const r = s.room!;
     const full = !r.seats.some((x) => x.free);
     const humans = r.seats.filter((x) => !x.free && !x.ai).length;
     return `
@@ -92,9 +111,9 @@ export function createOnline({ onPlay, onClose }) {
 
   function draw() {
     const body = { auth: authScreen, hub: hubScreen, room: roomScreen, ranking: rankingScreen }[s.screen]();
-    const keep = dialog.querySelector('form')?.elements.name?.value; // no perder lo escrito al redibujar
+    const keep = dialog.querySelector<AuthForm>('form')?.elements.name?.value; // no perder lo escrito al redibujar
     dialog.innerHTML = `${body}${s.error ? `<p class="turn-error" role="alert">${esc(s.error)}</p>` : ''}`;
-    const nameInput = dialog.querySelector('form')?.elements.name;
+    const nameInput = dialog.querySelector<AuthForm>('form')?.elements.name;
     if (nameInput && keep) nameInput.value = keep;
     if (s.screen === 'auth' && !dialog.querySelector(':focus')) nameInput?.focus();
   }
@@ -105,28 +124,28 @@ export function createOnline({ onPlay, onClose }) {
     try {
       if (s.screen === 'hub') set({ games: await api('GET', '/games'), user: (await api('GET', '/me')).user ?? s.user });
       else if (s.screen === 'room') {
-        const res = await api('GET', `/games/${s.room.id}?since=${s.room.version}`);
+        const res = await api('GET', `/games/${s.room!.id}?since=${s.room!.version}`);
         if (!res.unchanged) await showRoom(res);
       }
     } catch (error) {
-      if (error.status === 401) set({ screen: 'auth', user: null });
+      if ((error as ApiError).status === 401) set({ screen: 'auth', user: null });
     }
   }
 
   function schedule() {
-    clearTimeout(timer);
+    clearTimeout(timer as ReturnType<typeof setTimeout>);
     const every = POLL[s.screen];
     if (dialog.open && every) timer = setTimeout(async () => { await refresh(); schedule(); }, every);
   }
 
   /** Muestra la sala, o entra a jugar si la partida ya ha empezado. */
-  async function showRoom(room) {
+  async function showRoom(room: Room): Promise<void> {
     if (room.status === 'playing' || room.status === 'ended') return play(room.id);
     if (room.status === 'cancelled') return set({ screen: 'hub', room: null, error: 'La sala se ha cancelado', games: await api('GET', '/games') });
     set({ screen: 'room', room, error: null });
   }
 
-  function play(id) {
+  function play(id: string) {
     entering = true;
     dialog.close();
     entering = false;
@@ -140,7 +159,7 @@ export function createOnline({ onPlay, onClose }) {
 
   // --- Acciones ----------------------------------------------------------------------------------
 
-  const ACTIONS = {
+  const ACTIONS: Record<string, (el: HTMLElement) => unknown> = {
     mode: (el) => set({ mode: el.dataset.mode, error: null }),
     hub: () => toHub(),
     ranking: async () => set({ screen: 'ranking', ranking: (await api('GET', '/ranking')).ranking, error: null }),
@@ -148,18 +167,18 @@ export function createOnline({ onPlay, onClose }) {
     create: async (el) => showRoom(await api('POST', '/games', { size: Number(el.dataset.size) })),
     open: async (el) => showRoom(await api('GET', `/games/${el.dataset.id}`)),
     join: async (el) => showRoom(await api('POST', `/games/${el.dataset.id}/join`, {})),
-    leave: async () => { await api('POST', `/games/${s.room.id}/leave`, {}); await toHub(); },
-    ai: async (el) => showRoom(await api('POST', `/games/${s.room.id}/ai`, { add: el.dataset.add === 'true' })),
-    start: async () => showRoom(await api('POST', `/games/${s.room.id}/start`, {})),
+    leave: async () => { await api('POST', `/games/${s.room!.id}/leave`, {}); await toHub(); },
+    ai: async (el) => showRoom(await api('POST', `/games/${s.room!.id}/ai`, { add: el.dataset.add === 'true' })),
+    start: async () => showRoom(await api('POST', `/games/${s.room!.id}/start`, {})),
   };
 
   dialog.addEventListener('click', async (e) => {
-    if (e.target === dialog || e.target.closest('.close')) return dialog.close();
-    const el = e.target.closest('[data-do]');
+    if (e.target === dialog || (e.target as Element).closest('.close')) return dialog.close();
+    const el = (e.target as Element).closest<HTMLElement>('[data-do]');
     if (!el || s.busy) return;
     s = { ...s, busy: true, error: null };
     try {
-      await ACTIONS[el.dataset.do](el);
+      await ACTIONS[el.dataset.do!](el);
     } catch (error) {
       fail(error);
     }
@@ -169,9 +188,9 @@ export function createOnline({ onPlay, onClose }) {
 
   dialog.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const form = e.target;
+    const form = e.target as AuthForm;
     if (form.dataset.form !== 'auth' || s.busy) return;
-    const credentials = { name: form.elements.name.value, password: form.elements.password.value }; // antes de redibujar
+    const credentials = { name: form.elements.name!.value, password: form.elements.password!.value }; // antes de redibujar
     set({ busy: true, error: null });
     try {
       const { user } = await api('POST', s.mode === 'login' ? '/login' : '/register', credentials);
@@ -184,7 +203,7 @@ export function createOnline({ onPlay, onClose }) {
   });
 
   dialog.addEventListener('close', () => {
-    clearTimeout(timer);
+    clearTimeout(timer as ReturnType<typeof setTimeout>);
     if (!entering) onClose();
   });
 
@@ -196,7 +215,8 @@ export function createOnline({ onPlay, onClose }) {
         const { user } = await api('GET', '/me');
         if (user) { set({ user, screen: 'hub' }); await toHub(); } else set({ screen: 'auth', user: null });
       } catch (error) {
-        set({ screen: 'auth', user: null, error: error.message });
+        set({ screen: 'auth', user: null, error: (error as Error).message });
+
       }
       schedule();
     },
