@@ -3,7 +3,7 @@ import { BUILDINGS_BY_ID } from '../data/decks.ts';
 import { MARKET_BY_ID, describeToken } from '../data/market.ts';
 import { ZONES_BY_ID, STREET, LOT_IDS } from '../data/zones.ts';
 import { act, whoseTurn, seasonOf, IKIZAMA_SLOTS } from '../game/engine.ts';
-import { characterLots } from '../game/state.ts';
+import { buildCost, characterLots } from '../game/state.ts';
 import { abilityText, cardName, chips, costChips, costText, isWaiting, logLine, playerColor, playerName, shopName, waitingText, who } from './format.ts';
 import type { Action, ActionOf, CharacterType, Game, IkizamaSlot, MarketToken, Target } from '../types.ts';
 
@@ -128,7 +128,7 @@ export function renderTurnPanel(el: HTMLElement, game: Game, ctx: Ctx) {
     ${ctx.canUndo && !waiting ? '<button type="button" class="btn btn-sm" data-do="undo">↶ Deshacer</button>' : ''}
     <details class="turn-log" open>
       <summary class="label">Registro</summary>
-      <ol>${game.log.slice(-8).reverse().map((e) => `<li>${logLine(game, e)}</li>`).join('')}</ol>
+      <ul>${game.log.slice(-8).reverse().map((e) => `<li>${logLine(game, e)}</li>`).join('')}</ul>
     </details>`;
 }
 
@@ -267,10 +267,10 @@ function constructionBody(game: Game, ui: Ui) {
   const sel = ui.building?.via === 'shop' ? ui.building.building : null;
   return `
     ${shopBtn(game, `${chips([{ res: 'mon', n: 1 }])} → ${chips([{ res: 'rice', n: 1 }])}`, { choice: 'rice' })}
-    <p class="label">Construir (+1 mon)</p>
-    <div class="picks">${game.buildings.map((b) => picture(BUILDINGS_BY_ID[b].image, `${BUILDINGS_BY_ID[b].name}: ${costText(BUILDINGS_BY_ID[b].cost)}`,
+    <p class="label">Construir (+1 mon de la tienda)</p>
+    <div class="picks">${game.buildings.map((b) => picture(BUILDINGS_BY_ID[b].image, `${BUILDINGS_BY_ID[b].name}: ${costText(buildCost(b, { fee: 1 }))}`,
       `data-do="building" data-via="shop" data-building="${b}"`, { selected: b === sel, disabled: !canBuildAny(game, { type: 'shop', choice: 'build', building: b }) })).join('')}</div>
-    ${sel ? `<p class="muted">Cuesta ${costChips(BUILDINGS_BY_ID[sel].cost)} + 1 mon (+2 en las esquinas). Pulsa un solar libre.</p>` : ''}`;
+    ${sel ? `<p class="muted">Cuesta ${costChips(buildCost(sel, { fee: 1 }))} (+2 mons en las esquinas). Pulsa un solar libre.</p>` : ''}`;
 }
 
 /** ¿Se puede construir en algún solar libre con esta acción base? */
@@ -281,12 +281,15 @@ function tobaccoBody(game: Game, ui: Ui) {
   const pipe = (ui.pipe && MARKET_BY_ID[ui.pipe]) as MarketToken | null | undefined;
   const own = characterLots(game, game.turn!.player);
   const action = { type: 'shop', pipe: ui.pipe, bag: ui.bag, target: pipe?.effect!.xp ? ui.target : undefined } as Action;
+  const price = [ui.pipe, ui.bag].reduce((sum, id) => sum + (id ? MARKET_BY_ID[id].cost : 0), 0);
+  const mons = game.players[game.turn!.player].resources.mon;
   const tokens = (ids: string[], key: string) => ids.map((id) => picture(MARKET_BY_ID[id].image ?? '/tokens/winter/back-dark.webp', describeToken(MARKET_BY_ID[id]),
     `data-do="toggle" data-key="${key}" data-id="${id}"`, { selected: ui[key] === id, disabled: !isLegal(game, { type: 'shop', [key]: id, target: own[0] }) })).join('');
   return `
     <p class="label">Pipas</p><div class="picks">${tokens(m.pipes, 'pipe') || '<span class="muted">Ninguna</span>'}</div>
     <p class="label">Bolsas de Tabaco</p><div class="picks">${tokens(m.bags, 'bag') || '<span class="muted">Ninguna</span>'}</div>
     ${pipe?.effect!.xp ? `<p class="label">+1 experiencia a</p>${ownChoices(game, own, 'target', ui.target)}` : ''}
+    ${price > mons ? `<p class="muted">Cuesta ${chips([{ res: 'mon', n: price }])} y tienes ${chips([{ res: 'mon', n: mons }])}.</p>` : ''}
     ${btn('Comprar', `data-do="shop-tobacco"`, { disabled: !(ui.pipe || ui.bag) || !isLegal(game, action), cls: 'wide primary' })}`;
 }
 
@@ -307,7 +310,7 @@ function characterBody(game: Game, lot: string, { ui }: Ctx) {
       btn(cardName(game.lots[l].card), `data-do="char" data-lot="${lot}" data-target="${l}"`, { disabled: !isLegal(game, { type: 'character', lot, target: l }) })).join('')}</div>`;
   } else if (a.kind === 'build') {
     const sel = ui.building?.via === 'char' && ui.building.lot === lot ? ui.building.building : null;
-    options = `<div class="picks">${game.buildings.map((b) => picture(BUILDINGS_BY_ID[b].image, `${BUILDINGS_BY_ID[b].name}: ${costText(BUILDINGS_BY_ID[b].cost)}`,
+    options = `<div class="picks">${game.buildings.map((b) => picture(BUILDINGS_BY_ID[b].image, `${BUILDINGS_BY_ID[b].name}: ${costText(buildCost(b, { discount: a.discount }))}`,
       `data-do="building" data-via="char" data-lot="${lot}" data-building="${b}"`,
       { selected: b === sel, disabled: !canBuildAny(game, { type: 'character', lot, building: b }) })).join('')}</div>
       ${sel ? '<p class="muted">Pulsa un solar libre del tablero.</p>' : ''}`;

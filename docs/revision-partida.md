@@ -52,10 +52,13 @@ Resultado: Rojo 113 · Azul 89 · Morado 87.
 
 ## Dudas (no son fallos claros)
 
-- **Numeración del registro**: el 1 es la entrada más reciente («1. Mes 1» queda abajo del todo). Puede ser
-  intencionado, pero se lee como orden cronológico.
-- **Coste extra de los solares**: el reglamento dice «1 o 2 mons»; el código solo cobra +2 en las 4 esquinas. En el
-  tablero de 3-4 jugadores solo se ve el +2, así que el «1» será del lado de 2 jugadores (sin implementar).
-- **Variedad y personajes quemados**: los personajes que arden o no se alimentan no cuentan para la variedad (se
-  eliminan de la partida). Coherente con que no llegan a tu tablero, pero el reglamento dice «tipos que hayas
-  contratado».
+- **Numeración del registro** (resuelta): el 1 era la entrada más reciente y se leía al revés. Se han quitado los
+  números; cada entrada ya lleva su mes.
+- **Coste extra de los solares** (resuelta con las fotos del reglamento): B1 dice literalmente «Recuerda pagar el
+  coste extra del espacio (1 o 2 mons) si lo hubiera», y el ejemplo del Monje solo usa las esquinas (+2). En el lado
+  de 3-4 jugadores no hay solares de +1, así que el código es correcto; el +1 será del lado de 2 jugadores (en la
+  página 12 el puesto central lleva un icono «+1», sin texto que lo explique), que no está implementado.
+- **Variedad y personajes quemados** (resuelta con las fotos del reglamento): al no alimentarlos «Las cartas de
+  personaje se eliminan de la partida», y al final «Los jugadores recuperan sus cartas de Personaje que aún estén en
+  el tablero principal y las colocan en las columnas de sus tableros de jugador» antes de puntuar. Una carta
+  eliminada no llega al tablero de jugador, así que no cuenta para la variedad. El código es correcto.

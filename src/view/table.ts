@@ -77,7 +77,7 @@ export function renderDecks(el: HTMLElement, game: Game, { selectedCard, onSelec
 export function renderSupply(el: HTMLElement, game: Game) {
   el.innerHTML = `
     <section class="panel">
-      <span class="label">Edificios · ${game.buildings.length} al azar</span>
+      <span class="label">Edificios · ${game.buildings.length + game.players.reduce((n, pl) => n + pl.buildings.length, 0)} al azar</span>
       <div class="buildings">${game.buildings.map((id) =>
         `<img src="${BUILDINGS_BY_ID[id].image}" alt="${BUILDINGS_BY_ID[id].name}" title="${BUILDINGS_BY_ID[id].name}" data-zoom="${BUILDINGS_BY_ID[id].image}" draggable="false">`).join('')}</div>
       <div class="box" title="${game.buildingsBox.map((id) => BUILDINGS_BY_ID[id].name).join(', ')}">

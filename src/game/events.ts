@@ -149,7 +149,10 @@ function feed(g: Game, p: number, chars: string[], dropped: string[]) {
 /** Granja y Villa Imperial: habilidades de final de estación (tras alimentar). */
 function perks(g: Game) {
   g.players.forEach((player, p) => {
-    if (player.buildings.includes('farm') && player.fed) receive(g, p, { iki: FARM_IKI * player.fed });
+    if (player.buildings.includes('farm') && player.fed) {
+      receive(g, p, { iki: FARM_IKI * player.fed });
+      log(g, { type: 'perk', player: p, building: 'farm', gain: { iki: FARM_IKI * player.fed } });
+    }
     if (player.buildings.includes('imperial-villa')) {
       const counts: Record<string, number> = {};
       for (const card of [...characterLots(g, p).map((l) => g.lots[l].card), ...player.retired]) {
@@ -157,7 +160,10 @@ function perks(g: Game) {
         counts[type] = (counts[type] ?? 0) + 1;
       }
       const most = Math.max(0, ...Object.values(counts));
-      if (most) receive(g, p, { mon: VILLA_MONS * most });
+      if (most) {
+        receive(g, p, { mon: VILLA_MONS * most });
+        log(g, { type: 'perk', player: p, building: 'imperial-villa', gain: { mon: VILLA_MONS * most } });
+      }
     }
     delete player.fed;
   });

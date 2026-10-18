@@ -110,9 +110,11 @@ export const typeLabel = (type: string) => CHARACTER_TYPES[type as keyof typeof 
 
 const name = (id: string): string => CHARACTERS_BY_ID[id]?.name ?? BUILDINGS_BY_ID[id]?.name ?? id;
 const lotName = (g: Game, lot: string) => name(g.lots[lot]?.card);
+/** Nombre del Nagaya de un solar (`lot-top-left-3` → «amarillo»). */
+const nagayaOfLot = (lot: string) => NAGAYAS_BY_ID[lot.replace(/^lot-|-\d$/g, '')]?.name ?? lot;
 
 /** Entradas del registro que cuentan lo que pasó en el Evento del mes (para el resumen). */
-export const EVENT_LOG_TYPES = ['salary', 'harmony', 'starve', 'food', 'fire-start', 'fire-stopped', 'fire-avoided', 'burned'];
+export const EVENT_LOG_TYPES = ['salary', 'harmony', 'perk', 'starve', 'food', 'fire-start', 'fire-stopped', 'fire-avoided', 'burned'];
 
 /** Una entrada del registro como frase (HTML); `g` da los nombres de los jugadores. */
 /** Campos de una entrada del registro: dependen de `type` (ver los `log(g, …)` del motor). */
@@ -129,11 +131,13 @@ export function logLine(g: Game, e: Entry) {
     case 'move': return `${p} se mueve a ${ZONES_BY_ID[e.to].label}${e.laps ? ` y da la vuelta (+${e.laps} exp.)` : ''}`;
     case 'place': return `${p} coloca su Oyakata en ${ZONES_BY_ID[e.to].label}`;
     case 'shop': return `${p} usa ${ZONES_BY_ID[e.shop].label}`;
-    case 'character': return `${p} activa a ${name(e.card)}${e.owner !== e.player ? ` de ${who(g, e.owner)}` : ''}`;
+    case 'character': return `${p} activa a ${name(e.card)}${e.owner !== e.player ? ` de ${who(g, e.owner)}` : ''}${e.swapped ? ` e intercambia ${
+      (e.swapped as { card: string; from: string }[]).map((s) => `${name(s.card)} (Nagaya ${nagayaOfLot(s.from)})`).join(' y ')}` : ''}`;
     case 'build': return `${p} construye ${name(e.card)}`;
     case 'fire': return `${p} sube a ${e.level} en Extinción`;
     case 'retire': return `${p} retira a ${name(e.card)}`;
     case 'salary': return `${p} cobra ${Object.entries(e.gain as Cost).filter(([, n]) => n).map(([r, n]) => chip(r, n)).join(' ') || 'nada'} de salario`;
+    case 'perk': return `${p} gana ${Object.entries(e.gain as Cost).map(([r, n]) => chip(r, n)).join(' ')} por ${name(e.building)}`;
     case 'harmony': return `${p} gana ${e.iki} IKI por Armonía`;
     case 'food': return `${p} alimenta a ${e.fed} personaje(s)${e.dropped ? ` y pierde ${e.dropped}` : ''}`;
     case 'starve': return `${p} pierde a ${name(e.card)} por falta de arroz`;

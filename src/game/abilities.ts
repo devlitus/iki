@@ -19,7 +19,8 @@ function xpToOwn(g: Game, p: number, target: string | undefined) {
   gainXp(g, target!);
 }
 
-const ABILITIES: Record<Character['ability']['kind'], (g: Game, p: number, def: Character, a: CharacterAction) => void> = {
+/** Cada habilidad puede devolver campos extra para la entrada del registro (p. ej. qué cartas intercambia). */
+const ABILITIES: Record<Character['ability']['kind'], (g: Game, p: number, def: Character, a: CharacterAction) => void | Record<string, unknown>> = {
   gain: (g, p, def) => receive(g, p, toCost(def.ability.gain)),
 
   trade(g, p, def) {
@@ -45,6 +46,7 @@ const ABILITIES: Record<Character['ability']['kind'], (g: Game, p: number, def: 
     const [x, y] = a.lots ?? [];
     rule(x !== y && g.lots[x]?.kind === 'character' && g.lots[y]?.kind === 'character', 'Elige 2 cartas de Personaje');
     [g.lots[x], g.lots[y]] = [g.lots[y], g.lots[x]]; // los Kobun siguen con su carta
+    return { swapped: [{ card: g.lots[y].card, from: x }, { card: g.lots[x].card, from: y }] };
   },
 
   gainOthers(g, p, def) {
@@ -61,8 +63,8 @@ export function activateCharacter(g: Game, p: number, lotId: string, a: Characte
   const lot = g.lots[lotId];
   rule(lot?.kind === 'character', 'Ahí no hay ningún personaje');
   const def = CHARACTERS_BY_ID[lot.card];
-  ABILITIES[def.ability.kind](g, p, def, a);
-  log(g, { type: 'character', player: p, card: lot.card, owner: lot.owner });
+  const extra = ABILITIES[def.ability.kind](g, p, def, a);
+  log(g, { type: 'character', player: p, card: lot.card, owner: lot.owner, ...extra });
   // Cometas y Marionetas mueven cartas: la experiencia es de la carta, esté donde esté.
   const now = Object.keys(g.lots).find((id) => g.lots[id].card === def.id);
   if (lot.owner !== p && now) gainXp(g, now);

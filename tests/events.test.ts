@@ -155,6 +155,7 @@ test('Granja y Villa Imperial: IKI por Kobun alimentado y mons por personaje del
   assert.equal(g.players[0].iki, 3 + 4 + 4);
   assert.equal(g.players[0].resources.mon, 8 + 2 + 2 + 4);
   assert.equal(g.players[0].fed, undefined);
+  assert.deepEqual(g.log.filter((e) => e.type === 'perk').map((e) => [e.building, e.gain]), [['farm', { iki: 4 }], ['imperial-villa', { mon: 4 }]]);
 });
 
 test('cambio de estación: fila y mercado fuera; llega el mercado de la siguiente', () => {
