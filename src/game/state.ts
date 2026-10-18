@@ -107,6 +107,14 @@ export function gainXp(g: Game, lotId: string) {
 /** Casilla de salario actual de un personaje en juego, o la máxima si está retirado. */
 export const salaryOf = (def: Character, xp: number) => def.salary[Math.min(xp, def.salary.length - 1)];
 
+/** Coste de un edificio sin el extra del solar: discount = recurso del que se descuenta 1; fee = mons extra. */
+export function buildCost(building: string, { discount, fee = 0 }: { discount?: Amount; fee?: number } = {}): Cost {
+  const cost: Cost = { ...BUILDINGS_BY_ID[building].cost };
+  if (discount) cost[discount.res] = Math.max(0, (cost[discount.res] ?? 0) - 1);
+  if (fee) cost.mon = (cost.mon ?? 0) + fee;
+  return cost;
+}
+
 /**
  * Construye un edificio de los disponibles (`g.buildings`) en un solar libre.
  * discount = recurso del que se descuenta 1 (Carpintero, Tallador); fee = mons extra (Lugar de Construcción).
@@ -116,9 +124,8 @@ export function build(g: Game, p: number, { building, lot, discount, fee = 0 }: 
   rule(def && g.buildings.includes(building), `${building} no está disponible`);
   assertFreeLot(g, lot);
   rule(g.players[p].kobun > 0, 'No tienes Kobun disponibles');
-  const cost = { ...def.cost };
-  if (discount) cost[discount.res] = Math.max(0, (cost[discount.res] ?? 0) - 1);
-  cost.mon = (cost.mon ?? 0) + fee + ZONES_BY_ID[lot].extraCost!;
+  const cost = buildCost(building, { discount, fee });
+  cost.mon = (cost.mon ?? 0) + ZONES_BY_ID[lot].extraCost!;
   pay(g, p, cost, `construir ${def.name}`);
   g.buildings = g.buildings.filter((b) => b !== building);
   g.players[p].buildings.push(building);
