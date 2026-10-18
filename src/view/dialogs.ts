@@ -1,4 +1,4 @@
-import { EVENT_LOG_TYPES, cardSummary, logLine, playerColor, playerName, typeLabel } from './format.ts';
+import { EVENT_LOG_TYPES, cardSummary, logByMonth, logLine, playerColor, playerName, typeLabel } from './format.ts';
 import { CHARACTERS_BY_ID } from '../data/characters.ts';
 import { BUILDINGS_BY_ID } from '../data/decks.ts';
 import { NAGAYAS_BY_ID, fireTileImage } from '../data/zones.ts';
@@ -48,6 +48,22 @@ export function createEventSummary({ onClose = () => {} } = {}) {
         <button type="button" class="btn close" autofocus>Continuar</button>`;
       if (!dialog.open) dialog.showModal();
       return start?.nagaya ?? null;
+    },
+  };
+}
+
+/** El registro entero de la partida, por meses (el panel de turno solo enseña el mes en curso). */
+export function createLogDialog() {
+  const dialog = makeDialog('log-dialog');
+  dialog.setAttribute('aria-labelledby', 'log-dialog-title');
+  return {
+    open(game: Game) {
+      dialog.innerHTML = `
+        <h2 id="log-dialog-title">Registro de la partida</h2>
+        <div class="log-full">${logByMonth(game, game.log, 'h3')}</div>
+        <footer><button type="button" class="btn close">Cerrar</button></footer>`;
+      if (!dialog.open) dialog.showModal();
+      dialog.scrollTop = 0;
     },
   };
 }

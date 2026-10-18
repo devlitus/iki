@@ -125,7 +125,7 @@ export function logLine(g: Game, e: Entry) {
 
   const p = e.player != null ? who(g, e.player) : '';
   switch (e.type) {
-    case 'month': return `<b>Mes ${e.month}</b>`;
+    case 'month': return `<b>${monthLabel(e.month)}</b>`;
     case 'income': return `${p} cobra ingresos (+4 mons)`;
     case 'hire': return `${p} contrata a ${name(e.card)}`;
     case 'move': return `${p} se mueve a ${ZONES_BY_ID[e.to].label}${e.laps ? ` y da la vuelta (+${e.laps} exp.)` : ''}`;
@@ -149,6 +149,21 @@ export function logLine(g: Game, e: Entry) {
     case 'end': return `Fin de la partida: gana ${who(g, e.winner)}`;
     default: return e.type;
   }
+}
+
+/** Cabecera de un mes en el registro («Mes 3», y el 13 es el Día de Año Nuevo). */
+export const monthLabel = (month: number) => (month === 13 ? 'Día de Año Nuevo' : `Mes ${month}`);
+
+/**
+ * Entradas del registro agrupadas por mes, del más reciente al más antiguo y, dentro de cada mes, lo último arriba;
+ * `heading` es la etiqueta de la cabecera de cada grupo (h3, h4…).
+ */
+export function logByMonth(g: Game, entries: LogEntry[], heading = 'h4') {
+  const months = new Map<number, LogEntry[]>();
+  for (const e of entries) if (e.type !== 'month') months.set(e.month, [...(months.get(e.month) ?? []), e]);
+  return [...months].reverse().map(([month, list]) => `<section class="log-month">
+    <${heading}>${monthLabel(month)}</${heading}>
+    <ul>${list.reverse().map((e) => `<li>${logLine(g, e)}</li>`).join('')}</ul></section>`).join('');
 }
 
 export { lotName, name as cardName };

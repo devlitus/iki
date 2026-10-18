@@ -3,8 +3,9 @@ import { BUILDINGS_BY_ID } from '../data/decks.ts';
 import { MARKET_BY_ID, describeToken } from '../data/market.ts';
 import { ZONES_BY_ID, STREET, LOT_IDS } from '../data/zones.ts';
 import { act, whoseTurn, seasonOf, IKIZAMA_SLOTS } from '../game/engine.ts';
+import { FIRE_STRENGTH } from '../game/events.ts';
 import { buildCost, characterLots } from '../game/state.ts';
-import { abilityText, cardName, chips, costChips, costText, isWaiting, logLine, playerColor, playerName, shopName, waitingText, who } from './format.ts';
+import { abilityText, cardName, chips, costChips, costText, isWaiting, logByMonth, playerColor, playerName, shopName, waitingText, who } from './format.ts';
 import type { Action, ActionOf, CharacterType, Game, IkizamaSlot, MarketToken, Target } from '../types.ts';
 
 
@@ -32,6 +33,7 @@ export type Ctx = {
   canUndo?: boolean;
   game?: Game;
   openFinal?: () => void;
+  openLog?: () => void;
 };
 
 /**
@@ -119,6 +121,7 @@ export function renderTurnPanel(el: HTMLElement, game: Game, ctx: Ctx) {
       <span class="label">Mes ${game.month}/13 · ${season.name}</span>
       <h2>${PHASE[game.phase] ?? ''}</h2>
       ${p != null ? `<p class="turn-who" style="--player-color:${playerColor(game, p)}">Juega ${who(game, p)}${game.turn?.slot ? ` · Ikizama ${game.turn.slot}` : ''}</p>` : ''}
+      ${fireWarning(game, p)}
     </header>`;
 
   const waiting = isWaiting(game);
@@ -131,18 +134,31 @@ export function renderTurnPanel(el: HTMLElement, game: Game, ctx: Ctx) {
     ${ctx.canUndo && !waiting ? '<button type="button" class="btn btn-sm" data-do="undo">↶ Deshacer</button>' : ''}
     <details class="turn-log" open>
       <summary class="label">Registro</summary>
-      <ul>${recentLog(game)}</ul>
+      ${recentLog(game)}
+      ${btn('Ver todo el registro', 'data-do="log"', { cls: 'btn-sm' })}
     </details>`;
 }
 
-/** Las últimas entradas, de la más reciente a la más antigua, con la cabecera «Mes N» encima de las de cada mes. */
+/**
+ * En los meses de Incendio, aviso de que al final del mes habrá uno y de su fuerza, con el nivel de Extinción de quien
+ * juega (o, si juega la IA, de las personas), para elegir Ikizama y solar sabiéndolo.
+ */
+function fireWarning(game: Game, p: number | null) {
+  const strength = FIRE_STRENGTH[game.month];
+  if (!strength || (game.phase !== 'ikizama' && game.phase !== 'actions')) return '';
+  const humans = p != null && !game.players[p].ai ? [p] : game.players.flatMap((q, i) => (q.ai ? [] : [i]));
+  const levels = humans.map((q) => `${who(game, q)}: ${game.players[q].fire}`).join(' · ');
+  return `<p class="fire-warning"><span aria-hidden="true">🔥</span> Incendio al final del mes · fuerza <b>${strength}</b>
+    ${levels ? `<br><span>Extinción de ${levels}</span>` : ''}</p>`;
+}
+
+/** Lo jugado en el mes en curso y, mientras este apenas ha empezado, también en el anterior (lo último, arriba). */
+const RECENT_MIN = 4;
 function recentLog(game: Game) {
-  let month: number | null = null;
-  return game.log.slice(-8).reverse().filter((e) => e.type !== 'month').map((e) => {
-    const head = e.month !== month ? `<li>${logLine(game, { ...e, type: 'month' })}</li>` : '';
-    month = e.month;
-    return `${head}<li>${logLine(game, e)}</li>`;
-  }).join('');
+  const played = game.log.filter((e) => e.type !== 'month');
+  const now = played.filter((e) => e.month === game.month).length;
+  const from = now >= RECENT_MIN ? game.month : game.month - 1;
+  return logByMonth(game, played.filter((e) => e.month >= from));
 }
 
 const btn = (label: string | number, attrs: string, { disabled = false, cls = '' } = {}) =>
@@ -394,7 +410,7 @@ export function bindTurnPanel(el: HTMLElement, getCtx: () => Ctx) {
   });
 }
 
-function handle(b: Control, { ui, set, dispatch, undo, game, openFinal }: Ctx) {
+function handle(b: Control, { ui, set, dispatch, undo, game, openFinal, openLog }: Ctx) {
   const d = b.dataset as Record<string, string>;
   const num = (v: string) => Number(v);
   switch (d.do) {
@@ -422,6 +438,7 @@ function handle(b: Control, { ui, set, dispatch, undo, game, openFinal }: Ctx) {
     case 'avoid': return dispatch({ type: 'resolve', use: d.use === 'true' });
     case 'wild': return dispatch({ type: 'resolve', cardType: d.type as CharacterType });
     case 'final': return openFinal!();
+    case 'log': return openLog!();
   }
 }
 

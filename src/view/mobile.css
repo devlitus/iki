@@ -52,7 +52,8 @@
     overflow-y: auto; overscroll-behavior: contain;
   }
   #app > #turn[hidden], #app.turn-collapsed > #turn { display: none; }
-  .turn-log ul { font-size: 11px; }
+  .turn-log ul { font-size: 12px; }
+  .turn-log summary { display: flex; align-items: center; min-height: 44px; padding: 0; }
   .mobile-only { display: inline-block; }
 
   /* Objetivos de toque de al menos 44 px de alto */

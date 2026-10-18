@@ -7,6 +7,7 @@
 .turn-head h2 { margin: 0; font: 400 22px/1.1 'Patrick Hand SC', system-ui, sans-serif; }
 .turn-who { margin: 2px 0 0; padding-left: 8px; border-left: 4px solid var(--player-color); }
 .who-name { color: var(--player-color); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6); }
+.fire-warning { margin: 6px 0 0; padding: 4px 8px; border: 1px solid #ff9a6b; border-left-width: 4px; border-radius: 5px; background: rgba(20, 8, 4, 0.6); font-size: 13px; line-height: 1.3; }
 .turn-body { display: flex; flex-direction: column; gap: 6px; }
 .turn-body p { margin: 0; }
 .turn-error { margin: 0; padding: 4px 8px; border-radius: 5px; background: rgba(214, 50, 58, 0.35); }
@@ -31,7 +32,11 @@
 .swap { display: flex; align-items: center; gap: 4px; }
 .swap select { flex: 1; min-width: 0; font: inherit; }
 .turn-log ul { margin: 4px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; font-size: 12px; }
-.turn-log summary { cursor: pointer; }
+.turn-log summary { cursor: pointer; padding: 4px 0; }
+.turn-log .log-month h4 { margin: 6px 0 0; font-size: 12px; }
+.turn-log > .btn { margin-top: 6px; }
+.log-full .log-month h3 { margin: 10px 0 4px; font: 400 20px/1 'Patrick Hand SC', system-ui, sans-serif; color: #ffd27a; }
+#log-dialog { width: min(640px, calc(100vw - 32px)); }
 .ic-iki { width: auto; padding: 0 3px; border-radius: 3px; background: #2b2622; }
 
 /* Fila de cartas: las que no se pueden contratar se apagan mientras se elige */

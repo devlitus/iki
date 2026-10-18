@@ -12,7 +12,7 @@ import { renderDecks, renderSupply, renderPlayers, renderSpecialsInfo } from './
 import { renderBoardPieces } from './view/boardPieces.ts';
 import { renderTurnPanel, bindTurnPanel, boardTargets, hireableCards } from './view/turnPanel.ts';
 import { createCover } from './view/cover.ts';
-import { createEventSummary, createFinalTable, initZoom } from './view/dialogs.ts';
+import { createEventSummary, createFinalTable, createLogDialog, initZoom } from './view/dialogs.ts';
 import { initTooltips } from './view/tooltip.ts';
 import { createPlayerModal } from './view/playerModal.ts';
 import { createDiceRoll } from './view/diceRoll.ts';
@@ -87,11 +87,12 @@ const mobile = createMobileLayout({ app, side: document.getElementById('side')!,
 let fireTileShown: string | null = null;
 const eventSummary = createEventSummary({ onClose: () => { if (fireTileShown) { fireTileShown = null; render(); } } });
 const finalTable = createFinalTable({ onNewGame: () => openPicker() });
+const logDialog = createLogDialog();
 initZoom();
 initTooltips();
 
 /** Todo lo que el panel de turno necesita para pintar y para actuar. */
-const turnCtx = () => ({ game: game!, ui, set, dispatch, undo, canUndo: history.length > 0, openFinal: () => finalTable.open(game!) });
+const turnCtx = () => ({ game: game!, ui, set, dispatch, undo, canUndo: history.length > 0, openFinal: () => finalTable.open(game!), openLog: () => logDialog.open(game!) });
 bindTurnPanel(turnEl, turnCtx);
 
 /** Deja la mesa vacía, como antes de empezar ninguna partida. */
