@@ -21,7 +21,7 @@ function paula() {
     p.wildType = 'builder';
     p.fish = ['spring-fish-4', 'summer-fish-7', 'autumn-fish-2']; // 3 estaciones: 10 + 1 + 7
     p.pipes = ['spring-fire-2'];
-    p.tobacco = ['autumn-inro-3', 'winter-bag-5']; // 3 (tipo más contratado) + 5
+    p.tobacco = ['autumn-inro-3', 'winter-bag-7']; // 3 (tipo más contratado) + 5
     p.buildings = ['restaurant'];
     p.resources = { mon: 5, rice: 0, sandal: 0, wood: 0, koban: 1 };
   });
