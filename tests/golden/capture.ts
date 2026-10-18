@@ -1,5 +1,8 @@
-import * as M from './modules.js';
-import { hash, outcome, seeded, serialize } from './serialize.js';
+import * as M from './modules.ts';
+import { hash, outcome, seeded, serialize } from './serialize.ts';
+import type { Action, Game, Seed } from '../../src/types.ts';
+import type { Ui } from '../../src/view/turnPanel.ts';
+import type { Board } from '../../src/board.ts';
 
 /**
  * Grabación de referencia: recorre el juego de forma determinista y anota, paso a paso, lo que hace cada capa (motor, IA,
@@ -13,10 +16,10 @@ const MAX_STEPS = 4000;
 // Math.random solo lo usan la portada, el dado animado y los nombres de la IA, pero se fija por si acaso.
 Math.random = seeded(1234);
 
-const newGame = (n, seed, ai = () => true) => M.createGame({ players: BOARDS.slice(0, n).map((boardId, i) => ({ boardId, ai: ai(i) })), seed });
+const newGame = (n: number, seed: Seed, ai: (i: number) => boolean = () => true) => M.createGame({ players: BOARDS.slice(0, n).map((boardId, i) => ({ boardId, ai: ai(i) })), seed });
 
 /** Jugadas mal formadas o imposibles que se prueban en cada paso: se anota el error exacto (o el estado, si se acepta). */
-const probes = (g) => [
+const probes = (g: Game): any[] => [
   null, undefined, {}, 'income', [], { type: 'nope' }, { type: 'constructor' }, { type: '__proto__' }, { type: 'toString' },
   { type: 'income' }, { type: 'endTurn' }, { type: 'hire', card: 'x', lot: 'y' }, { type: 'hire', card: g.row?.[0]?.card, lot: 'lot-top-left-1' },
   { type: 'move', sandals: 99 }, { type: 'move', sandals: -1 }, { type: 'move', base: 7 }, { type: 'move', base: 1.5, sandals: 0 },
@@ -28,7 +31,7 @@ const probes = (g) => [
 ];
 
 /** Lo que se anota de un estado: cada faceta por separado, para que un fallo diga qué parte cambió. */
-function facets(g) {
+function facets(g: Game) {
   return {
     state: hash(g),
     whose: outcome(() => M.whoseTurn(g)),
@@ -44,11 +47,11 @@ function facets(g) {
 }
 
 /** Partida entera entre IA. `onStep(g, action)` permite a otras capas mirar cada estado. */
-function playOut(g, effort, onStep = () => {}) {
-  const steps = [];
+function playOut(g: Game, effort: 'fast' | 'normal', onStep: (g: Game, action: Action | null) => void = () => {}) {
+  const steps: object[] = [];
   for (let i = 0; g.phase !== 'ended'; i++) {
     if (i >= MAX_STEPS) throw new Error('la partida no termina');
-    const action = M.chooseAction(g, { effort });
+    const action = M.chooseAction(g, { effort })!;
     steps.push({ action: serialize(action), ...facets(g) });
     onStep(g, action);
     g = M.act(g, action);
@@ -60,11 +63,14 @@ function playOut(g, effort, onStep = () => {}) {
 
 // --- Capas 1-3: motor, IA, vista pública y jugadas no válidas -----------------------------------
 
+/** Escenario: nombre y función que devuelve sus datos. */
+type Scenario = [string, () => unknown];
+
 function engineScenarios() {
-  const out = [];
+  const out: Scenario[] = [];
   for (const n of [3, 4]) for (let seed = 1; seed <= 20; seed++) out.push([`engine-${n}p-s${seed}-fast`, () => playOut(newGame(n, seed), 'fast')]);
   for (const [n, seed] of [[3, 101], [4, 102]]) out.push([`engine-${n}p-s${seed}-normal`, () => playOut(newGame(n, seed), 'normal')]);
-  for (const [n, seed] of [[3, [1, 2, 3, 4]], [4, [0xdeadbeef, 7, 0, 99]]]) out.push([`engine-${n}p-sfc-${seed.join('_')}`, () => playOut(newGame(n, seed), 'fast')]);
+  for (const [n, seed] of [[3, [1, 2, 3, 4]], [4, [0xdeadbeef, 7, 0, 99]]] as [number, number[]][]) out.push([`engine-${n}p-sfc-${seed.join('_')}`, () => playOut(newGame(n, seed), 'fast')]);
   out.push(['engine-setup', () => {
     const tries = [
       () => newGame(2, 1), () => newGame(5, 1), () => M.createGame({ players: [{ boardId: 'x' }, { boardId: 'blue' }, { boardId: 'red' }], seed: 1 }),
@@ -72,7 +78,7 @@ function engineScenarios() {
       () => M.createGame({ players: BOARDS.slice(0, 3).map((boardId) => ({ boardId })), seed: 0 }),
       () => newGame(3, 2 ** 32 - 1), () => newGame(4, 0.5),
     ];
-    const rng = (seed) => { const r = M.createRng(seed); return [r.next(), r.roll(), r.roll(20), r.shuffle([1, 2, 3, 4, 5, 6, 7, 8]), r.state()]; };
+    const rng = (seed: Seed) => { const r = M.createRng(seed); return [r.next(), r.roll(), r.roll(20), r.shuffle([1, 2, 3, 4, 5, 6, 7, 8]), r.state()]; };
     return {
       tries: tries.map((t) => outcome(t)),
       rng: [1, 0, 2 ** 31, [1, 2, 3, 4], [5, 0, 0, 0]].map((s) => outcome(() => rng(s))),
@@ -83,14 +89,14 @@ function engineScenarios() {
 
 // --- Capa 4: tutorial ---------------------------------------------------------------------------
 
-function tutorialScenario(pick) {
+function tutorialScenario(pick: (options: Action[]) => Action) {
   return () => {
     let g = M.createTutorialGame();
-    const acked = new Set();
-    const humanOptions = (s) => (s.phase === 'initial-characters'
+    const acked = new Set<string>();
+    const humanOptions = (s: Game): Action[] => (s.phase === 'initial-characters'
       ? s.initialCharacters.flatMap((card) => M.HUMAN_LOTS.map((lot) => ({ type: 'placeInitial', card, lot })))
       : M.legalActions(s));
-    const steps = [];
+    const steps: unknown[] = [];
     for (let i = 0; i < 6000; i++) {
       const step = M.currentStep(g, acked);
       if (!step) { steps.push('sin paso'); break; }
@@ -106,7 +112,7 @@ function tutorialScenario(pick) {
       else if (M.isAiTurn(g) || step.kind === 'free') g = M.act(g, M.chooseAction(g, { effort: 'fast' }));
       else {
         const allowed = options.filter((a) => M.stepAllows(step, g, a));
-        g = M.act(g, step.id === 'business' ? allowed.find((a) => a.type === 'endTurn') : pick(allowed));
+        g = M.act(g, step.id === 'business' ? allowed.find((a) => a.type === 'endTurn')! : pick(allowed));
       }
     }
     return { steps, ids: [M.STEPS.map((s) => s.id), M.TIPS.map((t) => t.id)], final: hash(g) };
@@ -116,7 +122,7 @@ function tutorialScenario(pick) {
 // --- Capa 5: vistas -----------------------------------------------------------------------------
 
 /** Lo que el jugador tendría a medio elegir antes de la jugada `a` (el `ui` de main.js). */
-function uiFor(a) {
+function uiFor(a: any): Ui {
   if (!a) return {};
   switch (a.type) {
     case 'hire': return { hire: a.card };
@@ -131,17 +137,17 @@ function uiFor(a) {
 function viewRecorder() {
   const el = document.createElement('div');
   const pieces = document.createElement('div');
-  const board = { pieces, place: (node, u, v) => { node.dataset.u = u; node.dataset.v = v; pieces.append(node); return node; } };
+  const board = { pieces, place: (node: HTMLElement, u: number, v: number) => { node.dataset.u = u as any; node.dataset.v = v as any; pieces.append(node); return node; } } as unknown as Board;
   const modal = M.createPlayerModal();
   const summary = M.createEventSummary();
   const finalTable = M.createFinalTable({ onNewGame() {} });
-  const html = (fn) => outcome(() => { fn(); return el.innerHTML; });
-  const steps = [];
+  const html = (fn: () => unknown) => outcome(() => { fn(); return el.innerHTML; });
+  const steps: Record<string, string>[] = [];
   let seenLog = 0;
 
   return {
     steps,
-    onStep(g, action) {
+    onStep(g: Game, action: Action | null) {
       const entries = g.log.slice(seenLog);
       seenLog = g.log.length;
       const variants = {
@@ -149,14 +155,14 @@ function viewRecorder() {
         local: { ...structuredClone(g), players: g.players.map((p) => ({ ...p, ai: false })) },
         online: { ...structuredClone(g), viewer: 0, players: g.players.map((p, i) => ({ ...p, ai: i === 2 ? p.ai : false, userName: `<J${i}>` })) },
       };
-      const row = { log: outcome(() => entries.map((e) => M.logLine(g, e))) };
+      const row: Record<string, string> = { log: outcome(() => entries.map((e) => M.logLine(g, e))) };
       for (const [name, v] of Object.entries(variants)) {
-        for (const [uiName, ui] of [['empty', {}], ['next', uiFor(action)], ['error', { error: 'Algo falla' }]]) {
+        for (const [uiName, ui] of [['empty', {}], ['next', uiFor(action)], ['error', { error: 'Algo falla' }]] as [string, Ui][]) {
           const ctx = { ui, set() {}, dispatch() {}, undo() {}, canUndo: uiName === 'empty' };
           row[`${name}.turn.${uiName}`] = html(() => M.renderTurnPanel(el, v, ctx));
           row[`${name}.targets.${uiName}`] = outcome(() => M.boardTargets(v, ctx).map(({ zone, title }) => [zone, title]));
         }
-        const hireable = (() => { try { return M.hireableCards(v); } catch { return new Set(); } })();
+        const hireable = (() => { try { return M.hireableCards(v); } catch { return new Set<string>(); } })();
         row[`${name}.hireable`] = outcome(() => M.hireableCards(v));
         row[`${name}.decks`] = html(() => M.renderDecks(el, v, { selectedCard: v.row?.[0]?.card ?? null, onSelectCard() {}, hireable, hiring: uiFor(action).hire ?? null, onSelectHire() {} }));
         row[`${name}.supply`] = html(() => M.renderSupply(el, v));
@@ -166,17 +172,17 @@ function viewRecorder() {
           M.renderBoardPieces(board, v, { targets, fireNagaya: null });
           return pieces.innerHTML;
         });
-        row[`${name}.modal`] = outcome(() => v.players.map((_, i) => { modal.open(v, i); return document.getElementById('player-modal').innerHTML; }));
+        row[`${name}.modal`] = outcome(() => v.players.map((_, i) => { modal.open(v, i); return document.getElementById('player-modal')!.innerHTML; }));
       }
-      if (entries.length) row.summary = outcome(() => [summary.show(g, entries), document.getElementById('event-summary').innerHTML]);
-      if (g.phase === 'ended') row.final = outcome(() => { finalTable.open(g); return document.getElementById('final-table').innerHTML; });
+      if (entries.length) row.summary = outcome(() => [summary.show(g, entries), document.getElementById('event-summary')!.innerHTML]);
+      if (g.phase === 'ended') row.final = outcome(() => { finalTable.open(g); return document.getElementById('final-table')!.innerHTML; });
       steps.push(row);
     },
   };
 }
 
 function viewScenarios() {
-  const out = [];
+  const out: Scenario[] = [];
   for (const [n, seed] of [[3, 1], [4, 2], [3, 3], [4, 4]]) {
     out.push([`view-${n}p-s${seed}`, () => {
       const rec = viewRecorder();
@@ -189,7 +195,7 @@ function viewScenarios() {
     M.renderSpecialsInfo(el);
     return {
       specials: hash(el.innerHTML),
-      abilities: M.CHARACTERS.map((c) => [c.id, outcome(() => M.abilityText(c)), outcome(() => M.cardSummary(c.image))]),
+      abilities: M.CHARACTERS.map((c) => [c.id, outcome(() => M.abilityText(c)), outcome(() => M.cardSummary((c as { image?: string }).image!))]),
     };
   }]);
   out.push(['data', () => Object.fromEntries(Object.entries(M.data).map(([name, mod]) => [name, hash(mod)]))]);
@@ -219,7 +225,7 @@ async function serverScenario() {
 
   function browser() {
     let cookie = '';
-    return async (method, path, body, { origin = ORIGIN, type = 'application/json' } = {}) => {
+    return async (method: string, path: string, body?: unknown, { origin = ORIGIN, type = 'application/json' } = {}) => {
       const headers = new Headers();
       if (cookie) headers.set('cookie', cookie);
       if (origin) headers.set('origin', origin);
@@ -235,7 +241,7 @@ async function serverScenario() {
       return { status: res.status, body: parsed };
     };
   }
-  const dbGame = async (id) => (await db.query('SELECT * FROM games WHERE id = $1', [id]))[0];
+  const dbGame = async (id: string) => (await db.query('SELECT * FROM games WHERE id = $1', [id]))[0];
 
   try {
     const [a, b, c, d] = [browser(), browser(), browser(), browser()];
@@ -315,7 +321,7 @@ async function serverScenario() {
 }
 
 /** Todos los escenarios: [nombre, () => datos | Promise<datos>]. */
-export const scenarios = () => [
+export const scenarios = (): Scenario[] => [
   ...engineScenarios(),
   ['tutorial-first', tutorialScenario((options) => options[0])],
   ['tutorial-last', tutorialScenario((options) => options.at(-1))],

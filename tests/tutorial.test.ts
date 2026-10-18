@@ -1,12 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import type { Action, Game } from '../src/types.ts';
 import { act, legalActions } from '../src/game/engine.ts';
 import { chooseAction, isAiTurn } from '../src/ai/player.ts';
 import { createTutorialGame, HUMAN_LOTS } from '../src/tutorial/game.ts';
-import { STEPS, TIPS, currentStep, humanOf, progress, stepAllows, stepZones } from '../src/tutorial/script.ts';
+import { STEPS, TIPS, currentStep, humanOf, progress, stepAllows, stepZones, type Step } from '../src/tutorial/script.ts';
 
 /** Jugadas del humano: el motor no las lista en la preparación, así que ahí se generan las colocaciones posibles. */
-const humanOptions = (g) => (g.phase === 'initial-characters'
+const humanOptions = (g: Game): Action[] => (g.phase === 'initial-characters'
   ? g.initialCharacters.flatMap((card) => HUMAN_LOTS.map((lot) => ({ type: 'placeInitial', card, lot })))
   : legalActions(g));
 
@@ -15,9 +16,9 @@ const humanOptions = (g) => (g.phase === 'initial-characters'
  * jugada que el paso acepta y deja jugar a la IA; en el juego libre, el humano juega como la IA. Devuelve los pasos vistos
  * y la partida al llegar al paso `until` (por defecto, el último).
  */
-function playThrough(choose = (options) => options[0], until = (step) => step.last) {
+function playThrough(choose = (options: Action[]) => options[0], until = (step: Step) => step.last) {
   let g = createTutorialGame();
-  const acked = new Set();
+  const acked = new Set<string>();
   const seen = [];
   for (let i = 0; i < 5000; i++) {
     const step = currentStep(g, acked);
@@ -59,8 +60,8 @@ test('seguir las indicaciones lleva del principio al final del año', () => {
 
 test('los avisos del año salen en su mes', () => {
   let g = createTutorialGame();
-  const acked = new Set();
-  const at = {};
+  const acked = new Set<string>();
+  const at: Record<string, number> = {};
   for (let i = 0; i < 5000 && g.phase !== 'ended'; i++) {
     const step = currentStep(g, acked);
     at[step.id] ??= g.month;
@@ -97,14 +98,14 @@ test('cualquier espacio de Ikizama y cualquier personaje inicial permiten acabar
   for (const slot of ['1', '2', '3', '4']) {
     for (const card of createTutorialGame().initialCharacters) {
       let g = createTutorialGame();
-      const acked = new Set();
+      const acked = new Set<string>();
       for (let i = 0; i < 400 && !afterMonth1(currentStep(g, acked)); i++) {
         const step = currentStep(g, acked);
         if (step.kind === 'info') acked.add(step.id);
         else if (isAiTurn(g)) g = act(g, chooseAction(g, { effort: 'fast' }));
         else {
           const options = humanOptions(g).filter((a) => stepAllows(step, g, a));
-          const wanted = options.find((a) => a.slot === slot || a.card === card) ?? options.find((a) => a.type === 'endTurn') ?? options[0];
+          const wanted = options.find((a) => (a as { slot?: string }).slot === slot || (a as { card?: string }).card === card) ?? options.find((a) => a.type === 'endTurn') ?? options[0];
           assert.ok(wanted, `sin jugada en «${step.id}»`);
           g = act(g, wanted);
         }

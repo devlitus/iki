@@ -4,13 +4,14 @@ import { createGame } from '../src/game/setup.ts';
 import { act, legalActions } from '../src/game/engine.ts';
 import { chooseAction, deciderOf, isAiTurn } from '../src/ai/player.ts';
 import { evaluate } from '../src/ai/evaluate.ts';
-import { BOARDS } from './helpers.js';
+import { BOARDS } from './helpers.ts';
+import type { Game } from '../src/types.ts';
 
-const aiGame = (n, seed, ai = () => true) =>
+const aiGame = (n: number, seed: number, ai: (i: number) => boolean = () => true) =>
   createGame({ players: BOARDS.slice(0, n).map((boardId, i) => ({ boardId, ai: ai(i) })), seed });
 
 /** Juega la partida entera con la IA (esfuerzo bajo, para que sea rápido) y devuelve el estado final. */
-function playOut(g, limit = 2000) {
+function playOut(g: Game, limit = 2000) {
   for (let steps = 0; g.phase !== 'ended'; steps++) {
     assert.ok(steps < limit, `la partida no termina (fase ${g.phase}, mes ${g.month})`);
     const action = chooseAction(g, { effort: 'fast' });

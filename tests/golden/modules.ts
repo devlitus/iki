@@ -1,4 +1,4 @@
-import './dom.js';
+import './dom.ts';
 
 /**
  * Todo lo que usa la grabación de referencia, en un solo sitio: al migrar a TypeScript solo cambian estas rutas, y la

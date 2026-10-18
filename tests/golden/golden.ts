@@ -24,7 +24,7 @@ const format = (data) => `{\n${Object.entries(data).map(([k, v]) => `${JSON.stri
   : JSON.stringify(v)}`).join(',\n')}\n}\n`;
 
 async function worker(outDir, index, count) {
-  const { scenarios } = await import('./capture.js');
+  const { scenarios } = await import('./capture.ts');
   const list = scenarios().filter(([name]) => name.includes(filter)).filter((_, i) => i % count === index);
   for (const [name, run] of list) {
     const started = performance.now();
@@ -41,7 +41,7 @@ async function worker(outDir, index, count) {
 
 function runWorkers(outDir) {
   const count = Math.max(1, Math.min(8, availableParallelism() - 1));
-  return Promise.all(Array.from({ length: count }, (_, i) => new Promise((resolve, reject) => {
+  return Promise.all(Array.from({ length: count }, (_, i) => new Promise<void>((resolve, reject) => {
     const child = spawn(process.execPath, [fileURLToPath(import.meta.url), '--worker', outDir, String(i), String(count), filter], { stdio: 'inherit' });
     child.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`el proceso ${i} terminó con código ${code}`))));
   })));

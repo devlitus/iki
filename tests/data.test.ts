@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import type { Action, Game } from '../src/types.ts';
 import { existsSync } from 'node:fs';
 import { CHARACTERS, CHARACTERS_BY_ID, CHARACTER_TYPES } from '../src/data/characters.ts';
 import { BUILDINGS, SEASONS } from '../src/data/decks.ts';
@@ -28,9 +29,9 @@ test('10 edificios con coste y puntuación', () => {
 });
 
 test('mercado: 6 fichas por estación', () => {
-  for (const s of ['spring', 'summer', 'autumn', 'winter']) {
+  for (const s of ['spring', 'summer', 'autumn', 'winter'] as const) {
     const m = seasonMarket(s);
-    for (const k of ['fish', 'pipe', 'bag']) assert.equal(m[k].length, 2, `${s} ${k}`);
+    for (const k of ['fish', 'pipe', 'bag'] as const) assert.equal(m[k].length, 2, `${s} ${k}`);
   }
   assert.equal(MARKET_TOKENS.length, 24);
   for (const t of MARKET_TOKENS) if (t.image) assert.ok(pub(t.image), t.image);

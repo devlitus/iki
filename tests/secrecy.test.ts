@@ -1,11 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import type { Action, Game } from '../src/types.ts';
 import { createRng, secretSeed } from '../src/game/random.ts';
 import { createGame } from '../src/game/setup.ts';
 import { act, legalActions } from '../src/game/engine.ts';
 import { publicView, HIDDEN } from '../src/game/view.ts';
 import { chooseAction, isAiTurn, deciderOf } from '../src/ai/player.ts';
-import { BOARDS } from './helpers.js';
+import { BOARDS } from './helpers.ts';
 
 const players = (n = 3) => BOARDS.slice(0, n).map((boardId) => ({ boardId, ai: true }));
 
@@ -33,7 +34,7 @@ test('secretSeed da 4 enteros de 32 bits distintos cada vez y se rechazan semill
   assert.equal(s.length, 4);
   assert.ok(s.every((n) => Number.isInteger(n) && n >= 0 && n < 2 ** 32));
   assert.notDeepEqual(secretSeed(), secretSeed());
-  for (const bad of [[], [1, 2, 3], [0, 0, 0, 0], [1, 2, 3, 1.5], [1, 2, 3, 'a']]) assert.throws(() => createRng(bad), /Semilla/);
+  for (const bad of [[], [1, 2, 3], [0, 0, 0, 0], [1, 2, 3, 1.5], [1, 2, 3, 'a']]) assert.throws(() => createRng(bad as number[]), /Semilla/);
 });
 
 test('una partida con semilla de 128 bits se juega entera y es repetible', () => {
@@ -95,7 +96,7 @@ const FIELDS = ['card', 'lot', 'base', 'sandals', 'bonus', 'slot', 'zone', 'pipe
 const TYPES = ['placeInitial', 'placeIkizama', 'income', 'hire', 'move', 'shop', 'character', 'endTurn', 'place', 'resolve', 'start', 'constructor', '__proto__', 'toString', 'hasOwnProperty', undefined, 7];
 
 /** Que el estado siga teniendo sentido: recursos enteros y no negativos, IKI entero y Kobun entre 0 y 4. */
-function assertSane(g) {
+function assertSane(g: Game) {
   for (const p of g.players) {
     for (const [res, n] of Object.entries(p.resources)) assert.ok(Number.isInteger(n) && n >= 0, `${res} = ${n}`);
     assert.ok(Number.isInteger(p.iki) && p.iki >= 0, `iki = ${p.iki}`);

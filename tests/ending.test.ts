@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { newGame, tweak } from './helpers.js';
+import type { Action, Game } from '../src/types.ts';
+import { newGame, tweak } from './helpers.ts';
 import { act, legalActions, whoseTurn } from '../src/game/engine.ts';
 import { createRng } from '../src/game/random.ts';
 import { scorePlayer, scoreGame } from '../src/game/scoring.ts';
@@ -98,7 +99,7 @@ test('desempate: más IKI, luego más Extinción, luego más arriba en la pila',
 // --- Día de Año Nuevo --------------------------------------------------------------------------
 
 /** Final del mes 12 resuelto: empieza el mes 13. */
-function newYear(edit = () => {}) {
+function newYear(edit: (d: Game) => unknown = () => {}) {
   return tweak(newGame(), (d) => {
     d.month = 12;
     d.lots = {};
@@ -171,8 +172,8 @@ test('Comodín: al final se pregunta el tipo del Marionetista y cuenta en la pun
   assert.deepEqual(g.pending, { type: 'wildType', player: 1 });
   assert.equal(whoseTurn(g), 1);
   assert.equal(legalActions(g).length, 5);
-  assert.throws(() => act(g, { type: 'resolve', cardType: 'ninja' }), /tipo/);
-  for (const cardType of ['constructor', '__proto__', 'toString']) assert.throws(() => act(g, { type: 'resolve', cardType }), /tipo/, cardType);
+  assert.throws(() => act(g, { type: 'resolve', cardType: 'ninja' } as any), /tipo/);
+  for (const cardType of ['constructor', '__proto__', 'toString']) assert.throws(() => act(g, { type: 'resolve', cardType } as any), /tipo/, cardType);
   g = act(g, { type: 'resolve', cardType: 'artisan' });
   assert.equal(g.phase, 'ended');
   assert.equal(g.players[1].wildType, 'artisan');

@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import type { Action, Game } from '../src/types.ts';
 import { OUTER_LOTS, KOBUN_PER_PLAYER, createGame, currentPicker } from '../src/game/setup.ts';
-import { newGame, tweak, placeAll, turnOf } from './helpers.js';
+import { newGame, tweak, placeAll, turnOf } from './helpers.ts';
 import { createRng } from '../src/game/random.ts';
 import { act, legalActions, whoseTurn } from '../src/game/engine.ts';
 import { CHARACTERS_BY_ID } from '../src/data/characters.ts';
@@ -9,8 +10,8 @@ import { ZONES_BY_ID } from '../src/data/zones.ts';
 
 // --- Ayudas ------------------------------------------------------------------------------------
 
-const player = (g, slot = g.turn.slot) => g.players[g.turn.player];
-const throws = (fn, re) => assert.throws(fn, re);
+const player = (g: Game, slot = g.turn!.slot) => g.players[g.turn!.player];
+const throws = (fn: () => unknown, re: RegExp) => assert.throws(fn, re);
 
 // --- Preparación y fase A ----------------------------------------------------------------------
 
@@ -52,7 +53,7 @@ test('fase A: coloca por orden de Extinción y no repite espacio', () => {
   assert.equal(g.players[first].ikizama, '3');
   assert.equal(whoseTurn(g), second);
   throws(() => act(g, { type: 'placeIkizama', slot: '3' }), /ocupado/);
-  throws(() => act(g, { type: 'placeIkizama', slot: '9' }), /desconocido/);
+  throws(() => act(g, { type: 'placeIkizama', slot: '9' } as any), /desconocido/);
 });
 
 test('fase A: desde el mes 2 el más adelantado en Extinción coloca primero; en empate, el de arriba de la pila', () => {
@@ -160,7 +161,7 @@ test('el nivel de Extinción no pasa de 10 y la ficha sube a lo alto de la pila'
 // --- Fase B2: movimiento -----------------------------------------------------------------------
 
 /** Pone al jugador de turno en `pos`, listo para mover. */
-function at(g, pos, edit = () => {}) {
+function at(g: Game, pos: string, edit: (d: Game) => unknown = () => {}) {
   return tweak(g, (d) => {
     d.turn.step = 'move';
     d.players[d.turn.player].oyakata = pos;
@@ -170,7 +171,7 @@ function at(g, pos, edit = () => {}) {
 
 test('movimiento: casillas exactas siguiendo las flechas', () => {
   const g = turnOf(newGame(), '2');
-  const go = (from, steps, extra = {}) => act(at(g, from), { type: 'move', ...extra }).players[g.turn.player].oyakata;
+  const go = (from: string, steps?: number, extra = {}) => act(at(g, from), { type: 'move', ...extra }).players[g.turn.player].oyakata;
   // Desde la zona inicial el primer paso lleva a street-t2.
   assert.equal(go('queue-1'), 'street-t1'); // slot '2': queue → t2 → t1
   assert.equal(act(at(g, 'street-t1'), { type: 'move' }).players[g.turn.player].oyakata, 'street-b2');
@@ -235,7 +236,7 @@ test('retiro al dar la vuelta: recupera el Kobun, la carta va a retirados y lleg
 // --- Fase B2: negocios -------------------------------------------------------------------------
 
 /** Turno del jugador de espacio '1' detenido en `pos`, listo para negocios, con recursos a medida. */
-function shopping(pos, res = {}, edit = () => {}) {
+function shopping(pos: string, res = {}, edit: (d: Game) => unknown = () => {}) {
   return tweak(turnOf(newGame(), '1'), (d) => {
     d.turn.step = 'business';
     const p = d.players[d.turn.player];
@@ -245,7 +246,7 @@ function shopping(pos, res = {}, edit = () => {}) {
   });
 }
 
-const res = (g) => g.players[g.turn.player].resources;
+const res = (g: Game) => g.players[g.turn.player].resources;
 
 test('tiendas simples: Sandalias, Arroz, Casa de Empeños, Cambio', () => {
   let g = act(shopping('street-t2', { mon: 5 }), { type: 'shop' });
@@ -327,9 +328,9 @@ test('Lugar de Construcción: 1 mon → arroz, o 1 mon + coste → edificio', ()
 
 const stallLot = 'lot-top-left-1'; // puesto de street-t1 (Arroz)
 
-function withCharacter(pos, owner, card, xp = 0, res = {}) {
+function withCharacter(pos: string, owner: 'me' | 'other', card: string, xp = 0, res = {}) {
   return shopping(pos, res, (d) => {
-    const who = owner === 'me' ? d.turn.player : (d.turn.player + 1) % d.players.length;
+    const who = owner === 'me' ? d.turn!.player : (d.turn!.player + 1) % d.players.length;
     d.lots[stallLot] = { kind: 'character', card, owner: who, xp };
     d.players[who].kobun -= 1;
   });
@@ -429,7 +430,7 @@ test('mes con evento simple: +1 mon en las cartas que quedan y empieza el mes si
 });
 
 /** Juega un mes entero con la primera jugada legal que no contrata, para no complicar el estado. */
-function playMonth(g) {
+function playMonth(g: Game) {
   const month = g.month;
   while (g.month === month && g.phase !== 'event') {
     const options = legalActions(g);
@@ -471,7 +472,7 @@ test('partidas al azar con jugadas legales: llegan al Día de Año Nuevo con el 
   }
 });
 
-function assertCoherent(g) {
+function assertCoherent(g: Game) {
   g.players.forEach((p, i) => {
     for (const [k, v] of Object.entries(p.resources)) assert.ok(v >= 0, `${k} negativo`);
     assert.ok(p.iki >= 0 && p.fire >= 0 && p.fire <= 10);

@@ -43,6 +43,11 @@ Todos los imports de la grabación pasan por `tests/golden/modules.js`: al renom
 5. **Verificación final** (commit con el informe): `golden:check` contra las grabaciones de `pre-ts`; prueba cruzada
    regrabando desde cero en un worktree de `pre-ts` y comparando con las grabaciones guardadas; tests en verde.
 
+## Fallos de la propia grabación (se corrigen en la fase 5, regrabando desde el código JS)
+
+- `view-static`: pide `cardSummary(c.image)` para los personajes, pero los personajes guardan la imagen en `scan`;
+  la comprobación grababa siempre un texto vacío.
+
 ## Bugs encontrados al tipar (se arreglan después)
 
 - `src/game/playerStats.ts`, `ikizama`: busca `ZONES_BY_ID[p.ikizama]` con el espacio (`'1-4'`, `'2'`…), pero las zonas

@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { newGame, tweak } from './helpers.js';
+import type { Action, Game, LogEntry } from '../src/types.ts';
+import { newGame, tweak } from './helpers.ts';
 import { act, legalActions, whoseTurn } from '../src/game/engine.ts';
 import { startEvent, continueEvent, harmonyBonus, FIRE_STRENGTH } from '../src/game/events.ts';
 import { KOBUN_PER_PLAYER, OUTER_LOTS } from '../src/game/setup.ts';
@@ -8,7 +9,7 @@ import { NAGAYAS, fireTileImage } from '../src/data/zones.ts';
 import { existsSync } from 'node:fs';
 
 /** Estado al final de la fase B del `month`, con ajustes, y resuelve el Evento. */
-function eventOf(month, edit = () => {}) {
+function eventOf(month: number, edit: (d: Game) => unknown = () => {}) {
   return tweak(newGame(), (d) => {
     d.month = month;
     d.lots = {}; // sin personajes iniciales, para controlar el tablero
@@ -18,7 +19,7 @@ function eventOf(month, edit = () => {}) {
   });
 }
 
-const put = (d, lot, owner, card, xp = 0) => {
+const put = (d: Game, lot: string, owner: number, card: string, xp = 0) => {
   d.lots[lot] = { kind: card.startsWith('b:') ? 'building' : 'character', card: card.replace('b:', ''), owner, xp };
   d.players[owner].kobun -= 1;
 };
@@ -183,7 +184,7 @@ test('mes 12: el mercado de Invierno se queda, se recogen los Oyakata y llega el
 // --- Incendio ----------------------------------------------------------------------------------
 
 /** Incendio en un Nagaya concreto, saltando el sorteo de la loseta. */
-function burning(month, nagaya, edit) {
+function burning(month: number, nagaya: string, edit?: (d: Game) => unknown) {
   return tweak(newGame(), (d) => {
     d.month = month;
     d.lots = {};
@@ -286,7 +287,7 @@ test('cada incendio roba al azar: según la partida y el mes arde cualquiera de 
     let g = newGame(3, seed);
     for (const month of [5, 8, 11]) {
       g = tweak(g, (d) => { d.month = month; d.lots = {}; startEvent(d); });
-      const start = g.log.findLast((e) => e.type === 'fire-start');
+      const start = g.log.findLast((e) => e.type === 'fire-start') as LogEntry & { nagaya: string };
       burned.add(start.nagaya);
       assert.ok(existsSync(`public${fireTileImage(start.nagaya)}`), `falta la loseta del Nagaya ${start.nagaya}`);
     }

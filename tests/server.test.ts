@@ -22,7 +22,7 @@ after(() => db.close());
 /** Un navegador: guarda su cookie de sesión y manda las peticiones con el origen de la web. */
 function browser() {
   let cookie = '';
-  const call = async (method, path, body, { origin = ORIGIN, type = 'application/json' } = {}) => {
+  const call = async (method: string, path: string, body?: unknown, { origin = ORIGIN as string | null, type = 'application/json' } = {}) => {
     const headers = new Headers();
     if (cookie) headers.set('cookie', cookie);
     if (origin) headers.set('origin', origin);
@@ -32,7 +32,7 @@ function browser() {
     if (set) cookie = set.split(';')[0].endsWith('=') ? '' : set.split(';')[0];
     return { status: res.status, body: await res.json(), headers: res.headers };
   };
-  return { call, get cookie() { return cookie; }, set cookie(v) { cookie = v; } };
+  return { call, get cookie() { return cookie; }, set cookie(v: string) { cookie = v; } };
 }
 
 let counter = 0;
