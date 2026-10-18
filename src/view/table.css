@@ -89,6 +89,10 @@
 .ic-sandal { background-image: url('/tokens/resource/sandals.webp'); }
 .ic-koban { width: 30px; background-image: url('/tokens/money/koban.webp'); }
 .ic-special { background-image: url('/tokens/special/wildcard.webp'); }
+.ic-special-move { background-image: url('/tokens/special/move-plus-1.webp'); }
+.ic-special-avoid-fire { background-image: url('/tokens/special/fire-ward.webp'); }
+.ic-special-wild { background-image: url('/tokens/special/wildcard.webp'); }
+.ic-special-hire { background-image: url('/tokens/special/hire-minus-1.webp'); }
 
 /* Jugadores en la columna derecha: una ficha compacta cada uno, el activo arriba y resaltado */
 #players { grid-area: players; display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow-y: auto; }

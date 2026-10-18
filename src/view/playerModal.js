@@ -3,7 +3,7 @@ import { MARKET_BY_ID, describeToken } from '../data/market.js';
 import { SEASONS } from '../data/decks.js';
 import { CHARACTER_TYPES } from '../data/characters.js';
 import { activePlayer } from '../game/setup.js';
-import { playerStats, MAX_FISH, MAX_TYPES } from '../game/playerStats.js';
+import { playerStats, SPECIALS, MAX_FISH, MAX_TYPES } from '../game/playerStats.js';
 
 /**
  * Modal con el tablero de un jugador: la imagen tumbada a todo el ancho y debajo su información en tres
@@ -13,6 +13,10 @@ import { playerStats, MAX_FISH, MAX_TYPES } from '../game/playerStats.js';
 const RESOURCES = [['mon', 'Mons'], ['rice', 'Arroz'], ['wood', 'Madera'], ['sandal', 'Sandalias'], ['koban', 'Koban']];
 
 const row = (label, value, hint = '') => `<div${hint ? ` title="${hint}"` : ''}><dt>${label}</dt><dd>${value}</dd></div>`;
+/** Sin fichas especiales, la fila genérica; con ellas, una fila por ficha con su propia imagen. */
+const specialRows = (ids) => (ids.length
+  ? ids.map((id) => row(`<span class="ic ic-special-${id}"></span>${SPECIALS[id] ?? id}`, '✓')).join('')
+  : row('<span class="ic ic-special"></span>Especiales', '—'));
 const list = (items, empty) => (items.length ? `<ul>${items.join('')}</ul>` : `<p class="muted">${empty}</p>`);
 /**
  * Fichas de mercado compradas, sobre sus círculos del tablero: un Pescado por estación y las Pipas y Bolsas de Tabaco
@@ -83,7 +87,7 @@ export function createPlayerModal() {
           <h3>Recursos y peones</h3>
           <dl>
             ${RESOURCES.map(([res, label]) => row(`<span class="ic ic-${res}"></span>${label}`, st.resources[res])).join('')}
-            ${row('<span class="ic ic-special"></span>Especiales', st.specials.length ? st.specials.join(', ') : '—')}
+            ${specialRows(p.specials)}
           </dl>
           <dl>
             ${row('Kobun libres', `${st.kobunFree}/${st.kobunTotal}`, 'Hace falta uno libre para contratar o construir')}

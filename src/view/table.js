@@ -4,7 +4,7 @@ import { CHARACTERS_BY_ID } from '../data/characters.js';
 import { currentPicker, activePlayer } from '../game/setup.js';
 import { seasonOf } from '../game/engine.js';
 import { esc, isWaiting, playerName } from './format.js';
-import { playerStats, MAX_FISH, MAX_TYPES } from '../game/playerStats.js';
+import { playerStats, SPECIALS, MAX_FISH, MAX_TYPES } from '../game/playerStats.js';
 
 /**
  * Mesa alrededor del tablero: mazos, edificios y reserva en la columna izquierda; los jugadores en la
@@ -119,8 +119,8 @@ export function renderPlayers(el, game, { onOpenBoard }) {
           ${index === game.starter ? '<span class="badge">inicial</span>' : ''}
           <button type="button" class="btn btn-sm open-board">Tablero</button>
         </header>
-        <div class="chips">${resourceChips(p.resources)}${st.specials.length
-          ? `<span class="res" title="${st.specials.join(', ')}"><span class="ic ic-special"></span>×${st.specials.length}</span>` : ''}</div>
+        <div class="chips">${resourceChips(p.resources)}${p.specials.map((id) =>
+          `<span class="res" title="${SPECIALS[id] ?? id}"><span class="ic ic-special-${id}"></span></span>`).join('')}</div>
         <dl class="facts">
           <div title="Kobun libres para contratar o construir"><dt>Kobun</dt><dd>${st.kobunFree}/${st.kobunTotal}</dd></div>
           <div title="Puntos de IKI en el marcador"><dt>IKI</dt><dd>${st.iki}</dd></div>
