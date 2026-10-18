@@ -200,7 +200,7 @@ function spread(g: Game) {
     if (!lot) continue; // solar vacío: el fuego pasa al siguiente con 1 menos
     const strength = FIRE_STRENGTH[g.month] + ZONES_BY_ID[lotId].fire!;
     if (g.players[lot.owner].fire >= strength) {
-      log(g, { type: 'fire-stopped', player: lot.owner, lot: lotId });
+      log(g, { type: 'fire-stopped', player: lot.owner, lot: lotId, card: lot.card, level: g.players[lot.owner].fire, strength });
       break;
     }
     if (lot.kind === 'character' && g.players[lot.owner].specials.includes('avoid-fire')) {
@@ -237,7 +237,7 @@ export function resolvePending(g: Game, a: ActionOf<'resolve'>) {
     if (a.use) {
       const specials = g.players[pending.player].specials;
       specials.splice(specials.indexOf('avoid-fire'), 1);
-      log(g, { type: 'fire-avoided', player: pending.player, lot: pending.lot });
+      log(g, { type: 'fire-avoided', player: pending.player, lot: pending.lot, card: g.lots[pending.lot].card });
     } else burn(g, pending.lot);
     (g.event as FireEvent).index! += 1;
   }

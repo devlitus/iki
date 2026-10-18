@@ -189,8 +189,10 @@ export function logLine(g: Game, e: Entry) {
     case 'food': return `${p} alimenta a ${e.fed} personaje(s)${e.dropped ? ` y pierde ${e.dropped}` : ''}`;
     case 'starve': return `${p} pierde a ${name(e.card)} por falta de arroz`;
     case 'fire-start': return `Incendio de fuerza ${e.strength} en el Nagaya ${NAGAYAS_BY_ID[e.nagaya].name}`;
-    case 'fire-stopped': return `El fuego se detiene en el solar de ${p}`;
-    case 'fire-avoided': return `${p} evita el incendio`;
+    case 'fire-stopped': return e.card
+      ? `El fuego se detiene en ${name(e.card)} de ${p}: Extinción ${e.level} contra fuerza ${e.strength}`
+      : `El fuego se detiene en el solar de ${p}`;
+    case 'fire-avoided': return `${p} evita que arda ${e.card ? name(e.card) : 'su personaje'} («Evitar un incendio»)`;
     case 'burned': return `Arde ${name(e.card)} de ${p}`;
     case 'wild': return `${p} elige el tipo ${typeLabel(e.cardType)} para el Comodín`;
     case 'end': return `Fin de la partida: gana ${who(g, e.winner)}`;

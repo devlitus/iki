@@ -25,7 +25,7 @@ import { openIntro } from './tutorial/intro.ts';
 import { createTutorialGame } from './tutorial/game.ts';
 import { createOnline } from './online/online.ts';
 import { api, type ApiError } from './online/api.ts';
-import { isWaiting } from './view/format.ts';
+import { EVENT_LOG_TYPES, isWaiting } from './view/format.ts';
 import { CHARACTERS_BY_ID } from './data/characters.ts';
 import './view/table.css';
 import './view/turn.css';
@@ -232,9 +232,19 @@ function dispatch(action: Action, { auto = false } = {}) {
   if (game.phase === 'ended' && before.phase !== 'ended') finalTable.open(game);
 }
 
-/** Cuenta el Evento ocurrido desde `before`; si fue un Incendio, su loseta queda en el Nagaya hasta cerrar el resumen. */
+/**
+ * Cuenta el Evento ocurrido desde `before`; si fue un Incendio, su loseta queda en el Nagaya hasta cerrar el resumen.
+ * Si el Evento espera una decisión (comida, «Evitar un incendio»), no se cuenta a medias: se cuenta entero al terminar,
+ * con lo que ya había pasado antes de la decisión (las últimas entradas del Evento en el registro de `before`).
+ */
 function showEvent(before: Game) {
-  const nagaya = eventSummary.show(game!, game!.log.filter((e) => e.seq > (before.logSeq ?? 0)));
+  if (game!.event && game!.pending) return;
+  let since = before.logSeq ?? 0;
+  if (before.event && before.pending) {
+    const start = before.log.findLastIndex((e) => !EVENT_LOG_TYPES.includes(e.type));
+    since = before.log[start]?.seq ?? 0;
+  }
+  const nagaya = eventSummary.show(game!, game!.log.filter((e) => e.seq > since));
   if (nagaya) {
     fireTileShown = nagaya;
     render();

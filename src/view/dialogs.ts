@@ -60,6 +60,7 @@ export function createLogDialog() {
     open(game: Game) {
       dialog.innerHTML = `
         <h2 id="log-dialog-title">Registro de la partida</h2>
+        ${game.log[0]?.seq > 1 ? `<p class="muted">Solo se guardan las últimas ${game.log.length} entradas.</p>` : ''}
         <div class="log-full">${logByMonth(game, game.log, 'h3')}</div>
         <footer><button type="button" class="btn close">Cerrar</button></footer>`;
       if (!dialog.open) dialog.showModal();
