@@ -1,6 +1,7 @@
 import { CHARACTERS_BY_ID, CHARACTER_TYPES } from '../data/characters.ts';
 import { BUILDINGS_BY_ID } from '../data/decks.ts';
 import { PLAYER_BOARDS_BY_ID } from '../data/playerBoards.ts';
+import { MARKET_BY_ID } from '../data/market.ts';
 import { NAGAYAS_BY_ID, ZONES_BY_ID } from '../data/zones.ts';
 import { deciderOf, isAiTurn } from '../ai/player.ts';
 import type { Ability, Amount, Character, Cost, Game, LogEntry, Res } from '../types.ts';
@@ -33,10 +34,10 @@ export const who = (g: Game, p: number) => `<b class="who-name" style="--player-
 
 const RES_LABEL: Record<string, string> = { mon: 'mons', rice: 'arroz', sandal: 'sandalias', wood: 'madera', koban: 'Koban', iki: 'IKI' };
 
-/** n + icono del recurso (`iki` va como texto: no tiene ficha). */
+/** n + icono del recurso (`iki` va como texto: no tiene ficha); el lector de pantalla lee el nombre del recurso. */
 export const chip = (res: string, n: number) => (res === 'iki'
   ? `<span class="res" title="IKI">${n} IKI</span>`
-  : `<span class="res" title="${RES_LABEL[res]}">${n}<span class="ic ic-${res}"></span></span>`);
+  : `<span class="res" title="${RES_LABEL[res]}">${n}<span class="ic ic-${res}" aria-hidden="true"></span><span class="sr-only"> ${RES_LABEL[res]}</span></span>`);
 
 /** [{ res, n }] → chips; un IKI negativo se muestra con su signo. */
 export const chips = (list: Amount[]) => list.map(({ res, n }) => chip(res, n)).join(' ');
@@ -116,6 +117,28 @@ const nagayaOfLot = (lot: string) => NAGAYAS_BY_ID[lot.replace(/^lot-|-\d$/g, ''
 /** Entradas del registro que cuentan lo que pasó en el Evento del mes (para el resumen). */
 export const EVENT_LOG_TYPES = ['salary', 'harmony', 'perk', 'starve', 'food', 'fire-start', 'fire-stopped', 'fire-avoided', 'burned'];
 
+const TOKEN_NAME: Record<string, string> = { fish: 'un Pescado', pipe: 'una Pipa', bag: 'una Bolsa de Tabaco' };
+
+/** Lo que hizo un jugador en una tienda, con lo que pagó y lo que se llevó (sin el sujeto). */
+function shopDeal(e: Entry) {
+  const at = ZONES_BY_ID[e.shop].label;
+  const token = (id: string) => `${TOKEN_NAME[MARKET_BY_ID[id].kind]} de ${chip('mon', MARKET_BY_ID[id].cost)}`;
+  switch (e.shop) {
+    case 'shop-sandals': return `compra ${chip('sandal', 2)} por ${chip('mon', 2)}`;
+    case 'shop-rice': return `compra ${chip('rice', 2)} por ${chip('mon', 3)}`;
+    case 'shop-pawn': return e.choice ? `empeña ${chip(e.choice, 1)} por ${chip('mon', 4)}` : `usa ${at}`;
+    case 'shop-exchange': return e.choice === 'mons' ? `cobra ${chip('mon', 2)} en ${at}`
+      : e.choice ? `cambia ${chip('mon', e.choice === 'koban1' ? 6 : 10)} por ${chip('koban', e.choice === 'koban1' ? 1 : 2)}` : `usa ${at}`;
+    case 'shop-construction': return e.choice === 'rice' ? `compra ${chip('rice', 1)} por ${chip('mon', 1)} en ${at}` : `usa ${at}`;
+    case 'shop-fish': return e.fish ? `compra ${token(e.fish)}` : `usa ${at}`;
+    case 'shop-tobacco': {
+      const bought = [e.pipe, e.bag].filter(Boolean).map(token);
+      return bought.length ? `compra ${bought.join(' y ')}` : `usa ${at}`;
+    }
+    default: return `usa ${at}`;
+  }
+}
+
 /** Una entrada del registro como frase (HTML); `g` da los nombres de los jugadores. */
 /** Campos de una entrada del registro: dependen de `type` (ver los `log(g, …)` del motor). */
 type Entry = { [field: string]: any } & Pick<LogEntry, 'seq' | 'month' | 'type'>;
@@ -130,7 +153,7 @@ export function logLine(g: Game, e: Entry) {
     case 'hire': return `${p} contrata a ${name(e.card)}`;
     case 'move': return `${p} se mueve a ${ZONES_BY_ID[e.to].label}${e.laps ? ` y da la vuelta (+${e.laps} exp.)` : ''}`;
     case 'place': return `${p} coloca su Oyakata en ${ZONES_BY_ID[e.to].label}`;
-    case 'shop': return `${p} usa ${ZONES_BY_ID[e.shop].label}`;
+    case 'shop': return `${p} ${shopDeal(e)}`;
     case 'character': return `${p} activa a ${name(e.card)}${e.owner !== e.player ? ` de ${who(g, e.owner)}` : ''}${e.swapped ? ` e intercambia ${
       (e.swapped as { card: string; from: string }[]).map((s) => `${name(s.card)} (Nagaya ${nagayaOfLot(s.from)})`).join(' y ')}` : ''}`;
     case 'build': return `${p} construye ${name(e.card)}`;
