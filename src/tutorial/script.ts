@@ -5,7 +5,7 @@ import { FIRE_STRENGTH, PAYDAY_MONTHS } from '../game/events.ts';
 import { seasonOf } from '../game/month.ts';
 import { characterLots } from '../game/state.ts';
 import { isAiTurn } from '../ai/player.ts';
-import { EVENT_LOG_TYPES, abilityText, cardName, logLine, shopName, typeLabel, who } from '../view/format.ts';
+import { EVENT_LOG_TYPES, abilityText, cardName, logLine, shopName, theShop, toShop, typeLabel, who } from '../view/format.ts';
 import type { Action, Game } from '../types.ts';
 
 export type TextOptions = { mobile?: boolean };
@@ -79,7 +79,8 @@ function home(g: Game) {
   return { lot, cell, card: g.lots[lot].card };
 }
 
-const cellName = (cell: string) => `${ZONES_BY_ID[cell].label} · ${shopName(cell)}`;
+/** La casilla de la calle por su tienda: «la Tienda de Arroz». */
+const cellName = theShop;
 const player = (g: Game) => g.players[humanOf(g)];
 
 /** Casilla a la que llegaría el humano con su Ikizama y `sandals` sandalias, desde el paso B1 o B2. */
@@ -262,7 +263,7 @@ export const STEPS: Step[] = [
       const h = home(g)!;
       const def = CHARACTERS_BY_ID[h.card];
       return `<p><b>${def.name}</b> (${typeLabel(def.type)}) ya trabaja para ti, con un Kobun en el primer espacio de experiencia.</p>
-        <p>Su solar es un puesto de la casilla <b>${cellName(h.cell)}</b>: cuando tu Oyakata pare ahí podrás activarlo (${abilityText(def)}).
+        <p>Su solar es un puesto de <b>${cellName(h.cell)}</b>: cuando tu Oyakata pare ahí podrás activarlo (${abilityText(def)}).
         Cada Día de Pago, que llega cada tres meses, cobrará el salario de la casilla donde esté su Kobun.</p>`;
     },
   },
@@ -359,7 +360,7 @@ export const STEPS: Step[] = [
       const foreign = here.stalls!.some((l) => g.lots[l]?.kind === 'character' && g.lots[l].owner !== humanOf(g));
       const shop = didShop ? 'La tienda ya está usada.' : `Tienda: ${SHOP_HELP[here.shop!]}.`;
       const people = didChar ? 'Ya has activado un personaje.' : stalls.length ? 'Personajes en los puestos:' : 'No hay personajes en los puestos.';
-      return `<p>Has llegado a <b>${cellName(player(g).oyakata!)}</b>. Aquí puedes hacer <b>dos cosas</b>, en el orden que quieras y sin
+      return `<p>Has llegado <b>${toShop(player(g).oyakata!)}</b>. Aquí puedes hacer <b>dos cosas</b>, en el orden que quieras y sin
         obligación: usar la <b>tienda</b> y activar <b>un personaje</b> de los puestos.</p>
         <p>${shop}</p><p>${people}</p>${!didChar && stalls.length ? `<ul>${stalls.join('')}</ul>` : ''}
         ${foreign && !didChar ? '<p class="muted">Si activas el de otro jugador, funciona igual para ti, pero su dueño gana 1 de experiencia.</p>' : ''}

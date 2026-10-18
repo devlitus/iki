@@ -107,6 +107,10 @@ const SUMMARY_BY_IMAGE = new Map<string, () => string>([
 export const cardSummary = (src: string) => SUMMARY_BY_IMAGE.get(src)?.() ?? '';
 
 export const shopName = (zoneId: string) => ZONES_BY_ID[ZONES_BY_ID[zoneId].shop!].label;
+/** «el Mercado de Pescado», «la Tienda de Arroz»: la casilla de la calle por su tienda (su nombre interno no dice nada). */
+export const theShop = (zoneId: string) => `${/^(Mercado|Lugar)/.test(shopName(zoneId)) ? 'el' : 'la'} ${shopName(zoneId)}`;
+/** «al Mercado de Pescado», «a la Tienda de Arroz». */
+export const toShop = (zoneId: string) => `a ${theShop(zoneId)}`.replace(/^a el /, 'al ');
 export const typeLabel = (type: string) => CHARACTER_TYPES[type as keyof typeof CHARACTER_TYPES]?.label ?? type;
 
 const name = (id: string): string => CHARACTERS_BY_ID[id]?.name ?? BUILDINGS_BY_ID[id]?.name ?? id;
@@ -151,8 +155,8 @@ export function logLine(g: Game, e: Entry) {
     case 'month': return `<b>${monthLabel(e.month)}</b>`;
     case 'income': return `${p} cobra ingresos (+4 mons)`;
     case 'hire': return `${p} contrata a ${name(e.card)}`;
-    case 'move': return `${p} se mueve a ${ZONES_BY_ID[e.to].label}${e.laps ? ` y da la vuelta (+${e.laps} exp.)` : ''}`;
-    case 'place': return `${p} coloca su Oyakata en ${ZONES_BY_ID[e.to].label}`;
+    case 'move': return `${p} se mueve ${toShop(e.to)}${e.laps ? ` y da la vuelta (+${e.laps} exp.)` : ''}`;
+    case 'place': return `${p} coloca su Oyakata en ${theShop(e.to)}`;
     case 'shop': return `${p} ${shopDeal(e)}`;
     case 'character': return `${p} activa a ${name(e.card)}${e.owner !== e.player ? ` de ${who(g, e.owner)}` : ''}${e.swapped ? ` e intercambia ${
       (e.swapped as { card: string; from: string }[]).map((s) => `${name(s.card)} (Nagaya ${nagayaOfLot(s.from)})`).join(' y ')}` : ''}`;

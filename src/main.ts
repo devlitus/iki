@@ -10,7 +10,7 @@ import { randomSeed } from './game/random.ts';
 import { chooseAction, isAiTurn } from './ai/player.ts';
 import { renderDecks, renderSupply, renderPlayers, renderSpecialsInfo } from './view/table.ts';
 import { renderBoardPieces } from './view/boardPieces.ts';
-import { renderTurnPanel, bindTurnPanel, boardTargets, hireableCards } from './view/turnPanel.ts';
+import { renderTurnPanel, bindTurnPanel, boardTargets, hireableCards, moveDestination } from './view/turnPanel.ts';
 import { createCover } from './view/cover.ts';
 import { createEventSummary, createFinalTable, createLogDialog, initZoom } from './view/dialogs.ts';
 import { initTooltips } from './view/tooltip.ts';
@@ -124,7 +124,8 @@ function render() {
   renderPlayers(document.getElementById('players')!, game, { onOpenBoard: (i) => playerModal.open(game!, i) });
   playerModal.update(game);
   const fireNagaya = game.event?.kind === 'fire' ? game.event.nagaya : fireTileShown;
-  renderBoardPieces(board, game, { targets: targets(), fireNagaya });
+  const current = playing && game.phase !== 'ended' ? whoseTurn(game) : null;
+  renderBoardPieces(board, game, { targets: targets(), fireNagaya, current, destination: moveDestination(game, ui) });
   tutorial?.update(game);
   if (tutorial) mobile.reveal(document.getElementById('coach')!.textContent!);
   mobile.update(game, { selectedCard, tutorialFocus: Boolean(tutorial) });

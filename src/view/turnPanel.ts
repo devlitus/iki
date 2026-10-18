@@ -5,7 +5,7 @@ import { ZONES_BY_ID, STREET, LOT_IDS } from '../data/zones.ts';
 import { act, whoseTurn, seasonOf, IKIZAMA_SLOTS } from '../game/engine.ts';
 import { FIRE_STRENGTH } from '../game/events.ts';
 import { buildCost, characterLots } from '../game/state.ts';
-import { abilityText, cardName, chips, costChips, costText, isWaiting, logByMonth, playerColor, playerName, shopName, waitingText, who } from './format.ts';
+import { abilityText, cardName, chip, chips, costChips, costText, isWaiting, logByMonth, playerColor, playerName, shopName, theShop, toShop, waitingText, who } from './format.ts';
 import type { Action, ActionOf, CharacterType, Game, IkizamaSlot, MarketToken, Target } from '../types.ts';
 
 
@@ -62,6 +62,9 @@ const freeLots = (game: Game) => LOT_IDS.filter((id) => !game.lots[id]);
 /** Solares libres donde se puede hacer `make(lot)` ahora. */
 const legalLots = (game: Game, make: (lot: string) => Action) => freeLots(game).filter((lot) => isLegal(game, make(lot)));
 
+/** Etiqueta de los solares de las esquinas, que cuestan 2 mons más (en táctil no se ve el `title`). */
+const cornerBadge = (lot: string) => (ZONES_BY_ID[lot].extraCost ? `+${chip('mon', ZONES_BY_ID[lot].extraCost!)}` : undefined);
+
 /** Coste en mons de contratar `card` en `lot` (ya descontados los mons de la carta), para los títulos. */
 function hireCost(game: Game, p: number, card: string, lot: string) {
   const entry = game.row.find((r) => r.card === card)!;
@@ -92,20 +95,21 @@ export function boardTargets(game: Game, { ui, dispatch }: Pick<Ctx, 'ui' | 'dis
   }
   if (game.pending) return [];
   if (game.phase === 'newyear' && game.turn!.step === 'place') {
-    return STREET.map((zone) => ({ zone, title: `Colocar el Oyakata en ${ZONES_BY_ID[zone].label} · ${shopName(zone)}`, onClick: () => dispatch({ type: 'place', zone }) }));
+    return STREET.map((zone) => ({ zone, title: `Colocar el Oyakata en ${theShop(zone)}`, onClick: () => dispatch({ type: 'place', zone }) }));
   }
   if (game.phase !== 'actions' && game.phase !== 'newyear') return [];
 
   if (ui.hire && game.turn!.step === 'b1') {
     return legalLots(game, (lot) => ({ type: 'hire', card: ui.hire!, lot })).map((lot) => ({
       zone: lot, title: `Contratar a ${cardName(ui.hire!)} aquí · ${hireCostText(hireCost(game, p!, ui.hire!, lot))}`,
-      onClick: () => dispatch({ type: 'hire', card: ui.hire!, lot }),
+      onClick: () => dispatch({ type: 'hire', card: ui.hire!, lot }), badge: cornerBadge(lot),
     }));
   }
   if (ui.building?.building && game.turn!.step === 'business') {
     const { via, lot: charLot, building } = ui.building;
     const make = (lot: string): Action => (via === 'shop' ? { type: 'shop', choice: 'build', building, lot } : { type: 'character', lot: charLot!, building, buildLot: lot });
-    return legalLots(game, make).map((lot) => ({ zone: lot, title: `Construir ${cardName(building)} aquí`, onClick: () => dispatch(make(lot)) }));
+    return legalLots(game, make).map((lot) => ({ zone: lot, title: `Construir ${cardName(building)} aquí${ZONES_BY_ID[lot].extraCost ? ` · ${ZONES_BY_ID[lot].extraCost} mons más` : ''}`,
+      onClick: () => dispatch(make(lot)), badge: cornerBadge(lot) }));
   }
   return [];
 }
@@ -192,7 +196,7 @@ function actionsBody(game: Game, ctx: Ctx) {
   if (step === 'move') return moveBody(game, ctx);
   if (step === 'place') {
     return `<p>Coloca tu Oyakata en cualquier casilla de la calle (pulsa el tablero o elige aquí).</p>
-      <div class="zone-list">${STREET.map((z) => btn(`${ZONES_BY_ID[z].label} · ${shopName(z)}`, `data-do="place" data-zone="${z}"`)).join('')}</div>`;
+      <div class="zone-list">${STREET.map((z) => btn(`${shopName(z)}`, `data-do="place" data-zone="${z}"`)).join('')}</div>`;
   }
   return businessBody(game, ctx);
 }
@@ -213,13 +217,30 @@ function b1Body(game: Game, { ui }: Ctx) {
     ${ui.hire ? btn('Cancelar contratación', 'data-do="cancel"', { cls: 'btn-sm' }) : ''}`;
 }
 
+/** El movimiento que el jugador tiene elegido ahora (espacios, sandalias y «Mover +1»). */
+function moveAction(game: Game, ui: Ui): ActionOf<'move'> {
+  const choose = game.turn!.slot === '1-4';
+  const sandals = Math.min(ui.sandals ?? 0, game.players[game.turn!.player].resources.sandal);
+  return { type: 'move', base: choose ? ui.base ?? 1 : undefined, sandals, bonus: ui.bonus || undefined };
+}
+
+/** Casilla a la que llegaría el Oyakata con el movimiento elegido, para marcarla en el tablero (o null). */
+export function moveDestination(game: Game, ui: Ui) {
+  if (game.phase !== 'actions' || game.turn?.step !== 'move' || game.pending || isWaiting(game)) return null;
+  try {
+    return act(game, moveAction(game, ui)).players[game.turn.player].oyakata;
+  } catch {
+    return null;
+  }
+}
+
 function moveBody(game: Game, { ui }: Ctx) {
   const p = game.turn!.player;
   const player = game.players[p];
   const choose = game.turn!.slot === '1-4';
   const base = ui.base ?? 1;
-  const sandals = Math.min(ui.sandals ?? 0, player.resources.sandal);
-  const action: Action = { type: 'move', base: choose ? base : undefined, sandals, bonus: ui.bonus || undefined };
+  const action = moveAction(game, ui);
+  const sandals = action.sandals!;
 
   let preview = '';
   try {
@@ -228,7 +249,7 @@ function moveBody(game: Game, { ui }: Ctx) {
     const laps = next.log.at(-1)!.laps as number;
     const here = ZONES_BY_ID[to];
     const stalls = here.stalls!.map((l) => next.lots[l]).filter((l) => l?.kind === 'character').map((l) => cardName(l.card));
-    preview = `<p class="preview">Llegas a <b>${here.label}</b> · ${shopName(to)}${laps ? ` · <b>+${laps} experiencia</b> a todos tus personajes` : ''}
+    preview = `<p class="preview">Llegas <b>${toShop(to)}</b>${laps ? ` · <b>+${laps} experiencia</b> a todos tus personajes` : ''}
       ${stalls.length ? `<br><span class="muted">Puestos: ${stalls.join(', ')}</span>` : ''}</p>`;
   } catch (e) {
     preview = `<p class="turn-error">${(e as Error).message}</p>`;
@@ -255,7 +276,7 @@ function businessBody(game: Game, ctx: Ctx) {
   const shop = ZONES_BY_ID[here.shop!];
   const stalls = here.stalls!.filter((l) => game.lots[l]?.kind === 'character');
   return `
-    <p class="muted">Estás en <b>${here.label}</b>. Puedes usar la tienda y un personaje de sus puestos, en cualquier orden.</p>
+    <p class="muted">Estás en <b>${theShop(game.players[p].oyakata!)}</b>. Puedes usar la tienda y un personaje de sus puestos, en cualquier orden.</p>
     <section class="biz">
       <h3>${shop.label}${game.turn!.didShop ? ' <span class="muted">· hecho</span>' : ''}</h3>
       ${game.turn!.didShop ? '' : shopBody(game, here.shop!, ctx)}
@@ -421,7 +442,7 @@ function handle(b: Control, { ui, set, dispatch, undo, game, openFinal, openLog 
     case 'place': return dispatch({ type: 'place', zone: d.zone });
     case 'base': return set({ base: num(d.n) });
     case 'sandals': return set({ sandals: Math.max(0, (ui.sandals ?? 0) + num(d.d)) });
-    case 'move': return dispatch({ type: 'move', base: game!.turn!.slot === '1-4' ? ui.base ?? 1 : undefined, sandals: Math.min(ui.sandals ?? 0, game!.players[game!.turn!.player].resources.sandal), bonus: ui.bonus || undefined });
+    case 'move': return dispatch(moveAction(game!, ui));
     case 'endTurn': return dispatch({ type: 'endTurn' });
     case 'shop': return dispatch({ type: 'shop', ...pick(d, ['fish', 'choice']) });
     case 'building': return set({ building: ui.building?.building === d.building && ui.building.lot === d.lot ? null : { via: d.via, lot: d.lot, building: d.building } });
