@@ -281,12 +281,15 @@ function tobaccoBody(game: Game, ui: Ui) {
   const pipe = (ui.pipe && MARKET_BY_ID[ui.pipe]) as MarketToken | null | undefined;
   const own = characterLots(game, game.turn!.player);
   const action = { type: 'shop', pipe: ui.pipe, bag: ui.bag, target: pipe?.effect!.xp ? ui.target : undefined } as Action;
+  const price = [ui.pipe, ui.bag].reduce((sum, id) => sum + (id ? MARKET_BY_ID[id].cost : 0), 0);
+  const mons = game.players[game.turn!.player].resources.mon;
   const tokens = (ids: string[], key: string) => ids.map((id) => picture(MARKET_BY_ID[id].image ?? '/tokens/winter/back-dark.webp', describeToken(MARKET_BY_ID[id]),
     `data-do="toggle" data-key="${key}" data-id="${id}"`, { selected: ui[key] === id, disabled: !isLegal(game, { type: 'shop', [key]: id, target: own[0] }) })).join('');
   return `
     <p class="label">Pipas</p><div class="picks">${tokens(m.pipes, 'pipe') || '<span class="muted">Ninguna</span>'}</div>
     <p class="label">Bolsas de Tabaco</p><div class="picks">${tokens(m.bags, 'bag') || '<span class="muted">Ninguna</span>'}</div>
     ${pipe?.effect!.xp ? `<p class="label">+1 experiencia a</p>${ownChoices(game, own, 'target', ui.target)}` : ''}
+    ${price > mons ? `<p class="muted">Cuesta ${chips([{ res: 'mon', n: price }])} y tienes ${chips([{ res: 'mon', n: mons }])}.</p>` : ''}
     ${btn('Comprar', `data-do="shop-tobacco"`, { disabled: !(ui.pipe || ui.bag) || !isLegal(game, action), cls: 'wide primary' })}`;
 }
 
