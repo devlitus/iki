@@ -1,10 +1,10 @@
 import { CHARACTERS_BY_ID, CHARACTER_TYPES } from '../data/characters.ts';
-import { BUILDINGS_BY_ID } from '../data/decks.ts';
+import { BUILDINGS_BY_ID, SEASONS_BY_ID } from '../data/decks.ts';
 import { PLAYER_BOARDS_BY_ID } from '../data/playerBoards.ts';
-import { MARKET_BY_ID } from '../data/market.ts';
+import { MARKET_BY_ID, MARKET_TOKENS } from '../data/market.ts';
 import { NAGAYAS_BY_ID, ZONES_BY_ID } from '../data/zones.ts';
 import { deciderOf, isAiTurn } from '../ai/player.ts';
-import type { Ability, Amount, Character, Cost, Game, LogEntry, Res } from '../types.ts';
+import type { Ability, Amount, Character, Cost, Game, LogEntry, MarketToken, Res } from '../types.ts';
 
 /** Textos de la interfaz: nombres de jugadores, recursos, habilidades y entradas del registro. */
 
@@ -89,7 +89,27 @@ const BUILDING_EFFECT: Record<string, string> = {
   fire: 'Al final, 2 IKI por cada espacio de Extinción de Incendios.',
 };
 
+const BAG_SCORE: Record<string, string> = { fire2: '1 IKI por cada 2 espacios de Extinción de Incendios', mostType: '1 IKI por cada personaje del tipo que más tengas',
+  types: '1 IKI por cada tipo de personaje distinto', mon4: '1 IKI por cada 4 mons' };
+
+/** Resumen de una ficha de Pescado, Pipa o Tabaco, como el de las cartas. */
+function tokenSummary(t: MarketToken) {
+  const head = `<h3>${TOKEN_NAME[t.kind].replace(/^una? /, '')}</h3>
+    <p class="meta">${SEASONS_BY_ID[t.season].name} · cuesta ${chip('mon', t.cost)}</p>`;
+  if (t.kind === 'fish') {
+    return `${head}<p><b>Al final:</b> los Pescados de estaciones distintas puntúan juntos (3, 6, 10 o 15 IKI)${t.bonus ? `, y este da <b>${t.bonus} IKI</b> más` : ''}.</p>
+      <p>Solo uno por estación.</p>`;
+  }
+  if (t.kind === 'pipe') {
+    const e = t.effect!;
+    const what = e.fire ? `+${e.fire} en Extinción de Incendios` : e.xp ? '+1 de experiencia a uno de tus personajes' : `recibes ${chips(e.gain!)}`;
+    return `${head}<p><b>Al comprarla:</b> ${what}.</p><p><b>Al final:</b> con una Pipa, tu Tabaco puntúa el doble.</p>`;
+  }
+  return `${head}<p><b>Al final:</b> ${t.score!.iki != null ? `${t.score!.iki} IKI` : BAG_SCORE[t.score!.per!]}; el doble si tienes una Pipa.</p>`;
+}
+
 const SUMMARY_BY_IMAGE = new Map<string, () => string>([
+  ...MARKET_TOKENS.filter((t) => t.image).map((t) => [t.image!, () => tokenSummary(t)] as [string, () => string]),
   ...Object.values(CHARACTERS_BY_ID).map((c) => [c.scan, () => `
     <h3>${c.name}</h3>
     <p class="meta">${typeLabel(c.type)} · ${c.cost == null ? 'Personaje inicial' : `cuesta ${chip('mon', c.cost)}`}</p>

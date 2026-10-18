@@ -48,6 +48,9 @@
 /* El tablero ocupa su celda; el zoom y el arrastre siguen funcionando dentro. */
 #viewport { grid-area: board; position: relative; min-height: 0; border-radius: 6px; }
 #viewport #hint, #viewport #toast { position: absolute; }
+#board-banner { position: absolute; z-index: 5; left: 50%; top: 8px; /* sobre el calendario: abajo taparía solares exteriores */ translate: -50% 0; width: max-content; max-width: calc(100% - 16px); display: flex; align-items: center; gap: 10px; padding: 6px 8px 6px 12px; color: var(--ink); border: 1px solid #ffd27a; border-radius: 8px; background: rgba(29, 18, 10, 0.92); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55); }
+#board-banner[hidden] { display: none; }
+#board-banner .btn { flex: none; }
 
 /* Mazos y personajes iniciales */
 .decks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }

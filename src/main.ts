@@ -120,6 +120,7 @@ function render() {
     selectedCard, onSelectCard: (id) => { selectedCard = id; render(); },
     hireable: hireableCards(game), hiring: ui.hire, onSelectHire: (card) => set({ hire: card, building: null }),
   });
+  renderBanner();
   renderSupply(document.getElementById('supply')!, game);
   renderPlayers(document.getElementById('players')!, game, { onOpenBoard: (i) => playerModal.open(game!, i) });
   playerModal.update(game);
@@ -130,6 +131,24 @@ function render() {
   if (tutorial) mobile.reveal(document.getElementById('coach')!.textContent!);
   mobile.update(game, { selectedCard, tutorialFocus: Boolean(tutorial) });
   scheduleAi();
+}
+
+/**
+ * Aviso sobre el tablero mientras se coloca el personaje inicial elegido: en móvil el panel de la Mesa se cierra y
+ * solo quedarían los bordes discontinuos de los solares.
+ */
+const banner = document.getElementById('board-banner')!;
+banner.addEventListener('pointerdown', (e) => e.stopPropagation()); // que no arrastre el tablero (ni se pierda el clic)
+banner.addEventListener('click', (e) => {
+  if (!(e.target as Element).closest('[data-banner="change"]')) return;
+  selectedCard = null;
+  render(); // en móvil, mobile.update() vuelve a abrir la Mesa para elegir otra
+});
+function renderBanner() {
+  const placing = game!.phase === 'initial-characters' && selectedCard && !isWaiting(game!);
+  banner.hidden = !placing;
+  banner.innerHTML = placing ? `<span>Coloca a <b>${CHARACTERS_BY_ID[selectedCard!].name}</b>: toca un solar exterior libre (borde discontinuo).</span>
+    <button type="button" class="btn btn-sm" data-banner="change">Cambiar de carta</button>` : '';
 }
 
 // --- Jugadores de IA ---------------------------------------------------------------------------
