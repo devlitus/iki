@@ -7,6 +7,7 @@ import { createRng } from '../src/game/random.ts';
 import { act, legalActions, whoseTurn } from '../src/game/engine.ts';
 import { CHARACTERS_BY_ID } from '../src/data/characters.ts';
 import { ZONES_BY_ID } from '../src/data/zones.ts';
+import { logLine } from '../src/view/format.ts';
 import { playerStats } from '../src/game/playerStats.ts';
 
 // --- Ayudas ------------------------------------------------------------------------------------
@@ -398,6 +399,9 @@ test('Cometas: intercambia 2 cartas; los Kobun siguen con su carta', () => {
   assert.equal(done.lots[stallLot].card, 'dyer');
   assert.equal(done.lots[stallLot].xp, 1);
   assert.equal(done.lots['lot-top-left-2'].card, 'kite-maker');
+  const entry = done.log.findLast((e) => e.type === 'character')!;
+  assert.equal(logLine(done, entry).replace(/<[^>]+>/g, '').replace(/^.* activa/, 'activa'),
+    'activa a Constructor de Cometas e intercambia Constructor de Cometas (Nagaya amarillo) y Tintorero (Nagaya amarillo)');
   throws(() => act(g, { type: 'character', lot: stallLot, lots: [stallLot, 'lot-top-left-3'] }), /2 cartas/);
 });
 
