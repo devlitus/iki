@@ -1,7 +1,9 @@
 /** Iconos de recursos en SVG inline (viewBox 0 0 24 24), para que escalen con la carta. */
 const SAKURA_PETAL = 'M12 12C9.2 10.4 7.6 7.4 8.6 4.6 9.4 2.6 11 2.4 11.4 3.8L12 5.2 12.6 3.8C13 2.4 14.6 2.6 15.4 4.6 16.4 7.4 14.8 10.4 12 12Z';
 
-const ICONS = {
+import type { Amount } from '../types.ts';
+
+const ICONS: Record<string, string> = {
   // Moneda mon: disco con agujero cuadrado.
   mon: `<circle cx="12" cy="12" r="10" fill="#b9a27a" stroke="#4a3b22" stroke-width="1.5"/>
         <circle cx="12" cy="12" r="7.2" fill="none" stroke="#6d5a38" stroke-width="0.8"/>
@@ -38,12 +40,13 @@ const DEFS = `<defs><radialGradient id="sakura-fill" cx="12" cy="12" r="11" grad
   <stop offset="0" stop-color="#d66aa6"/><stop offset="0.45" stop-color="#f3b4d6"/><stop offset="1" stop-color="#fbe4f0"/>
 </radialGradient></defs>`;
 
-export function icon(res) {
+export function icon(res: string) {
   return `<svg class="icon icon-${res}" viewBox="0 0 24 24" aria-hidden="true">${DEFS}${ICONS[res] ?? ''}</svg>`;
 }
 
 /** Lista de recursos [{res, n}] → iconos repetidos (n ≤ 3), o icono con la cantidad superpuesta. */
-export function resources(list) {
+export function resources(list: Amount[]) {
+
   return list
     .map(({ res, n }) => (NUMBERED.has(res) || n > 3
       ? `<span class="res-n">${icon(res)}<span class="qty">${n}</span></span>`
@@ -73,11 +76,11 @@ export const GLYPHS = {
 /** Abanico abierto de 150° con varillas y borla, centrado en (50, 70) dentro de 100×110. */
 function fan() {
   const cx = 50, cy = 70;
-  const pt = (r, deg) => {
+  const pt = (r: number, deg: number) => {
     const a = (deg * Math.PI) / 180;
     return `${(cx + r * Math.cos(a)).toFixed(1)} ${(cy + r * Math.sin(a)).toFixed(1)}`;
   };
-  const arc = (r) => `M${pt(r, -165)}A${r} ${r} 0 0 1 ${pt(r, -15)}`;
+  const arc = (r: number) => `M${pt(r, -165)}A${r} ${r} 0 0 1 ${pt(r, -15)}`;
   const ribs = Array.from({ length: 17 }, (_, i) => `M${pt(6, -165 + i * 9.375)}L${pt(46, -165 + i * 9.375)}`).join('');
   return `<svg viewBox="0 0 100 110" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
     <path d="${arc(47)}" stroke-width="4"/>

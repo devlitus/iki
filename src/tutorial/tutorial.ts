@@ -1,7 +1,7 @@
 import './tutorial.css';
 import { ZONES_BY_ID, zoneCenter } from '../data/zones.ts';
 import { currentStep, stepAllows, stepZones } from './script.ts';
-import { isMobileLayout } from '../view/mobile.js';
+import { isMobileLayout } from '../view/mobile.ts';
 import { openIntro } from './intro.ts';
 import type { Step } from './script.ts';
 import type { Action, Game, Target } from '../types.ts';

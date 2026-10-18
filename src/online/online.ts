@@ -1,6 +1,6 @@
 import './online.css';
-import { api, ApiError } from './api.js';
-import { esc } from '../view/format.js';
+import { api, ApiError } from './api.ts';
+import { esc } from '../view/format.ts';
 
 type User = { id: number; name: string; rating: number; games: number; wins: number };
 type Seat = { free?: boolean; name?: string; ai?: boolean; host?: boolean };

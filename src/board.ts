@@ -7,7 +7,12 @@ const FIT_MARGIN = 8;
  * y ofrece una capa de piezas posicionadas en coordenadas normalizadas (u, v en 0..1,
  * origen arriba-izquierda), independientes de la resolución de la imagen y del zoom.
  */
-export async function createBoard({ viewport, board, image, pieces }) {
+export async function createBoard({ viewport, board, image, pieces }: {
+  viewport: HTMLElement;
+  board: HTMLElement;
+  image: HTMLImageElement;
+  pieces: HTMLElement;
+}) {
   await image.decode();
   const aspect = image.naturalWidth / image.naturalHeight;
 
@@ -34,7 +39,7 @@ export async function createBoard({ viewport, board, image, pieces }) {
   }
 
   /** Cambia el zoom manteniendo fijo el punto de pantalla (cx, cy). */
-  function zoomAt(cx, cy, factor) {
+  function zoomAt(cx: number, cy: number, factor: number) {
     const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * factor));
     if (next === zoom) return;
     if (next === MIN_ZOOM) return fit();
@@ -50,7 +55,7 @@ export async function createBoard({ viewport, board, image, pieces }) {
   }, { passive: false });
 
   // Arrastrar con un dedo/ratón desplaza; con dos dedos, pellizco para zoom.
-  const pointers = new Map();
+  const pointers = new Map<number, { x: number; y: number }>();
   let lastPinch = 0;
 
   viewport.addEventListener('pointerdown', (e) => {
@@ -78,7 +83,7 @@ export async function createBoard({ viewport, board, image, pieces }) {
     }
   });
 
-  const release = (e) => {
+  const release = (e: PointerEvent) => {
     pointers.delete(e.pointerId);
     if (pointers.size < 2) lastPinch = 0;
     if (pointers.size === 0) viewport.classList.remove('dragging');
@@ -90,7 +95,7 @@ export async function createBoard({ viewport, board, image, pieces }) {
   new ResizeObserver(fit).observe(viewport);
 
   /** Posición de pantalla → coordenadas normalizadas del tablero, o null si cae fuera. */
-  function clientToUV(clientX, clientY) {
+  function clientToUV(clientX: number, clientY: number) {
     const r = board.getBoundingClientRect();
     const u = (clientX - r.left) / r.width;
     const v = (clientY - r.top) / r.height;
@@ -98,7 +103,7 @@ export async function createBoard({ viewport, board, image, pieces }) {
   }
 
   /** Coloca (o mueve) un elemento de la capa de piezas, centrado en (u, v). */
-  function place(el, u, v) {
+  function place<T extends HTMLElement>(el: T, u: number, v: number): T {
     el.style.left = `${u * 100}%`;
     el.style.top = `${v * 100}%`;
     if (el.parentElement !== pieces) pieces.appendChild(el);
@@ -108,3 +113,6 @@ export async function createBoard({ viewport, board, image, pieces }) {
   fit();
   return { fit, zoomAt, clientToUV, place, pieces };
 }
+
+export type Board = Awaited<ReturnType<typeof createBoard>>;
+

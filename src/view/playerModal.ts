@@ -4,33 +4,34 @@ import { SEASONS } from '../data/decks.ts';
 import { CHARACTER_TYPES } from '../data/characters.ts';
 import { activePlayer } from '../game/setup.ts';
 import { playerStats, SPECIALS, MAX_FISH, MAX_TYPES } from '../game/playerStats.ts';
+import type { CharacterType, Game, Player, PlayerBoard, Point, Resource } from '../types.ts';
 
 /**
  * Modal con el tablero de un jugador: la imagen tumbada a todo el ancho y debajo su información en tres
  * columnas, con la puntuación final estimada. Esc o clic fuera lo cierran; ← → cambian de jugador.
  */
 
-const RESOURCES = [['mon', 'Mons'], ['rice', 'Arroz'], ['wood', 'Madera'], ['sandal', 'Sandalias'], ['koban', 'Koban']];
+const RESOURCES: [Resource, string][] = [['mon', 'Mons'], ['rice', 'Arroz'], ['wood', 'Madera'], ['sandal', 'Sandalias'], ['koban', 'Koban']];
 
-const row = (label, value, hint = '') => `<div${hint ? ` title="${hint}"` : ''}><dt>${label}</dt><dd>${value}</dd></div>`;
+const row = (label: string, value: unknown, hint = '') => `<div${hint ? ` title="${hint}"` : ''}><dt>${label}</dt><dd>${value}</dd></div>`;
 /** Sin fichas especiales, la fila genérica; con ellas, una fila por ficha con su propia imagen. */
-const specialRows = (ids) => (ids.length
+const specialRows = (ids: string[]) => (ids.length
   ? ids.map((id) => row(`<span class="ic ic-special-${id}"></span>${SPECIALS[id] ?? id}`, '✓')).join('')
   : row('<span class="ic ic-special"></span>Especiales', '—'));
-const list = (items, empty) => (items.length ? `<ul>${items.join('')}</ul>` : `<p class="muted">${empty}</p>`);
+const list = (items: string[], empty: string) => (items.length ? `<ul>${items.join('')}</ul>` : `<p class="muted">${empty}</p>`);
 /**
  * Fichas de mercado compradas, sobre sus círculos del tablero: un Pescado por estación y las Pipas y Bolsas de Tabaco
  * en su círculo (apiladas con un pequeño desplazamiento si hay varias).
  */
-function marketPieces(board, player) {
-  const piece = (id, [x, y], k = 0) => {
+function marketPieces(board: PlayerBoard, player: Player) {
+  const piece = (id: string, [x, y]: Point, k = 0) => {
     const t = MARKET_BY_ID[id];
     const style = `left: ${(x + k * 0.011) * 100}%; top: ${(y - k * 0.06) * 100}%; z-index: ${k + 1}`;
     return t.image
       ? `<img class="mkt-piece" src="${t.image}" alt="${describeToken(t)}" title="${describeToken(t)}" style="${style}" draggable="false">`
       : `<span class="mkt-piece mkt-plain" title="${describeToken(t)}" style="${style}">${t.cost}</span>`;
   };
-  const season = (id) => SEASONS.findIndex((s) => s.id === MARKET_BY_ID[id].season);
+  const season = (id: string) => SEASONS.findIndex((s) => s.id === MARKET_BY_ID[id].season);
   return [
     ...player.fish.map((id) => piece(id, board.market.fish[season(id)])),
     ...player.pipes.map((id, k) => piece(id, board.market.pipe, k)),
@@ -39,7 +40,7 @@ function marketPieces(board, player) {
 }
 
 /** Sandalias sobre su recuadro del tablero: una pila (como mucho 4 fichas a la vista) con el total si hay más de una. */
-function sandalPieces(board, n) {
+function sandalPieces(board: PlayerBoard, n: number) {
   if (!n) return '';
   const [x, y] = board.sandalSlot;
   const label = `${n} sandalia${n > 1 ? 's' : ''}`;
@@ -48,7 +49,7 @@ function sandalPieces(board, n) {
     + `<span class="sandal-count" role="img" aria-label="${label}" title="${label}" style="left: ${(x + 0.017) * 100}%; top: ${(y + 0.2) * 100}%">${n > 1 ? `×${n}` : ''}</span>`;
 }
 
-const typeDot = (type) => (type ? `<span class="type-dot" style="--type-color: ${CHARACTER_TYPES[type].color}" title="${CHARACTER_TYPES[type].label}"></span>` : '');
+const typeDot = (type: CharacterType | undefined) => (type ? `<span class="type-dot" style="--type-color: ${CHARACTER_TYPES[type].color}" title="${CHARACTER_TYPES[type].label}"></span>` : '');
 
 export function createPlayerModal() {
   const dialog = document.createElement('dialog');
@@ -56,7 +57,7 @@ export function createPlayerModal() {
   dialog.setAttribute('aria-labelledby', 'player-modal-title');
   document.body.append(dialog);
 
-  let game = null;
+  let game: Game = null!;
   let index = 0;
 
   function render() {
@@ -133,14 +134,14 @@ export function createPlayerModal() {
       </footer>`;
   }
 
-  function step(delta) {
+  function step(delta: number) {
     index = (index + delta + game.players.length) % game.players.length;
     render();
   }
 
   dialog.addEventListener('click', (e) => {
-    if (e.target === dialog || e.target.closest('.close')) return dialog.close();
-    const nav = e.target.closest('.nav');
+    if (e.target === dialog || (e.target as Element).closest('.close')) return dialog.close();
+    const nav = (e.target as Element).closest<HTMLElement>('.nav');
     if (nav) step(Number(nav.dataset.step));
   });
   dialog.addEventListener('keydown', (e) => {
@@ -149,14 +150,15 @@ export function createPlayerModal() {
   });
 
   return {
-    open(state, playerIndex) {
+    open(state: Game, playerIndex: number) {
       game = state;
       index = playerIndex;
       render();
       if (!dialog.open) dialog.showModal();
     },
     /** Tras un cambio en la partida, redibuja el modal si está abierto. */
-    update(state) {
+    update(state: Game) {
+
       game = state;
       if (dialog.open) render();
     },

@@ -30,23 +30,23 @@ export function exitFullscreen() {
 }
 
 /**
- * @param {{ button: HTMLButtonElement, tip: HTMLElement }} o
  *   button: alterna la pantalla completa (se oculta si no hay Fullscreen API o ya está instalada).
  *   tip:    consejo de la portada para instalarla, solo en móviles sin Fullscreen API (iPhone).
  */
-export function initFullscreen({ button, tip }) {
+export function initFullscreen({ button, tip }: { button: HTMLButtonElement; tip: HTMLElement }) {
   const sync = () => {
     button.hidden = !canFullscreen || isInstalled();
     button.setAttribute('aria-pressed', String(isFullscreen()));
     // «Reducir» y no «Salir», para que no se confunda con salir del juego (eso está en el Menú: exit.js).
-    button.querySelector('span').textContent = isFullscreen() ? 'Reducir' : 'Pantalla';
+    button.querySelector('span')!.textContent = isFullscreen() ? 'Reducir' : 'Pantalla';
     button.title = isFullscreen() ? 'Quitar la pantalla completa' : 'Pantalla completa';
     tip.hidden = canFullscreen || isInstalled() || !touch.matches;
   };
   button.addEventListener('click', () => (isFullscreen() ? exitFullscreen() : enterFullscreen()));
   // Cualquier botón de la portada es un toque del jugador: en el móvil se aprovecha para entrar en pantalla completa.
   document.addEventListener('click', (e) => {
-    if (touch.matches && !isInstalled() && e.target.closest?.('.cover-btn:not(.cover-exit)')) enterFullscreen();
+    if (touch.matches && !isInstalled() && (e.target as Element).closest?.('.cover-btn:not(.cover-exit)')
+) enterFullscreen();
   }, true);
   document.addEventListener('fullscreenchange', sync);
   document.addEventListener('webkitfullscreenchange', sync);

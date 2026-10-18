@@ -1,4 +1,4 @@
-import { esc } from './format.js';
+import { esc } from './format.ts';
 
 /**
  * Etiquetas propias en lugar de las del navegador: al pasar el ratón por cualquier elemento con `title`, sale una
@@ -7,7 +7,7 @@ import { esc } from './format.js';
  */
 const DELAY_MS = 250;
 
-function tipHtml(text) {
+function tipHtml(text: string) {
   const [head, ...lines] = text.split(' · ').map((part) => esc(part)
     .replace(/^(\d+) mons?$/, 'Cuesta $&') // un precio suelto, como en las fichas del mercado
     .replace(/(\d+) mons?\b/g, '<span class="tip-mon"><span class="ic ic-mon"></span>$1</span>')
@@ -21,16 +21,16 @@ export function initTooltips() {
   tip.setAttribute('role', 'tooltip');
   tip.hidden = true;
   document.body.append(tip);
-  let current = null;
-  let timer = 0;
+  let current: HTMLElement | null = null;
+  let timer: ReturnType<typeof setTimeout> | number = 0;
 
   const hide = () => {
     clearTimeout(timer);
     tip.hidden = true;
     current = null;
   };
-  const show = (el) => {
-    tip.innerHTML = tipHtml(el.dataset.tip);
+  const show = (el: HTMLElement) => {
+    tip.innerHTML = tipHtml(el.dataset.tip!);
     tip.hidden = false;
     // Encima del elemento y centrada; si no cabe arriba, debajo. Siempre dentro de la ventana.
     const r = el.getBoundingClientRect();
@@ -43,14 +43,15 @@ export function initTooltips() {
 
   document.addEventListener('pointerover', (e) => {
     if (e.pointerType === 'touch') return;
-    const el = e.target.closest?.('[title], [data-tip]');
+    const el = (e.target as Element).closest?.<HTMLElement>('[title], [data-tip]');
     if (el === current) return;
     const wasShown = !tip.hidden;
     hide();
     if (!el || el.closest('[data-zoom]')) return;
     // Se quita el `title` para que no salga también la etiqueta del navegador; el nombre accesible se conserva.
     if (el.hasAttribute('title')) {
-      if (el.title && !el.hasAttribute('aria-label') && !el.textContent.trim()) el.setAttribute('aria-label', el.title);
+      if (el.title && !el.hasAttribute('aria-label') && !el.textContent!.trim()
+) el.setAttribute('aria-label', el.title);
       el.dataset.tip = el.title;
       el.removeAttribute('title');
     }

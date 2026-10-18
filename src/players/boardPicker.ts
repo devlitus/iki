@@ -1,9 +1,12 @@
 import { PLAYER_BOARDS, PLAYER_BOARDS_BY_ID } from '../data/playerBoards.ts';
 import { MIN_PLAYERS, MAX_PLAYERS } from '../game/setup.ts';
-import { esc } from '../view/format.js';
+import { esc } from '../view/format.ts';
 
 const STORAGE_KEY = 'iki.playerBoards';
 const NAME_MAX = 16;
+
+/** Asiento elegido: `player` es el orden de elección (1, 2, …). */
+export type PickedPlayer = { player: number; boardId: string; ai: boolean; name: string };
 
 /** Nombres de la IA, de la Edo de los artesanos: a cada asiento de IA le toca uno al azar, sin repetir. */
 export const AI_NAMES = ['Hanzō', 'Kichibei', 'Otsuru', 'Sakichi', 'Okiku', 'Genpachi', 'Omitsu', 'Tōbei', 'Osen', 'Jirokichi'];
@@ -19,7 +22,7 @@ export const AI_NAMES = ['Hanzō', 'Kichibei', 'Otsuru', 'Sakichi', 'Okiku', 'Ge
  * en orden de elección, que es también el orden de los asientos alrededor de la mesa (sentido horario). `name` puede
  * venir vacío si la persona no escribió nada.
  */
-export function createBoardPicker({ onDone, onCancel } = {}) {
+export function createBoardPicker({ onDone, onCancel }: { onDone?: (players: PickedPlayer[]) => void; onCancel?: () => void } = {}) {
   let players = load();
 
   const overlay = document.createElement('div');
@@ -43,12 +46,12 @@ export function createBoardPicker({ onDone, onCancel } = {}) {
     </div>`;
   document.body.append(overlay);
 
-  const title = overlay.querySelector('#picker-title');
-  const list = overlay.querySelector('.picker-boards');
-  const seats = overlay.querySelector('.picker-seats');
-  const btnUndo = overlay.querySelector('.picker-undo');
-  const btnReset = overlay.querySelector('.picker-reset');
-  const btnDone = overlay.querySelector('.picker-done');
+  const title = overlay.querySelector('#picker-title')!;
+  const list = overlay.querySelector('.picker-boards')!;
+  const seats = overlay.querySelector('.picker-seats')!;
+  const btnUndo = overlay.querySelector<HTMLButtonElement>('.picker-undo')!;
+  const btnReset = overlay.querySelector<HTMLButtonElement>('.picker-reset')!;
+  const btnDone = overlay.querySelector<HTMLButtonElement>('.picker-done')!;
 
   for (const board of PLAYER_BOARDS) {
     const opt = document.createElement('button');
@@ -63,16 +66,16 @@ export function createBoardPicker({ onDone, onCancel } = {}) {
       if (players.length >= MAX_PLAYERS || ownerOf(board.id)) return;
       players = [...players, { player: players.length + 1, boardId: board.id, ai: false, name: '' }];
       update();
-      seats.querySelector(`[data-seat="${players.length}"] input`)?.focus();
+      seats.querySelector<HTMLInputElement>(`[data-seat="${players.length}"] input`)?.focus();
     });
     list.append(opt);
   }
 
-  const seatOf = (el) => Number(el.closest('[data-seat]')?.dataset.seat);
-  const edit = (seat, change) => (players = players.map((p) => (p.player === seat ? { ...p, ...change } : p)));
+  const seatOf = (el: Element) => Number(el.closest<HTMLElement>('[data-seat]')?.dataset.seat);
+  const edit = (seat: number, change: Partial<PickedPlayer>) => (players = players.map((p) => (p.player === seat ? { ...p, ...change } : p)));
 
   seats.addEventListener('click', (e) => {
-    const btn = e.target.closest('button');
+    const btn = (e.target as Element).closest('button');
     if (!btn) return;
     const seat = seatOf(btn);
     if (btn.getAttribute('aria-pressed') === 'true') return; // ya era así
@@ -81,21 +84,21 @@ export function createBoardPicker({ onDone, onCancel } = {}) {
     else if (btn.classList.contains('picker-reroll')) edit(seat, { name: freeAiName(seat) });
     else return;
     update();
-    if (btn.dataset.ai === 'false') seats.querySelector(`[data-seat="${seat}"] input`)?.focus();
+    if (btn.dataset.ai === 'false') seats.querySelector<HTMLInputElement>(`[data-seat="${seat}"] input`)?.focus();
   });
   // Se escribe sin redibujar la fila, para no perder el cursor.
   seats.addEventListener('input', (e) => {
-    edit(seatOf(e.target), { name: e.target.value });
+    edit(seatOf(e.target as Element), { name: (e.target as HTMLInputElement).value });
     refreshOwners();
     save(players);
   });
   seats.addEventListener('change', (e) => {
-    edit(seatOf(e.target), { name: e.target.value.trim() });
-    e.target.value = e.target.value.trim();
+    edit(seatOf(e.target as Element), { name: (e.target as HTMLInputElement).value.trim() });
+    (e.target as HTMLInputElement).value = (e.target as HTMLInputElement).value.trim();
     save(players);
   });
   seats.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && e.target.matches('input')) e.target.blur();
+    if ((e as KeyboardEvent).key === 'Enter' && (e.target as Element).matches('input')) (e.target as HTMLInputElement).blur();
   });
   btnUndo.addEventListener('click', () => { players = players.slice(0, -1); update(); });
   btnReset.addEventListener('click', () => { players = []; update(); });
@@ -105,25 +108,25 @@ export function createBoardPicker({ onDone, onCancel } = {}) {
     close();
     onDone?.(players);
   });
-  overlay.querySelector('.picker-close').addEventListener('click', cancel);
+  overlay.querySelector('.picker-close')!.addEventListener('click', cancel);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) cancel(); });
   overlay.addEventListener('keydown', (e) => { if (e.key === 'Escape') cancel(); });
 
-  function ownerOf(boardId) {
+  function ownerOf(boardId: string | undefined) {
     return players.find((p) => p.boardId === boardId);
   }
 
   /** Un nombre de IA que no lleve ya otro asiento (ni el que tenía este, para que sortear cambie algo). */
-  function freeAiName(seat) {
+  function freeAiName(seat: number) {
     const used = new Set(players.filter((p) => p.ai).map((p) => p.name));
     const free = AI_NAMES.filter((n) => !used.has(n));
     return free[Math.floor(Math.random() * free.length)] ?? AI_NAMES[seat - 1];
   }
 
   function refreshOwners() {
-    for (const opt of list.children) {
+    for (const opt of list.children as HTMLCollectionOf<HTMLButtonElement>) {
       const owner = ownerOf(opt.dataset.id);
-      opt.querySelector('.picker-owner').textContent = owner
+      opt.querySelector('.picker-owner')!.textContent = owner
         ? `${owner.name.trim() || `Jugador ${owner.player}`}${owner.ai ? ' · IA' : ''}` : '';
     }
   }
@@ -133,7 +136,7 @@ export function createBoardPicker({ onDone, onCancel } = {}) {
     title.textContent = full
       ? 'Todos los tableros elegidos'
       : `Jugador ${players.length + 1}: elige tu color`;
-    for (const opt of list.children) {
+    for (const opt of list.children as HTMLCollectionOf<HTMLButtonElement>) {
       const owner = ownerOf(opt.dataset.id);
       opt.classList.toggle('taken', Boolean(owner));
       opt.disabled = Boolean(owner) || full;
@@ -164,7 +167,7 @@ export function createBoardPicker({ onDone, onCancel } = {}) {
 
   function open() {
     overlay.hidden = false;
-    overlay.querySelector('.picker-board:not(:disabled), .picker-done')?.focus();
+    overlay.querySelector<HTMLElement>('.picker-board:not(:disabled), .picker-done')?.focus();
   }
 
   function close() {
@@ -181,14 +184,14 @@ export function createBoardPicker({ onDone, onCancel } = {}) {
   return { open, close, get players() { return players; }, get isOpen() { return !overlay.hidden; } };
 }
 
-function load() {
+function load(): PickedPlayer[] {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]');
-    const valid = Array.isArray(saved) && saved.every((p, i) => p.player === i + 1 && PLAYER_BOARDS_BY_ID[p.boardId]);
-    const unique = new Set(saved.map((p) => p.boardId)).size === saved.length;
+    const valid = Array.isArray(saved) && saved.every((p: any, i: number) => p.player === i + 1 && PLAYER_BOARDS_BY_ID[p.boardId]);
+    const unique = new Set(saved.map((p: any) => p.boardId)).size === saved.length;
     if (!valid || !unique || saved.length > MAX_PLAYERS) return [];
     // Las elecciones guardadas antes de que hubiera nombres: la IA recibe el de la lista que le toca por asiento.
-    return saved.map((p) => {
+    return saved.map((p: any) => {
       const ai = p.ai === true;
       const name = typeof p.name === 'string' ? p.name.slice(0, NAME_MAX) : '';
       return { player: p.player, boardId: p.boardId, ai, name: ai && !name ? AI_NAMES[p.player - 1] : name };
@@ -198,7 +201,8 @@ function load() {
   }
 }
 
-function save(players) {
+function save(players: PickedPlayer[]) {
+
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(players));
   } catch {

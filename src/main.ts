@@ -1,50 +1,54 @@
-import { createBoard } from './board.js';
-import { createZonesOverlay } from './zonesOverlay.js';
+import { createBoard } from './board.ts';
+import { createZonesOverlay } from './zonesOverlay.ts';
 import { ZONES_BY_ID } from './data/zones.ts';
 import './cards/card.css';
-import { createBoardPicker } from './players/boardPicker.js';
+import { createBoardPicker } from './players/boardPicker.ts';
 import './players/players.css';
 import { createGame, freeOuterLots, MIN_PLAYERS, GAME_VERSION } from './game/setup.ts';
 import { act, whoseTurn } from './game/engine.ts';
 import { randomSeed } from './game/random.ts';
 import { chooseAction, isAiTurn } from './ai/player.ts';
-import { renderDecks, renderSupply, renderPlayers, renderSpecialsInfo } from './view/table.js';
-import { renderBoardPieces } from './view/boardPieces.js';
-import { renderTurnPanel, bindTurnPanel, boardTargets, hireableCards } from './view/turnPanel.js';
-import { createCover } from './view/cover.js';
-import { createEventSummary, createFinalTable, initZoom } from './view/dialogs.js';
-import { initTooltips } from './view/tooltip.js';
-import { createPlayerModal } from './view/playerModal.js';
-import { createDiceRoll } from './view/diceRoll.js';
+import { renderDecks, renderSupply, renderPlayers, renderSpecialsInfo } from './view/table.ts';
+import { renderBoardPieces } from './view/boardPieces.ts';
+import { renderTurnPanel, bindTurnPanel, boardTargets, hireableCards } from './view/turnPanel.ts';
+import { createCover } from './view/cover.ts';
+import { createEventSummary, createFinalTable, initZoom } from './view/dialogs.ts';
+import { initTooltips } from './view/tooltip.ts';
+import { createPlayerModal } from './view/playerModal.ts';
+import { createDiceRoll } from './view/diceRoll.ts';
 import './view/diceRoll.css';
-import { createMobileLayout } from './view/mobile.js';
-import { initFullscreen } from './view/fullscreen.js';
-import { initExit } from './view/exit.js';
+import { createMobileLayout } from './view/mobile.ts';
+import { initFullscreen } from './view/fullscreen.ts';
+import { initExit } from './view/exit.ts';
 import { createTutorial } from './tutorial/tutorial.ts';
 import { openIntro } from './tutorial/intro.ts';
 import { createTutorialGame } from './tutorial/game.ts';
 import { createOnline } from './online/online.ts';
-import { api } from './online/api.ts';
-import { isWaiting } from './view/format.js';
+import { api, type ApiError } from './online/api.ts';
+
+import { isWaiting } from './view/format.ts';
 import { CHARACTERS_BY_ID } from './data/characters.ts';
 import './view/table.css';
 import './view/turn.css';
 import './view/mobile.css';
+import type { Ui } from './view/turnPanel.ts';
+import type { PickedPlayer } from './players/boardPicker.ts';
+import type { Action, Game, Target } from './types.ts';
 
 const board = await createBoard({
-  viewport: document.getElementById('viewport'),
-  board: document.getElementById('board'),
-  image: document.getElementById('board-image'),
-  pieces: document.getElementById('pieces'),
+  viewport: document.getElementById('viewport')!,
+  board: document.getElementById('board')!,
+  image: document.getElementById('board-image') as HTMLImageElement,
+  pieces: document.getElementById('pieces')!,
 });
 
 // Herramienta de desarrollo: Alt + clic marca un punto y muestra/copia sus coordenadas (u, v),
 // para ir mapeando las casillas del tablero.
-const toast = document.getElementById('toast');
+const toast = document.getElementById('toast')!;
 const marker = document.createElement('div');
 marker.className = 'coord-marker';
 
-document.getElementById('viewport').addEventListener('click', (e) => {
+document.getElementById('viewport')!.addEventListener('click', (e) => {
   if (!e.altKey) return;
   const uv = board.clientToUV(e.clientX, e.clientY);
   if (!uv) return;
@@ -57,7 +61,7 @@ document.getElementById('viewport').addEventListener('click', (e) => {
 });
 
 // Herramienta de desarrollo: la tecla Z muestra/oculta las zonas mapeadas.
-const zonesOverlay = createZonesOverlay(document.getElementById('board'));
+const zonesOverlay = createZonesOverlay(document.getElementById('board')!);
 window.addEventListener('keydown', (e) => {
   if (e.key === 'z' || e.key === 'Z') zonesOverlay.toggle();
 });
@@ -65,30 +69,30 @@ window.addEventListener('keydown', (e) => {
 // --- Partida ---------------------------------------------------------------------------------
 const GAME_KEY = 'iki.game';
 const MAX_UNDO = 40;
-let game = loadGame();
-let selectedCard = null; // paso 13: carta inicial elegida, a la espera del solar
-let ui = {}; // lo que el jugador va eligiendo en su turno antes de confirmar (ver view/turnPanel.js)
-let history = []; // estados anteriores del turno en curso, para deshacer
-let tutorial = null; // el tutorial en marcha: guía el turno del humano y no toca la partida guardada
-let online = null; // partida alojada en el servidor ({ id, version, me, seats, status }): allí se validan las jugadas y se juegan las IA
+let game: Game | null = loadGame();
+let selectedCard: string | null = null; // paso 13: carta inicial elegida, a la espera del solar
+let ui: Ui = {}; // lo que el jugador va eligiendo en su turno antes de confirmar (ver view/turnPanel.js)
+let history: Game[] = []; // estados anteriores del turno en curso, para deshacer
+let tutorial: ReturnType<typeof createTutorial> | null = null; // el tutorial en marcha: guía el turno del humano y no toca la partida guardada
+let online: OnlineGame | null = null; // partida alojada en el servidor ({ id, version, me, seats, status }): allí se validan las jugadas y se juegan las IA
 
-const app = document.getElementById('app');
-const turnEl = document.getElementById('turn');
-const btnPicker = document.getElementById('open-picker');
-const specialsInfo = document.getElementById('specials-info');
+const app = document.getElementById('app')!;
+const turnEl = document.getElementById('turn')!;
+const btnPicker = document.getElementById('open-picker')!;
+const specialsInfo = document.getElementById('specials-info')!;
 renderSpecialsInfo(specialsInfo);
 const playerModal = createPlayerModal();
 const diceRoll = createDiceRoll();
-const mobile = createMobileLayout({ app, side: document.getElementById('side'), players: document.getElementById('players'), turn: turnEl });
+const mobile = createMobileLayout({ app, side: document.getElementById('side')!, players: document.getElementById('players')!, turn: turnEl });
 /** Nagaya cuya loseta de Incendio sigue boca arriba en el tablero mientras se lee el resumen del incendio. */
-let fireTileShown = null;
+let fireTileShown: string | null = null;
 const eventSummary = createEventSummary({ onClose: () => { if (fireTileShown) { fireTileShown = null; render(); } } });
 const finalTable = createFinalTable({ onNewGame: () => openPicker() });
 initZoom();
 initTooltips();
 
 /** Todo lo que el panel de turno necesita para pintar y para actuar. */
-const turnCtx = () => ({ game, ui, set, dispatch, undo, canUndo: history.length > 0, openFinal: () => finalTable.open(game) });
+const turnCtx = () => ({ game: game!, ui, set, dispatch, undo, canUndo: history.length > 0, openFinal: () => finalTable.open(game!) });
 bindTurnPanel(turnEl, turnCtx);
 
 /** Deja la mesa vacía, como antes de empezar ninguna partida. */
@@ -98,7 +102,7 @@ function clearTable() {
   turnEl.hidden = true;
   btnPicker.hidden = Boolean(tutorial) || Boolean(online);
   specialsInfo.hidden = true;
-  ['decks', 'supply', 'players'].forEach((id) => document.getElementById(id).replaceChildren());
+  ['decks', 'supply', 'players'].forEach((id) => document.getElementById(id)!.replaceChildren());
   board.pieces.replaceChildren();
 }
 
@@ -112,17 +116,17 @@ function render() {
   specialsInfo.hidden = false;
   if (playing) renderTurnPanel(turnEl, game, turnCtx());
 
-  renderDecks(document.getElementById('decks'), game, {
+  renderDecks(document.getElementById('decks')!, game, {
     selectedCard, onSelectCard: (id) => { selectedCard = id; render(); },
     hireable: hireableCards(game), hiring: ui.hire, onSelectHire: (card) => set({ hire: card, building: null }),
   });
-  renderSupply(document.getElementById('supply'), game);
-  renderPlayers(document.getElementById('players'), game, { onOpenBoard: (i) => playerModal.open(game, i) });
+  renderSupply(document.getElementById('supply')!, game);
+  renderPlayers(document.getElementById('players')!, game, { onOpenBoard: (i) => playerModal.open(game!, i) });
   playerModal.update(game);
   const fireNagaya = game.event?.kind === 'fire' ? game.event.nagaya : fireTileShown;
   renderBoardPieces(board, game, { targets: targets(), fireNagaya });
   tutorial?.update(game);
-  if (tutorial) mobile.reveal(document.getElementById('coach').textContent);
+  if (tutorial) mobile.reveal(document.getElementById('coach')!.textContent!);
   mobile.update(game, { selectedCard, tutorialFocus: Boolean(tutorial) });
   scheduleAi();
 }
@@ -132,13 +136,13 @@ function render() {
 // un diálogo abierto (resumen del Evento, tabla final), la portada o el selector de tableros.
 const AI_DELAY = 700;
 const AI_RETRY = 400;
-let aiTimer = null;
+let aiTimer: ReturnType<typeof setTimeout> | null = null;
 let aiStalled = false; // la IA falló: no reintenta hasta que la partida cambie por otro lado
 
-const aiBlocked = () => cover.visible || picker.isOpen || diceRoll.isOpen || Boolean(tutorial?.blocking(game)) || Boolean(document.querySelector('dialog[open]:not(#player-modal)'));
+const aiBlocked = () => cover.visible || picker.isOpen || diceRoll.isOpen || Boolean(tutorial?.blocking(game!)) || Boolean(document.querySelector('dialog[open]:not(#player-modal)'));
 
 function scheduleAi(delay = AI_DELAY) {
-  clearTimeout(aiTimer);
+  clearTimeout(aiTimer as ReturnType<typeof setTimeout>);
   aiTimer = game && !online && !aiStalled && isAiTurn(game) ? setTimeout(runAi, delay) : null; // en línea las IA juegan en el servidor
 }
 
@@ -155,46 +159,48 @@ function runAi() {
   }
   if (game === before) {
     aiStalled = true;
-    clearTimeout(aiTimer);
+    clearTimeout(aiTimer as ReturnType<typeof setTimeout>);
   }
 }
 
 /** Zonas del tablero que se pueden pulsar: los solares exteriores en el paso 13 y, en juego, lo que pida el turno. */
-function targets() {
-  let list;
-  if (game.phase !== 'initial-characters') list = boardTargets(game, turnCtx());
-  else if (!selectedCard || isWaiting(game)) list = [];
+function targets(): Target[] {
+  let list: Target[];
+
+  if (game!.phase !== 'initial-characters') list = boardTargets(game!, turnCtx());
+  else if (!selectedCard || isWaiting(game!)) list = [];
   else {
-    list = freeOuterLots(game).map((lot) => ({
-      zone: lot, title: `Colocar ${CHARACTERS_BY_ID[selectedCard].name} aquí`, onClick: () => dispatch({ type: 'placeInitial', card: selectedCard, lot }),
+    list = freeOuterLots(game!).map((lot) => ({
+      zone: lot, title: `Colocar ${CHARACTERS_BY_ID[selectedCard!].name} aquí`, onClick: () => dispatch({ type: 'placeInitial', card: selectedCard!, lot }),
     }));
   }
-  return tutorial ? tutorial.filterTargets(game, list) : list;
+  return tutorial ? tutorial.filterTargets(game!, list) : list;
 }
 
 /** Cambia lo que el jugador está eligiendo (sin tocar la partida) y redibuja. */
-function set(patch) {
+function set(patch: Partial<Ui>) {
   ui = { ...ui, ...patch, error: null };
   render();
 }
 
 /** ¿Es la misma "mano" (mismo jugador, misma fase)? Entonces la jugada anterior se puede deshacer. */
-const turnKey = (g) => [g.phase, whoseTurn(g), g.turn?.index, g.month, Boolean(g.pending)].join('|');
+const turnKey = (g: Game) => [g.phase, whoseTurn(g), g.turn?.index, g.month, Boolean(g.pending)].join('|');
 
 /** Aplica una acción al motor; si no es válida, lo dice en el panel y deja la partida como estaba. */
-function dispatch(action, { auto = false } = {}) {
+function dispatch(action: Action, { auto = false } = {}) {
   if (online) return void dispatchOnline(action);
-  const before = game;
-  const refusal = !auto && tutorial?.refuse(game, action);
+  const before = game!;
+  const refusal = !auto && tutorial?.refuse(game!, action);
   if (refusal) {
     ui = { ...ui, error: refusal };
     return render();
   }
-  let next;
+  let next: Game;
   try {
     next = act(before, action);
   } catch (error) {
-    ui = { ...ui, error: error.message };
+    ui = { ...ui, error: (error as Error).message };
+
     return render();
   }
   aiStalled = false;
@@ -209,8 +215,8 @@ function dispatch(action, { auto = false } = {}) {
 }
 
 /** Cuenta el Evento ocurrido desde `before`; si fue un Incendio, su loseta queda en el Nagaya hasta cerrar el resumen. */
-function showEvent(before) {
-  const nagaya = eventSummary.show(game, game.log.filter((e) => e.seq > (before.logSeq ?? 0)));
+function showEvent(before: Game) {
+  const nagaya = eventSummary.show(game!, game!.log.filter((e) => e.seq > (before.logSeq ?? 0)));
   if (nagaya) {
     fireTileShown = nagaya;
     render();
@@ -219,14 +225,14 @@ function showEvent(before) {
 
 function undo() {
   if (!history.length) return;
-  game = history.at(-1);
+  game = history.at(-1)!;
   history = history.slice(0, -1);
   ui = {};
   persist();
   render();
 }
 
-function newGame(players) {
+function newGame(players: PickedPlayer[]) {
   endTutorial();
   leaveOnline();
   aiStalled = false;
@@ -253,25 +259,28 @@ function persist() {
 
 const POLL_MS = 2500;
 let onlineBusy = false;
-let pollTimer = null;
+let pollTimer: ReturnType<typeof setInterval> | null = null;
+
+/** Partida en línea: lo que manda el servidor además de la vista (ver server/games.js). */
+type OnlineGame = { id: string; version: number; me: number; seats: { name?: string }[]; status: string };
 
 /** Adopta la partida que manda el servidor: la vista pública más quién soy y cómo se llama cada jugador. */
-function adoptOnline(res) {
+function adoptOnline(res: OnlineGame & { view: Game }) {
   online = { id: res.id, version: res.version, me: res.me, seats: res.seats, status: res.status };
   game = { ...res.view, viewer: res.me };
   game.players = game.players.map((p, i) => ({ ...p, userName: p.ai ? undefined : res.seats[i]?.name }));
 }
 
 /** Tras un cambio llegado del servidor: redibuja, cuenta el Evento si lo hubo y abre la tabla final al terminar. */
-function showOnlineChange(before) {
+function showOnlineChange(before: Game | null) {
   selectedCard = null;
   ui = {};
   render();
   showEvent(before);
-  if (game.phase === 'ended' && before.phase !== 'ended') finalTable.open(game);
+  if (game!.phase === 'ended' && before!.phase !== 'ended') finalTable.open(game!);
 }
 
-async function playOnline(id) {
+async function playOnline(id: string) {
   try {
     const res = await api('GET', `/games/${id}`);
     endTutorial();
@@ -286,14 +295,14 @@ async function playOnline(id) {
     if (game.phase === 'ended') finalTable.open(game);
   } catch (error) {
     cover.show(Boolean(game));
-    toast.textContent = error.message;
+    toast.textContent = (error as Error).message;
     toast.hidden = false;
     setTimeout(() => { toast.hidden = true; }, 4000);
   }
 }
 
 function leaveOnline() {
-  clearInterval(pollTimer);
+  clearInterval(pollTimer as ReturnType<typeof setInterval>);
   pollTimer = null;
   online = null;
   document.body.classList.remove('sending');
@@ -315,7 +324,7 @@ async function pollOnline() {
 document.addEventListener('visibilitychange', () => { if (!document.hidden) pollOnline(); });
 
 /** Manda la acción al servidor y pinta el estado que devuelve (o el motivo del rechazo). */
-async function dispatchOnline(action) {
+async function dispatchOnline(action: Action) {
   if (onlineBusy || !online) return;
   const before = game;
   onlineBusy = true;
@@ -324,11 +333,11 @@ async function dispatchOnline(action) {
     adoptOnline(await api('POST', `/games/${online.id}/action`, { action, version: online.version }));
     showOnlineChange(before);
   } catch (error) {
-    if (error.data?.game) { // la partida había cambiado: se actualiza y se avisa
-      adoptOnline(error.data.game);
+    if ((error as ApiError).data?.game) { // la partida había cambiado: se actualiza y se avisa
+      adoptOnline((error as ApiError).data.game);
       showOnlineChange(before);
       ui = { error: 'La partida había cambiado: revisa la mesa y vuelve a intentarlo.' };
-    } else ui = { ...ui, error: error.message };
+    } else ui = { ...ui, error: (error as Error).message };
     render();
   } finally {
     onlineBusy = false;
@@ -369,13 +378,13 @@ function endTutorial() {
   tutorial = null;
 }
 
-function exitTutorial({ keep }) {
+function exitTutorial({ keep }: { keep: boolean }) {
   endTutorial();
   aiStalled = false;
   selectedCard = null;
   ui = {};
   history = [];
-  if (keep) saveGame(game);
+  if (keep) saveGame(game!);
   else game = loadGame();
   render();
   if (!keep) cover.show(Boolean(game));
@@ -383,7 +392,7 @@ function exitTutorial({ keep }) {
 
 // Portada y tableros de jugador: «Nueva partida» abre el selector; al pulsar Empezar se prepara una partida nueva.
 const cover = createCover({ onNew: () => openIntro({ tutorial: false, onClose: () => openPicker({ fromCover: true }) }), onContinue: () => {}, onTutorial: startTutorial, onOnline: ONLINE_ENABLED ? () => hub.open() : undefined });
-initFullscreen({ button: document.querySelector('[data-rail="fullscreen"]'), tip: document.querySelector('.cover-install') });
+initFullscreen({ button: document.querySelector<HTMLButtonElement>('[data-rail="fullscreen"]')!, tip: document.querySelector<HTMLElement>('.cover-install')! });
 initExit({ button: cover.exitButton });
 let pickerFromCover = false;
 const picker = createBoardPicker({
@@ -395,14 +404,14 @@ function openPicker({ fromCover = false } = {}) {
   picker.open();
 }
 btnPicker.addEventListener('click', () => openPicker());
-document.getElementById('open-menu').addEventListener('click', () => cover.show(Boolean(game)));
+document.getElementById('open-menu')!.addEventListener('click', () => cover.show(Boolean(game)));
 window.addEventListener('keydown', (e) => {
-  if ((e.key === 'j' || e.key === 'J') && !btnPicker.hidden && !e.target.closest?.('#board-picker, #player-modal, #cover, select, input')) openPicker();
+  if ((e.key === 'j' || e.key === 'J') && !btnPicker.hidden && !(e.target as Element).closest?.('#board-picker, #player-modal, #cover, select, input')) openPicker();
 });
 if (game) render();
 cover.show(Boolean(game));
 
-function loadGame() {
+function loadGame(): Game | null {
   try {
     const saved = JSON.parse(localStorage.getItem(GAME_KEY) ?? 'null');
     return saved?.version === GAME_VERSION ? saved : null;
@@ -411,7 +420,7 @@ function loadGame() {
   }
 }
 
-function saveGame(state) {
+function saveGame(state: Game | null) {
   try {
     localStorage.setItem(GAME_KEY, JSON.stringify(state));
   } catch {

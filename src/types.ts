@@ -34,7 +34,10 @@ export type Character = {
   salary: Amount[][];
   retireToken?: Special;
   scan: string;
+  /** Ilustración propia (sin `scan`, cards/card.js dibuja la carta entera). */
+  art?: string;
 };
+
 
 export type Season = { id: SeasonId; name: string; back: string; cards: string[] };
 

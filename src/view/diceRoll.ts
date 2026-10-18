@@ -1,4 +1,5 @@
-import { playerColor, playerName } from './format.js';
+import { playerColor, playerName } from './format.ts';
+import type { Game } from '../types.ts';
 
 /**
  * Animación de la tirada de dados para el jugador inicial (paso 10), justo después de pulsar Empezar en una partida
@@ -13,13 +14,13 @@ const PAUSE_MS = 1100; // pausa para leer el resultado de cada ronda
 const FACE_MS = 90; // cada cuánto cambia la cara mientras rueda
 
 // Posición de los puntos de cada cara en una rejilla de 3 × 3 (0-8, de izquierda a derecha y de arriba abajo).
-const PIPS = { 1: [4], 2: [2, 6], 3: [2, 4, 6], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+const PIPS: Record<number, number[]> = { 1: [4], 2: [2, 6], 3: [2, 4, 6], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
 
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 const randomFace = () => 1 + Math.floor(Math.random() * 6);
 
-function setFace(die, value) {
-  die.dataset.value = value;
+function setFace(die: HTMLElement, value: number) {
+  die.dataset.value = value as unknown as string;
   die.setAttribute('aria-label', `Dado: ${value}`);
   die.replaceChildren(...Array.from({ length: 9 }, (_, k) => {
     const cell = document.createElement('span');
@@ -46,13 +47,13 @@ export function createDiceRoll() {
     </div>`;
   document.body.append(overlay);
 
-  const rowsEl = overlay.querySelector('.dice-rows');
-  const status = overlay.querySelector('.dice-status');
-  const btnSkip = overlay.querySelector('.dice-skip');
-  const btnDone = overlay.querySelector('.dice-done');
+  const rowsEl = overlay.querySelector<HTMLElement>('.dice-rows')!;
+  const status = overlay.querySelector<HTMLElement>('.dice-status')!;
+  const btnSkip = overlay.querySelector<HTMLButtonElement>('.dice-skip')!;
+  const btnDone = overlay.querySelector<HTMLButtonElement>('.dice-done')!;
 
   let run = 0; // cada show() o salto invalida los temporizadores de la animación anterior
-  let resolve = null;
+  let resolve: (() => void) | null = null;
   let finish = () => {};
 
   btnSkip.addEventListener('click', () => finish());
@@ -65,14 +66,14 @@ export function createDiceRoll() {
     }
   });
 
-  const wait = (ms, id) => new Promise((ok, fail) => setTimeout(() => (id === run ? ok() : fail()), ms));
+  const wait = (ms: number, id: number) => new Promise<void>((ok, fail) => setTimeout(() => (id === run ? ok() : fail()), ms));
 
-  function show(game) {
+  function show(game: Game): Promise<void> {
     const id = ++run;
     const n = game.players.length;
     const rolls = game.players.map((p) => p.rolls);
     const rounds = Math.max(...rolls.map((r) => r.length));
-    const name = (i) => playerName(game, i);
+    const name = (i: number) => playerName(game, i);
 
     rowsEl.replaceChildren(...game.players.map((_, i) => {
       const row = document.createElement('li');
@@ -81,7 +82,7 @@ export function createDiceRoll() {
       row.innerHTML = `<span class="dice-name">${name(i)}</span><span class="dice-tray"></span>`;
       return row;
     }));
-    const rows = [...rowsEl.children];
+    const rows = [...rowsEl.children] as HTMLElement[];
     status.textContent = '';
     btnSkip.hidden = false;
     btnDone.hidden = true;
@@ -92,7 +93,7 @@ export function createDiceRoll() {
     function showResult() {
       run++;
       rows.forEach((row, i) => {
-        const tray = row.querySelector('.dice-tray');
+        const tray = row.querySelector('.dice-tray')!;
         tray.replaceChildren(...rolls[i].map((v, r) => die(v, r < rolls[i].length - 1)));
         row.classList.toggle('out', i !== game.starter);
         row.classList.toggle('winner', i === game.starter);
@@ -111,7 +112,7 @@ export function createDiceRoll() {
         status.textContent = r === 0 ? 'Tiran todos…' : `Vuelven a tirar ${rolling.map(nameText).join(' y ')}…`;
         // Los que ya tiraron antes atenúan su dado anterior: cuenta el nuevo.
         const dice = rolling.map((i) => {
-          const tray = rows[i].querySelector('.dice-tray');
+          const tray = rows[i].querySelector('.dice-tray')!;
           tray.querySelectorAll('.die').forEach((d) => d.classList.add('old'));
           const d = die(randomFace());
           tray.append(d);
@@ -141,7 +142,7 @@ export function createDiceRoll() {
     }
 
     /** Nombre sin HTML, para el texto de estado. */
-    function nameText(i) {
+    function nameText(i: number) {
       const tmp = document.createElement('span');
       tmp.innerHTML = name(i);
       return tmp.textContent;
@@ -151,7 +152,8 @@ export function createDiceRoll() {
     return new Promise((ok) => { resolve = ok; });
   }
 
-  function die(value, old = false) {
+  function die(value: number, old = false) {
+
     const d = document.createElement('span');
     d.className = `die${old ? ' old' : ''}`;
     d.setAttribute('role', 'img');

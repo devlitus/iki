@@ -1,6 +1,6 @@
 import { ZONES, radiusV } from './data/zones.ts';
 
-const GROUP_COLORS = {
+const GROUP_COLORS: Record<string, string> = {
   calendar: '#ffcc00',
   lots: '#00e5ff',
   street: '#ff3d71',
@@ -12,7 +12,7 @@ const GROUP_COLORS = {
 };
 
 /** Capa de depuración que dibuja todas las zonas sobre el tablero. Se alterna con toggle(). */
-export function createZonesOverlay(boardEl) {
+export function createZonesOverlay(boardEl: HTMLElement) {
   const layer = document.createElement('div');
   layer.id = 'zones';
   layer.hidden = true;
@@ -24,10 +24,10 @@ export function createZonesOverlay(boardEl) {
     el.title = `${z.label}\n${z.id}`;
     el.style.setProperty('--c', GROUP_COLORS[z.group] ?? '#fff');
     if (z.kind === 'rect') {
-      Object.assign(el.style, { left: pct(z.x), top: pct(z.y), width: pct(z.w), height: pct(z.h) });
+      Object.assign(el.style, { left: pct(z.x!), top: pct(z.y!), width: pct(z.w!), height: pct(z.h!) });
     } else {
       const rv = radiusV(z);
-      Object.assign(el.style, { left: pct(z.cx - z.r), top: pct(z.cy - rv), width: pct(z.r * 2), height: pct(rv * 2) });
+      Object.assign(el.style, { left: pct(z.cx! - z.r!), top: pct(z.cy! - rv), width: pct(z.r! * 2), height: pct(rv * 2) });
     }
     layer.appendChild(el);
   }
@@ -40,4 +40,5 @@ export function createZonesOverlay(boardEl) {
   };
 }
 
-const pct = (n) => `${(n * 100).toFixed(3)}%`;
+const pct = (n: number) =>
+ `${(n * 100).toFixed(3)}%`;

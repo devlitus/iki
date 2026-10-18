@@ -1,7 +1,8 @@
 import { CHARACTER_TYPES } from '../data/characters.ts';
-import { GLYPHS, resources } from './icons.js';
+import { GLYPHS, resources } from './icons.ts';
+import type { Character, CharacterType } from '../types.ts';
 
-const TYPE_SYMBOLS = {
+const TYPE_SYMBOLS: Record<CharacterType, string> = {
   vendor: '✿',
   artisan: GLYPHS.artisan,
   special: '❂',
@@ -17,7 +18,7 @@ const TYPE_SYMBOLS = {
  * franja blanca inferior con nombre y habilidad, y columna del color del tipo a la derecha con el
  * marcador de experiencia (retiro arriba, en círculo; espacio inicial del Kobun abajo, punteado).
  */
-export function createCharacterCard(character) {
+export function createCharacterCard(character: Character) {
   const type = CHARACTER_TYPES[character.type];
   const el = document.createElement('article');
   el.className = `card card-${character.type}`;
@@ -62,7 +63,8 @@ export function createCharacterCard(character) {
 }
 
 /** Ilustración provisional: silueta de un personaje con kimono sobre un fondo de calle. */
-function portrait(color) {
+function portrait(color: string) {
+
   return `<svg viewBox="0 0 60 90" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <rect width="60" height="90" fill="#efe3c8"/>
     <rect x="0" y="0" width="22" height="70" fill="#5b3a26"/>

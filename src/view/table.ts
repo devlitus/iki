@@ -3,24 +3,31 @@ import { SEASONS, BUILDINGS_BY_ID, BUILDING_BACK } from '../data/decks.ts';
 import { CHARACTERS_BY_ID } from '../data/characters.ts';
 import { currentPicker, activePlayer } from '../game/setup.ts';
 import { seasonOf } from '../game/engine.ts';
-import { esc, isWaiting, playerName } from './format.js';
+import { esc, isWaiting, playerName } from './format.ts';
 import { playerStats, SPECIALS, MAX_FISH, MAX_TYPES } from '../game/playerStats.ts';
+import type { Game, Resources } from '../types.ts';
 
 /**
  * Mesa alrededor del tablero: mazos, edificios y reserva en la columna izquierda; los jugadores en la
  * derecha, en fichas compactas con el activo arriba.
  */
 
-export const resourceChips = ({ mon, rice, sandal, wood, koban }) => [
+export const resourceChips = ({ mon, rice, sandal, wood, koban }: Resources) => ([
   ['mon', mon, 'Mons'], ['rice', rice, 'Arroz'], ['sandal', sandal, 'Sandalias'], ['wood', wood, 'Madera'], ['koban', koban, 'Koban'],
-].filter(([, n], i) => n > 0 || i < 3)
+] satisfies [string, number, string][]).filter(([, n], i) => n > 0 || i < 3)
   .map(([res, n, label]) => `<span class="res" title="${label}"><span class="ic ic-${res}"></span>×${n}</span>`).join('');
 
 /**
  * Mazos de Personaje (paso 8) y, debajo, los personajes iniciales (paso 13A) o, ya en juego, la fila de cartas del
  * mes con los mons que tiene encima cada una. En la fase B1 se pueden pulsar las que el jugador de turno puede contratar.
  */
-export function renderDecks(el, game, { selectedCard, onSelectCard, hireable = new Set(), hiring = null, onSelectHire }) {
+export function renderDecks(el: HTMLElement, game: Game, { selectedCard, onSelectCard, hireable = new Set(), hiring = null, onSelectHire }: {
+  selectedCard: string | null;
+  onSelectCard: (card: string | null) => void;
+  hireable?: Set<string>;
+  hiring?: string | null;
+  onSelectHire?: (card: string | null) => void;
+}) {
   const picker = currentPicker(game);
   const humanPicker = picker != null && !isWaiting(game); // cuando elige la IA u otra persona, las cartas no se pueden pulsar
   // La estación en curso se resalta y las ya pasadas se apagan.
@@ -32,7 +39,7 @@ export function renderDecks(el, game, { selectedCard, onSelectCard, hireable = n
       <span>${s.name}<br>${game.decks[s.id].length}</span>
     </div>`).join('');
 
-  let lower;
+  let lower: string;
   if (game.initialCharacters.length) {
     lower = `<div class="initial-row">
         <span class="label">Personajes iniciales${picker != null ? ` · elige ${playerName(game, picker)}` : ''}</span>
@@ -60,14 +67,14 @@ export function renderDecks(el, game, { selectedCard, onSelectCard, hireable = n
   }
 
   el.innerHTML = `<div class="decks">${decks}</div>${lower}`;
-  el.querySelectorAll('.initial-card[data-card]').forEach((b) =>
-    b.addEventListener('click', () => onSelectCard(b.dataset.card === selectedCard ? null : b.dataset.card)));
-  el.querySelectorAll('.initial-card[data-hire]').forEach((b) =>
-    b.addEventListener('click', () => onSelectHire?.(b.dataset.hire === hiring ? null : b.dataset.hire)));
+  el.querySelectorAll<HTMLElement>('.initial-card[data-card]').forEach((b) =>
+    b.addEventListener('click', () => onSelectCard(b.dataset.card === selectedCard ? null : b.dataset.card!)));
+  el.querySelectorAll<HTMLElement>('.initial-card[data-hire]').forEach((b) =>
+    b.addEventListener('click', () => onSelectHire?.(b.dataset.hire === hiring ? null : b.dataset.hire!)));
 }
 
 /** Edificios (paso 6) y reserva (paso 7). */
-export function renderSupply(el, game) {
+export function renderSupply(el: HTMLElement, game: Game) {
   el.innerHTML = `
     <section class="panel">
       <span class="label">Edificios · ${game.buildings.length} al azar</span>
@@ -94,13 +101,13 @@ export function renderSupply(el, game) {
  * Una ficha compacta por jugador (pasos 9-13), empezando por el activo. Al pulsar la ficha se abre su
  * tablero de jugador en un modal (`onOpenBoard(index)`) con toda su información.
  */
-export function renderPlayers(el, game, { onOpenBoard }) {
+export function renderPlayers(el: HTMLElement, game: Game, { onOpenBoard }: { onOpenBoard: (index: number) => void }) {
   const picker = currentPicker(game);
   const active = activePlayer(game);
   // Debajo del activo, los siguientes: en el paso 13 por orden de elección, después por orden de turno.
   const sequence = picker != null ? game.pickOrder
     : (game.phase === 'actions' || game.phase === 'newyear') && game.turnList ? game.turnList
-    : game.phase === 'ikizama' ? game.order : game.turnOrder;
+    : game.phase === 'ikizama' ? game.order! : game.turnOrder;
   const from = sequence.indexOf(active);
   const order = [...sequence.slice(from), ...sequence.slice(0, from)];
 
@@ -140,7 +147,7 @@ export function renderPlayers(el, game, { onOpenBoard }) {
       </article>`;
   }).join('');
   // Toda la ficha abre el tablero; el botón es el destino para el teclado.
-  el.querySelectorAll('.seat').forEach((s) => s.addEventListener('click', () => onOpenBoard(Number(s.dataset.player))));
+  el.querySelectorAll<HTMLElement>('.seat').forEach((s) => s.addEventListener('click', () => onOpenBoard(Number(s.dataset.player))));
 }
 
 /** Las fichas especiales de la reserva y lo que hace cada una (reglamento, «Fichas especiales»). */
@@ -152,7 +159,8 @@ const SPECIAL_TOKENS = [
 ];
 
 /** Desplegable de la barra lateral con las fichas especiales y su efecto. */
-export function renderSpecialsInfo(el) {
+export function renderSpecialsInfo(el: HTMLElement) {
+
   el.innerHTML = `<summary class="btn">Fichas especiales</summary>
     <ul>${SPECIAL_TOKENS.map(([file, name, text]) => `
       <li><img src="/tokens/special/${file}.webp" alt="" draggable="false"><span><b>${name}</b><span class="d">${text}</span></span></li>`).join('')}</ul>`;

@@ -5,7 +5,7 @@ import { FIRE_STRENGTH, PAYDAY_MONTHS } from '../game/events.ts';
 import { seasonOf } from '../game/month.ts';
 import { characterLots } from '../game/state.ts';
 import { isAiTurn } from '../ai/player.ts';
-import { EVENT_LOG_TYPES, abilityText, cardName, logLine, shopName, typeLabel, who } from '../view/format.js';
+import { EVENT_LOG_TYPES, abilityText, cardName, logLine, shopName, typeLabel, who } from '../view/format.ts';
 import type { Action, Game } from '../types.ts';
 
 export type TextOptions = { mobile?: boolean };

@@ -11,11 +11,11 @@
  * la cierra. Si no hay a dónde volver (pestaña abierta directamente en IKI), la página no puede cerrarse sola y se
  * explica cómo hacerlo. La partida ya se guarda en cada jugada, así que no se pierde nada.
  */
-import { exitFullscreen } from './fullscreen.js';
+import { exitFullscreen } from './fullscreen.ts';
 
 const touch = matchMedia('(pointer: coarse)');
 
-export function initExit({ button }) {
+export function initExit({ button }: { button: HTMLElement }) {
   const dialog = document.createElement('dialog');
   dialog.id = 'exit-dialog';
   dialog.className = 'iki-dialog';
@@ -75,7 +75,8 @@ export function initExit({ button }) {
   });
 
   dialog.addEventListener('click', (e) => {
-    const action = e.target.closest?.('[data-exit]')?.dataset.exit;
+    const action = (e.target as Element).closest?.<HTMLElement>('[data-exit]')?.dataset.exit;
+
     if (action === 'leave') leave();
     else if (action === 'stay' || e.target === dialog) dialog.close();
   });

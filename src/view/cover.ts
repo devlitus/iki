@@ -1,5 +1,5 @@
 import './cover.css';
-import { createPetals } from './coverPetals.js';
+import { createPetals } from './coverPetals.ts';
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
@@ -8,7 +8,12 @@ const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
  * puede volver a ella desde el menú. `onNew`, `onContinue`, `onTutorial` y `onOnline` los decide quien la crea; la portada solo se oculta.
  * Sin `onOnline` no se ofrece jugar en línea.
  */
-export function createCover({ onNew, onContinue, onTutorial, onOnline }) {
+export function createCover({ onNew, onContinue, onTutorial, onOnline }: {
+  onNew: () => void;
+  onContinue: () => void;
+  onTutorial: () => void;
+  onOnline?: () => void;
+}) {
   const el = document.createElement('div');
   el.id = 'cover';
   el.innerHTML = `
@@ -33,9 +38,9 @@ export function createCover({ onNew, onContinue, onTutorial, onOnline }) {
     </nav>`;
   document.body.append(el);
 
-  const btnContinue = el.querySelector('.cover-continue');
-  const petals = createPetals(el.querySelector('.cover-petals'));
-  const box = el.querySelector('.cover-box');
+  const btnContinue = el.querySelector<HTMLButtonElement>('.cover-continue')!;
+  const petals = createPetals(el.querySelector<HTMLCanvasElement>('.cover-petals')!);
+  const box = el.querySelector<HTMLElement>('.cover-box')!;
 
   // La caja se inclina hacia el puntero y el brillo del barniz lo sigue.
   el.addEventListener('pointermove', (e) => {
@@ -53,19 +58,19 @@ export function createCover({ onNew, onContinue, onTutorial, onOnline }) {
   });
 
   const hide = () => { el.hidden = true; petals.stop(); };
-  el.querySelector('.cover-new').addEventListener('click', () => { hide(); onNew(); });
+  el.querySelector('.cover-new')!.addEventListener('click', () => { hide(); onNew(); });
   if (onOnline) {
-    const btnOnline = el.querySelector('.cover-online');
+    const btnOnline = el.querySelector<HTMLElement>('.cover-online')!;
     btnOnline.hidden = false;
     btnOnline.addEventListener('click', () => { hide(); onOnline(); });
-    el.querySelector('.cover-players').textContent += ' o en línea';
+    el.querySelector('.cover-players')!.textContent += ' o en línea';
   }
-  el.querySelector('.cover-tutorial').addEventListener('click', () => { hide(); onTutorial(); });
+  el.querySelector('.cover-tutorial')!.addEventListener('click', () => { hide(); onTutorial(); });
   btnContinue.addEventListener('click', () => { hide(); onContinue(); });
 
   return {
     /** Muestra la portada; «Continuar» solo si `canContinue`. */
-    show(canContinue) {
+    show(canContinue: boolean) {
       btnContinue.hidden = !canContinue;
       // Reinicia la entrada (la caja cae sobre la mesa, el sello se estampa) cada vez que se vuelve a la portada.
       el.classList.remove('cover-enter');
@@ -73,11 +78,12 @@ export function createCover({ onNew, onContinue, onTutorial, onOnline }) {
       void el.offsetWidth;
       el.classList.add('cover-enter');
       if (!reducedMotion.matches) petals.start();
-      (canContinue ? btnContinue : el.querySelector('.cover-new')).focus();
+      (canContinue ? btnContinue : el.querySelector<HTMLElement>('.cover-new')!).focus();
     },
     hide,
     get visible() { return !el.hidden; },
     /** Botón «Salir» (solo en el móvil; lo gestiona exit.js). */
-    exitButton: el.querySelector('.cover-exit'),
+    exitButton: el.querySelector<HTMLElement>('.cover-exit')!,
+
   };
 }

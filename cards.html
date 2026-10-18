@@ -27,7 +27,7 @@
     <script type="module">
       import './src/cards/card.css';
       import { CHARACTERS } from './src/data/characters.ts';
-      import { createCharacterCard } from './src/cards/card.js';
+      import { createCharacterCard } from './src/cards/card.ts';
       const root = document.getElementById('cards');
       root.style.cssText = 'display:flex;flex-wrap:wrap;gap:40px;align-items:center;justify-content:center';
       for (const c of CHARACTERS) {

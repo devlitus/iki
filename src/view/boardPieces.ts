@@ -3,7 +3,12 @@ import { PLAYER_BOARDS_BY_ID } from '../data/playerBoards.ts';
 import { CHARACTERS_BY_ID } from '../data/characters.ts';
 import { BUILDINGS_BY_ID } from '../data/decks.ts';
 import { MARKET_BY_ID, MARKET_BACKS, describeToken, seasonMarket } from '../data/market.ts';
-import { createCharacterCard } from '../cards/card.js';
+import { createCharacterCard } from '../cards/card.ts';
+import type { Board } from '../board.ts';
+import type { Building, Character, Game, LogEntry, SeasonId, Target } from '../types.ts';
+
+type Put = (html: string, zoneId: string, steps: string | null, options?: { du?: number; dv?: number; title?: string }) => HTMLElement;
+type Img = (src: string, cls: string, style?: string) => string;
 
 /**
  * Dibuja sobre el tablero todo lo que hay en la partida: calendario, mercado, losetas, marcadores y peones de cada
@@ -16,17 +21,17 @@ const FIRE_FLIP_MS = 600;
  * Recorrido de la loseta del último incendio: desde qué pestaña (−1 = sale de la pila), hasta cuál y cuándo empezó. Si
  * se redibuja el tablero a mitad, la animación sigue por donde iba en vez de empezar otra vez.
  */
-let fireShown = { key: null, from: -1, end: -1, t0: 0 };
+let fireShown: { key: number | null | undefined; from: number; end: number; t0: number } = { key: null, from: -1, end: -1, t0: 0 };
 
 /**
  * Solares que recorre el fuego en el incendio en curso o recién resuelto: del exterior hacia dentro, hasta el que lo
  * detiene (o el que espera la decisión de «Evitar un incendio»); si nadie lo para, hasta el último.
  */
-function firePath(game, nagaya) {
+function firePath(game: Game, nagaya: string) {
   const lots = NAGAYAS_BY_ID[nagaya].lots;
   const start = game.log.findLast((e) => e.type === 'fire-start');
-  if (game.event?.kind === 'fire') return { key: start?.seq, lots: lots.slice(0, Math.min(game.event.index, lots.length - 1) + 1) };
-  const stopped = game.log.find((e) => e.seq > (start?.seq ?? 0) && e.type === 'fire-stopped');
+  if (game.event?.kind === 'fire') return { key: start?.seq, lots: lots.slice(0, Math.min(game.event.index!, lots.length - 1) + 1) };
+  const stopped = game.log.find((e) => e.seq > (start?.seq ?? 0) && e.type === 'fire-stopped') as (LogEntry & { lot: string }) | undefined;
   return { key: start?.seq, lots: lots.slice(0, stopped ? lots.indexOf(stopped.lot) + 1 : lots.length) };
 }
 
@@ -34,7 +39,7 @@ function firePath(game, nagaya) {
  * Loseta robada, boca arriba en las pestañas de modificador de los solares: entra por la del exterior y avanza una a una
  * (−1, −2, −3) mientras el fuego se propaga y pierde fuerza.
  */
-function placeFireTile(board, game, nagaya, put, img) {
+function placeFireTile(board: Board, game: Game, nagaya: string, put: Put, img: Img) {
   const { key, lots } = firePath(game, nagaya);
   const end = lots.length - 1;
   if (fireShown.key !== key || fireShown.end !== end) {
@@ -65,26 +70,26 @@ function placeFireTile(board, game, nagaya, put, img) {
 }
 
 /** `fireNagaya`: Nagaya cuya loseta de Incendio está boca arriba en el tablero (el incendio en curso o recién contado). */
-export function renderBoardPieces(board, game, { targets = [], fireNagaya = null } = {}) {
+export function renderBoardPieces(board: Board, game: Game, { targets = [], fireNagaya = null }: { targets?: Target[]; fireNagaya?: string | null } = {}) {
   board.pieces.replaceChildren();
-  const boardId = (i) => game.players[i].boardId;
-  const color = (i) => PLAYER_BOARDS_BY_ID[boardId(i)].color;
+  const boardId = (i: number) => game.players[i].boardId;
+  const color = (i: number) => PLAYER_BOARDS_BY_ID[boardId(i)].color;
 
-  const put = (html, zoneId, steps, { du = 0, dv = 0, title = '' } = {}) => {
+  const put: Put = (html, zoneId, steps, { du = 0, dv = 0, title = '' } = {}) => {
     const { u, v } = zoneCenter(ZONES_BY_ID[zoneId]);
     const tpl = document.createElement('template');
     tpl.innerHTML = html.trim();
-    const el = tpl.content.firstElementChild;
+    const el = tpl.content.firstElementChild as HTMLElement;
     if (steps) el.dataset.steps = steps;
     if (title) el.title = title;
     return board.place(el, u + du, v + dv);
   };
-  const img = (src, cls, style = '') => `<img class="${cls}" src="${src}" style="${style}" alt="" draggable="false">`;
+  const img: Img = (src, cls, style = '') => `<img class="${cls}" src="${src}" style="${style}" alt="" draggable="false">`;
 
   put(img('/tokens/calendar.webp', 'piece piece-calendar'), `month-${game.month}`, '2', { title: `Mes ${game.month}` });
 
   // Mercado de la estación (paso 5): cada ficha conserva su hueco aunque se compre la de al lado.
-  const market = (ids, kind, slotOf) => ids.forEach((id) => {
+  const market = (ids: string[], kind: 'fish' | 'pipe' | 'bag', slotOf: (i: number) => string) => ids.forEach((id) => {
     const t = MARKET_BY_ID[id];
     const slot = slotOf(seasonMarket(t.season)[kind].indexOf(id));
     const html = t.image ? img(t.image, `piece piece-market piece-${kind}`) : '<div class="tok tok-bag">5</div>';
@@ -94,15 +99,15 @@ export function renderBoardPieces(board, game, { targets = [], fireNagaya = null
   market(game.market.pipes, 'pipe', (i) => `pipe-${i + 1}`);
   market(game.market.bags, 'bag', (i) => `pipe-${i + 3}`);
   Object.keys(game.marketFaceDown).forEach((season) =>
-    put(img(MARKET_BACKS[season], 'piece piece-facedown'), `season-${season}`, '5', { title: 'Pescado, Pipas y Tabaco de la estación, boca abajo' }));
+    put(img(MARKET_BACKS[season as SeasonId], 'piece piece-facedown'), `season-${season}`, '5', { title: 'Pescado, Pipas y Tabaco de la estación, boca abajo' }));
 
   const pile = game.fireTiles.length - (fireNagaya ? 1 : 0); // la robada está en el Nagaya hasta que acaba el incendio
   put(`<div class="tok tok-fire-tiles">${'<i></i>'.repeat(pile)}<b>${pile}</b></div>`,
     'fire-tiles', '4', { title: 'Losetas de Incendio, boca abajo' });
 
   // Marcadores: los que comparten casilla se reparten un poco para verse todos.
-  const stackAt = (key) => (stackAt.seen[key] = (stackAt.seen[key] ?? -1) + 1);
-  stackAt.seen = {};
+  const stackAt = (key: string): number => (stackAt.seen[key] = (stackAt.seen[key] ?? -1) + 1);
+  stackAt.seen = {} as Record<string, number>;
   game.turnOrder.forEach((pi) => {
     const player = game.players[pi];
     const style = `--flower:url(/tokens/score/${boardId(pi)}.webp)`;
@@ -114,7 +119,7 @@ export function renderBoardPieces(board, game, { targets = [], fireNagaya = null
       { du: [-0.012, 0.012, -0.022, 0.022][k], dv: k < 2 ? -0.012 : 0.008, title: `${player.iki} IKI` });
   });
   // Pila de Extinción: la ficha de arriba de cada casilla se dibuja más arriba y por encima.
-  const levels = {};
+  const levels: Record<number, number[]> = {};
   game.fireStack.forEach((pi) => (levels[game.players[pi].fire] ??= []).push(pi));
   Object.entries(levels).forEach(([level, stack]) => stack.forEach((pi, k) =>
     put(img(`/tokens/fire-marker/${boardId(pi)}.webp`, 'piece piece-fire', `z-index:${10 - k}`), `fire-${level}`, '11',
@@ -133,10 +138,10 @@ export function renderBoardPieces(board, game, { targets = [], fireNagaya = null
   for (const [lotId, lot] of Object.entries(game.lots)) {
     const zone = ZONES_BY_ID[lotId];
     const isBuilding = lot.kind === 'building';
-    const def = isBuilding ? BUILDINGS_BY_ID[lot.card] : CHARACTERS_BY_ID[lot.card];
+    const def = (isBuilding ? BUILDINGS_BY_ID[lot.card] : CHARACTERS_BY_ID[lot.card]) as Building & Character;
     const card = isBuilding ? Object.assign(document.createElement('article'), { className: 'card card-scan',
       innerHTML: `<img src="${def.image}" alt="${def.name}" draggable="false">` }) : createCharacterCard(def);
-    card.style.width = `${zone.w * 100 * 0.92}%`;
+    card.style.width = `${zone.w! * 100 * 0.92}%`;
     card.dataset.steps = '13';
     card.dataset.zoom = isBuilding ? def.image : def.scan;
     card.title = `${def.name} · ${PLAYER_BOARDS_BY_ID[boardId(lot.owner)].name}`;
@@ -163,10 +168,11 @@ export function renderBoardPieces(board, game, { targets = [], fireNagaya = null
     target.title = title;
     target.setAttribute('aria-label', title);
     if (zone.kind === 'rect') {
-      target.style.width = `${zone.w * 100}%`;
-      target.style.height = `${zone.h * 100}%`;
+      target.style.width = `${zone.w! * 100}%`;
+      target.style.height = `${zone.h! * 100}%`;
     } else {
-      target.style.width = `${zone.r * 200}%`;
+      target.style.width = `${zone.r! * 200}%`;
+
       target.style.aspectRatio = '1';
       target.style.borderRadius = '50%';
     }

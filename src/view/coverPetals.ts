@@ -6,16 +6,21 @@ const PETALS_PER_MPX = 38;
 const MAX_PETALS = 70;
 const COLORS = ['#ffd3df', '#ffc0d0', '#ffe4ec', '#f7b2c4', '#fff0f4'];
 
-export function createPetals(canvas) {
-  const ctx = canvas.getContext('2d');
-  let petals = [];
+type Petal = {
+  x: number; y: number; size: number; fall: number; drift: number; phase: number; swing: number;
+  spin: number; angle: number; flip: number; flipSpeed: number; color: string;
+};
+
+export function createPetals(canvas: HTMLCanvasElement) {
+  const ctx = canvas.getContext('2d')!;
+  let petals: Petal[] = [];
   let raf = 0;
   let last = 0;
   let time = 0;
   let width = 0;
   let height = 0;
 
-  const spawn = (anywhere) => {
+  const spawn = (anywhere: boolean): Petal => {
     const size = 5 + Math.random() * 7;
     return {
       x: anywhere ? Math.random() * width : -20 - Math.random() * width * 0.3,
@@ -47,9 +52,9 @@ export function createPetals(canvas) {
   };
 
   // Viento: una brisa constante más ráfagas lentas que van y vienen.
-  const wind = (t) => 1 + 0.9 * Math.max(0, Math.sin(t * 0.23) * Math.sin(t * 0.61 + 1.3));
+  const wind = (t: number) => 1 + 0.9 * Math.max(0, Math.sin(t * 0.23) * Math.sin(t * 0.61 + 1.3));
 
-  const drawPetal = (p) => {
+  const drawPetal = (p: Petal) => {
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.rotate(p.angle);
@@ -73,7 +78,8 @@ export function createPetals(canvas) {
     ctx.restore();
   };
 
-  const frame = (now) => {
+  const frame = (now: number) => {
+
     const dt = Math.min(0.05, (now - last) / 1000 || 0);
     last = now;
     time += dt;
