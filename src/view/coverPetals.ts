@@ -79,7 +79,6 @@ export function createPetals(canvas: HTMLCanvasElement) {
   };
 
   const frame = (now: number) => {
-
     const dt = Math.min(0.05, (now - last) / 1000 || 0);
     last = now;
     time += dt;

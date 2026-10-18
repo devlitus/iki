@@ -45,8 +45,7 @@ export function initFullscreen({ button, tip }: { button: HTMLButtonElement; tip
   button.addEventListener('click', () => (isFullscreen() ? exitFullscreen() : enterFullscreen()));
   // Cualquier botón de la portada es un toque del jugador: en el móvil se aprovecha para entrar en pantalla completa.
   document.addEventListener('click', (e) => {
-    if (touch.matches && !isInstalled() && (e.target as Element).closest?.('.cover-btn:not(.cover-exit)')
-) enterFullscreen();
+    if (touch.matches && !isInstalled() && (e.target as Element).closest?.('.cover-btn:not(.cover-exit)')) enterFullscreen();
   }, true);
   document.addEventListener('fullscreenchange', sync);
   document.addEventListener('webkitfullscreenchange', sync);

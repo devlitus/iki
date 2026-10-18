@@ -144,7 +144,6 @@ const SHOPS: Record<string, (g: Game, p: number, a: ShopAction) => void> = {
 };
 
 export function activateShop(g: Game, p: number, shopId: string, a: ShopAction) {
-
   rule(SHOPS[shopId], `${shopId} no es una tienda`);
   SHOPS[shopId](g, p, a);
   log(g, { type: 'shop', player: p, shop: shopId });

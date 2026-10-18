@@ -175,7 +175,6 @@ export const NAGAYAS_BY_ID: Record<string, Nagaya> = Object.assign(Object.create
 
 /** Grupos de la Bonificación por Armonía: los 4 Nagayas y el 5.º grupo de las esquinas. */
 export const HARMONY_GROUPS: string[][] = [
-
   ...NAGAYAS.map((n) => n.lots),
   ZONES.filter((z) => z.group === 'lots' && z.corner).map((z) => z.id),
 ];

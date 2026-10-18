@@ -492,5 +492,4 @@ export const currentStep = (g: Game, acked: Set<string>) => (g.month > 1 && TIPS
 export const stepAllows = (step: Step, g: Game, action: Action) => step.kind === 'free' || (step.kind === 'action' && step.allow!(g, action));
 
 /** Zonas pulsables en este paso: null = las que ofrezca el panel. */
-export const stepZones = (step: Step, g: Game) =>
- (step.kind === 'action' ? step.zones?.(g) ?? null : step.kind === 'free' ? null : []);
+export const stepZones = (step: Step, g: Game) => (step.kind === 'action' ? step.zones?.(g) ?? null : step.kind === 'free' ? null : []);

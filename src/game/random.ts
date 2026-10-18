@@ -59,7 +59,6 @@ export function createRng(seed: Seed): Rng {
     roll: (sides = 6) => 1 + Math.floor(next() * sides),
     /** Copia mezclada (Fisher-Yates). */
     shuffle<T>(list: T[]): T[] {
-
       const out = [...list];
       for (let i = out.length - 1; i > 0; i--) {
         const j = Math.floor(next() * (i + 1));

@@ -216,7 +216,6 @@ export function createOnline({ onPlay, onClose }: { onPlay: (id: string) => void
         if (user) { set({ user, screen: 'hub' }); await toHub(); } else set({ screen: 'auth', user: null });
       } catch (error) {
         set({ screen: 'auth', user: null, error: (error as Error).message });
-
       }
       schedule();
     },

@@ -1,11 +1,16 @@
 import { randomUUID } from 'node:crypto';
-import { migrate } from './db.js';
-import { HttpError, fail, json, readJson } from './http.js';
+import { migrate } from './db.ts';
+import { HttpError, fail, json, readJson } from './http.ts';
 import {
   COOKIE, LOCK_MINUTES, MAX_FAILED_LOGINS, checkOrigin, cleanName, cleanPassword, cookieValue, dummyHash, hashPassword, makeSession,
   readSession, sessionCookie, verifyPassword,
-} from './auth.js';
-import { createLobby, getGame, joinGame, leaveGame, listGames, playAction, ranking, setAi, startGame } from './games.js';
+} from './auth.ts';
+import { createLobby, getGame, joinGame, leaveGame, listGames, playAction, ranking, setAi, startGame } from './games.ts';
+import type { Db, User } from './types.ts';
+
+/** Lo que recibe cada ruta: la petición, su URL y el usuario con sesión (o null). */
+type RouteCtx = { request: Request; url: URL; user: User | null };
+type Route = [method: string, pattern: RegExp, auth: boolean, run: (ctx: RouteCtx, m: RegExpExecArray) => Response | Promise<Response>];
 
 /**
  * La API: `createApp({ db, secret }).handle(request) → Response`. Solo usa Request/Response estándar, así que la misma
@@ -18,25 +23,25 @@ import { createLobby, getGame, joinGame, leaveGame, listGames, playAction, ranki
  *   POST /api/games/:id/ai {add}          POST /api/games/:id/action {action, version}
  */
 
-export function createApp({ db, secret, now = Date.now }) {
+export function createApp({ db, secret, now = Date.now }: { db: Db; secret: string | undefined; now?: () => number }) {
   if (typeof secret !== 'string' || secret.length < 32) throw new Error('SESSION_SECRET debe tener al menos 32 caracteres');
   const ready = migrate(db); // las tablas se crean la primera vez; si falla, se reintenta en la siguiente petición
   ready.catch(() => {});
   let migrated = ready;
 
-  const publicUser = (u) => ({ id: u.id, name: u.name, rating: u.rating, games: u.games, wins: u.wins });
+  const publicUser = (u: User) => ({ id: u.id, name: u.name, rating: u.rating, games: u.games, wins: u.wins });
 
-  async function currentUser(request) {
-    const session = readSession(secret, cookieValue(request, COOKIE), now());
+  async function currentUser(request: Request): Promise<User | null> {
+    const session = readSession(secret as string, cookieValue(request, COOKIE), now());
     if (!session) return null;
     const [user] = await db.query('SELECT id, name, rating, games, wins FROM users WHERE id = $1 AND session_version = $2', [session.id, session.version]);
     return user ?? null;
   }
 
-  const secure = (request) => new URL(request.url).protocol === 'https:' || request.headers.get('x-forwarded-proto') === 'https';
-  const withSession = (body, request, userId, version = 0) => json(body, 200, { 'set-cookie': sessionCookie(makeSession(secret, userId, version, now()), { secure: secure(request) }) });
+  const secure = (request: Request) => new URL(request.url).protocol === 'https:' || request.headers.get('x-forwarded-proto') === 'https';
+  const withSession = (body: unknown, request: Request, userId: number, version = 0) => json(body, 200, { 'set-cookie': sessionCookie(makeSession(secret as string, userId, version, now()), { secure: secure(request) }) });
 
-  async function register(request) {
+  async function register(request: Request) {
     const body = await readJson(request);
     const { name, key } = cleanName(body.name);
     const password = cleanPassword(body.password);
@@ -47,7 +52,7 @@ export function createApp({ db, secret, now = Date.now }) {
     return withSession({ user: publicUser(user) }, request, user.id);
   }
 
-  async function login(request) {
+  async function login(request: Request) {
     const body = await readJson(request);
     const { key } = cleanName(body.name);
     const password = String(body.password ?? '').slice(0, 200);
@@ -70,7 +75,7 @@ export function createApp({ db, secret, now = Date.now }) {
   }
 
   // [método, patrón, necesita sesión, función]. `m` son los grupos del patrón.
-  const ROUTES = [
+  const ROUTES: Route[] = [
     ['POST', /^\/register$/, false, (ctx) => register(ctx.request)],
     ['POST', /^\/login$/, false, (ctx) => login(ctx.request)],
     ['POST', /^\/logout$/, false, async (ctx) => {
@@ -80,23 +85,23 @@ export function createApp({ db, secret, now = Date.now }) {
     ['GET', /^\/me$/, false, (ctx) => json({ user: ctx.user ? publicUser(ctx.user) : null })],
     ['GET', /^\/ranking$/, false, async () => json({ ranking: await ranking(db) })],
     ['GET', /^\/games$/, true, async (ctx) => json(await listGames(db, ctx.user))],
-    ['POST', /^\/games$/, true, async (ctx) => json(await createLobby(db, ctx.user, await readJson(ctx.request)), 201)],
+    ['POST', /^\/games$/, true, async (ctx) => json(await createLobby(db, ctx.user!, await readJson(ctx.request) as { size: number }), 201)],
     ['GET', /^\/games\/([\w-]+)$/, true, async (ctx, m) => {
       const since = ctx.url.searchParams.get('since');
-      return json(await getGame(db, ctx.user, m[1], since == null ? null : Number(since)));
+      return json(await getGame(db, ctx.user!, m[1], since == null ? null : Number(since)));
     }],
-    ['POST', /^\/games\/([\w-]+)\/join$/, true, async (ctx, m) => json(await joinGame(db, ctx.user, m[1]))],
-    ['POST', /^\/games\/([\w-]+)\/leave$/, true, async (ctx, m) => json(await leaveGame(db, ctx.user, m[1]))],
-    ['POST', /^\/games\/([\w-]+)\/start$/, true, async (ctx, m) => json(await startGame(db, ctx.user, m[1]))],
-    ['POST', /^\/games\/([\w-]+)\/ai$/, true, async (ctx, m) => json(await setAi(db, ctx.user, m[1], (await readJson(ctx.request)).add !== false))],
+    ['POST', /^\/games\/([\w-]+)\/join$/, true, async (ctx, m) => json(await joinGame(db, ctx.user!, m[1]))],
+    ['POST', /^\/games\/([\w-]+)\/leave$/, true, async (ctx, m) => json(await leaveGame(db, ctx.user!, m[1]))],
+    ['POST', /^\/games\/([\w-]+)\/start$/, true, async (ctx, m) => json(await startGame(db, ctx.user!, m[1]))],
+    ['POST', /^\/games\/([\w-]+)\/ai$/, true, async (ctx, m) => json(await setAi(db, ctx.user!, m[1], (await readJson(ctx.request)).add !== false))],
     ['POST', /^\/games\/([\w-]+)\/action$/, true, async (ctx, m) => {
       const body = await readJson(ctx.request);
       if (!Number.isSafeInteger(body.version)) fail(400, 'Falta la versión de la partida');
-      return json(await playAction(db, ctx.user, m[1], body.action, body.version));
+      return json(await playAction(db, ctx.user!, m[1], body.action, body.version));
     }],
   ];
 
-  async function handle(request) {
+  async function handle(request: Request): Promise<Response> {
     const requestId = randomUUID().slice(0, 8);
     try {
       const url = new URL(request.url);

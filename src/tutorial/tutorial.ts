@@ -199,7 +199,6 @@ export function createTutorial({ coach, board, onChange, onExit }: {
 
     /** Redibuja la tarjeta y las marcas; hay que llamarlo después de pintar el tablero (que borra las marcas). */
     update(game: Game) {
-
       const step = stepOf(game);
       if (!step || intro) return;
       renderCoach(step, game);

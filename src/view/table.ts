@@ -160,7 +160,6 @@ const SPECIAL_TOKENS = [
 
 /** Desplegable de la barra lateral con las fichas especiales y su efecto. */
 export function renderSpecialsInfo(el: HTMLElement) {
-
   el.innerHTML = `<summary class="btn">Fichas especiales</summary>
     <ul>${SPECIAL_TOKENS.map(([file, name, text]) => `
       <li><img src="/tokens/special/${file}.webp" alt="" draggable="false"><span><b>${name}</b><span class="d">${text}</span></span></li>`).join('')}</ul>`;

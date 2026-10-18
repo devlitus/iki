@@ -46,7 +46,6 @@ export function icon(res: string) {
 
 /** Lista de recursos [{res, n}] → iconos repetidos (n ≤ 3), o icono con la cantidad superpuesta. */
 export function resources(list: Amount[]) {
-
   return list
     .map(({ res, n }) => (NUMBERED.has(res) || n > 3
       ? `<span class="res-n">${icon(res)}<span class="qty">${n}</span></span>`

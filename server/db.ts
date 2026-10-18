@@ -1,4 +1,5 @@
 import { neon } from '@neondatabase/serverless';
+import type { Db } from './types.ts';
 
 /**
  * Base de datos: Postgres. Todo el servidor habla con ella a través de `db.query(sql, params) → filas`, así que el mismo
@@ -60,13 +61,13 @@ const SCHEMA = [
 ];
 
 /** Crea las tablas que falten. Se puede lanzar tantas veces como se quiera. */
-export async function migrate(db) {
+export async function migrate(db: Db) {
   for (const statement of SCHEMA) await db.query(statement);
 }
 
 /** Neon por HTTP (producción). */
-export function neonDb(url) {
+export function neonDb(url: string | undefined): Db {
   if (!url) throw new Error('Falta DATABASE_URL');
   const sql = neon(url);
-  return { query: (text, params = []) => sql.query(text, params) };
+  return { query: (text, params = []) => sql.query(text, params) as Promise<any[]> };
 }

@@ -153,7 +153,6 @@ export function createDiceRoll() {
   }
 
   function die(value: number, old = false) {
-
     const d = document.createElement('span');
     d.className = `die${old ? ' old' : ''}`;
     d.setAttribute('role', 'img');

@@ -172,7 +172,6 @@ export function renderBoardPieces(board: Board, game: Game, { targets = [], fire
       target.style.height = `${zone.h! * 100}%`;
     } else {
       target.style.width = `${zone.r! * 200}%`;
-
       target.style.aspectRatio = '1';
       target.style.borderRadius = '50%';
     }

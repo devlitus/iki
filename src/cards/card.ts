@@ -64,7 +64,6 @@ export function createCharacterCard(character: Character) {
 
 /** Ilustración provisional: silueta de un personaje con kimono sobre un fondo de calle. */
 function portrait(color: string) {
-
   return `<svg viewBox="0 0 60 90" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <rect width="60" height="90" fill="#efe3c8"/>
     <rect x="0" y="0" width="22" height="70" fill="#5b3a26"/>

@@ -202,7 +202,6 @@ function load(): PickedPlayer[] {
 }
 
 function save(players: PickedPlayer[]) {
-
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(players));
   } catch {

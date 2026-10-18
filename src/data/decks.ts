@@ -55,6 +55,5 @@ export const BUILDINGS: Building[] = ([
   { id: 'well', name: 'Pozo', cost: { wood: 4 }, iki: 0, score: 'fire' },
 ] satisfies Omit<Building, 'image'>[]).map((b) => ({ ...b, image: `/cards/buildings/${b.id}.jpg` }));
 
-export const BUILDINGS_BY_ID: Record<string, Building> = Object.assign
-(Object.create(null), Object.fromEntries(BUILDINGS.map((b) => [b.id, b]))); // sin prototipo: «constructor» o «__proto__» no son ids
+export const BUILDINGS_BY_ID: Record<string, Building> = Object.assign(Object.create(null), Object.fromEntries(BUILDINGS.map((b) => [b.id, b]))); // sin prototipo: «constructor» o «__proto__» no son ids
 export const BUILDING_BACK = '/cards/buildings/building-back.jpg';

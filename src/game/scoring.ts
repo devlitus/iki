@@ -85,8 +85,7 @@ export function scoreGame(g: Game): FinalScore {
   const scores = g.players.map((_, p) => scorePlayer(g, p));
   const ranking = g.players
     .map((_, p) => p)
-    .sort((a, b) => scores[b].total! - scores[a].total! ||
- g.players[b].fire - g.players[a].fire || g.fireStack.indexOf(a) - g.fireStack.indexOf(b));
+    .sort((a, b) => scores[b].total! - scores[a].total! || g.players[b].fire - g.players[a].fire || g.fireStack.indexOf(a) - g.fireStack.indexOf(b));
   return { scores, ranking, winner: ranking[0] };
 }
 

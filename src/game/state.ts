@@ -128,7 +128,6 @@ export function build(g: Game, p: number, { building, lot, discount, fee = 0 }: 
 }
 
 export function assertFreeLot(g: Game, lot: string) {
-
   rule(LOT_IDS.includes(lot), `${lot} no es un solar`);
   rule(!g.lots[lot], `${lot} está ocupado`);
 }

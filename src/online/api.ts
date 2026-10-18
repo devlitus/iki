@@ -25,7 +25,6 @@ export async function api(method: string, path: string, body?: unknown): Promise
     throw new ApiError(0, 'No hay conexión con el servidor');
   }
   let data: any = null;
-
   try {
     data = await res.json();
   } catch {

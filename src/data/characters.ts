@@ -138,5 +138,4 @@ export const CHARACTERS: Character[] = [
   card('winter', 'incense-shop', 'Tienda de Incienso', 'merchant', 3, 0, trade([mon(3)], iki(5)), [[mon(4)], [mon(5)]]),
 ];
 
-export const CHARACTERS_BY_ID: Record<string, Character> = Object.assign
-(Object.create(null), Object.fromEntries(CHARACTERS.map((c) => [c.id, c]))); // sin prototipo: «constructor» o «__proto__» no son ids
+export const CHARACTERS_BY_ID: Record<string, Character> = Object.assign(Object.create(null), Object.fromEntries(CHARACTERS.map((c) => [c.id, c]))); // sin prototipo: «constructor» o «__proto__» no son ids

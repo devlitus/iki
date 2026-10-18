@@ -247,8 +247,7 @@ function shopBody(game: Game, shopId: string, { ui }: Ctx) {
     case 'shop-sandals': return shopBtn(game, `${chips([{ res: 'mon', n: 2 }])} → ${chips([{ res: 'sandal', n: 2 }])}`, {});
     case 'shop-rice': return shopBtn(game, `${chips([{ res: 'mon', n: 3 }])} → ${chips([{ res: 'rice', n: 2 }])}`, {});
     case 'shop-fire-tower': return shopBtn(game, '+1 Extinción de Incendios', {});
-    case 'shop-pawn': return (['rice', 'sandal'] as const).map(
-(choice) => shopBtn(game, `${chips([{ res: choice, n: 1 }])} → ${chips([{ res: 'mon', n: 4 }])}`, { choice })).join('');
+    case 'shop-pawn': return (['rice', 'sandal'] as const).map((choice) => shopBtn(game, `${chips([{ res: choice, n: 1 }])} → ${chips([{ res: 'mon', n: 4 }])}`, { choice })).join('');
     case 'shop-exchange': return [
       shopBtn(game, `${chips([{ res: 'mon', n: 6 }])} → ${chips([{ res: 'koban', n: 1 }])}`, { choice: 'koban1' }),
       shopBtn(game, `${chips([{ res: 'mon', n: 10 }])} → ${chips([{ res: 'koban', n: 2 }])}`, { choice: 'koban2' }),

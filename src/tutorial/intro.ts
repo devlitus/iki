@@ -69,7 +69,6 @@ function unroll(dialog: HTMLDialogElement) {
   const rod = dialog.querySelector<HTMLElement>('.scroll-rod.bottom')!;
   const h = paper.offsetHeight;
   const timing: KeyframeAnimationOptions = { duration: 1100, easing: 'cubic-bezier(0.3, 0.7, 0.2, 1)', fill: 'backwards', delay: 250 };
-
   paper.animate([{ clipPath: 'inset(0 0 100% 0)' }, { clipPath: 'inset(0 0 0 0)' }], timing);
   rod.animate([{ transform: `translateY(${-h}px)` }, { transform: 'none' }], timing);
 }

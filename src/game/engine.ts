@@ -316,7 +316,6 @@ function characterCandidates(g: Game, lot: string, p: number): Action[] {
 
 /** Todas las formas de elegir `k` elementos de `list`. */
 function combinations<T>(list: T[], k: number): T[][] {
-
   if (k === 0) return [[]];
   return list.flatMap((x, i) => combinations(list.slice(i + 1), k - 1).map((rest) => [x, ...rest]));
 }

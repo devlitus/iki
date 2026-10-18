@@ -147,7 +147,6 @@ function chooseIkizama(g: Game, p: number, cfg: Cfg): Action {
 
 /** La siguiente acción del jugador de IA al que le toca (o null si no le toca a nadie). */
 export function chooseAction(g: Game, { effort = 'normal' }: { effort?: Effort } = {}): Action | null {
-
   const p = deciderOf(g);
   if (p == null) return null;
   const cfg = EFFORT[effort];

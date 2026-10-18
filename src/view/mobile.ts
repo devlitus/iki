@@ -147,7 +147,6 @@ export function createMobileLayout({ app, side, players, turn }: { app: HTMLElem
 
     /** El tutorial señala algo que está dentro de un panel cerrado: se abre ese panel, una vez por paso (`key`). */
     reveal(key: string) {
-
       if (!MOBILE.matches || key === revealed) return;
       revealed = key;
       const focus = document.querySelector('#side .tut-focus, #players .tut-focus');

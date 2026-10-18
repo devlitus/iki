@@ -234,7 +234,6 @@ export function resolvePending(g: Game, a: ActionOf<'resolve'>) {
       log(g, { type: 'fire-avoided', player: pending.player, lot: pending.lot });
     } else burn(g, pending.lot);
     (g.event as FireEvent).index! += 1;
-
   }
   continueEvent(g);
 }

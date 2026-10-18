@@ -1,13 +1,13 @@
 import { createHmac, randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
-import { fail } from './http.js';
+import { fail } from './http.ts';
 
 /**
  * Cuentas y sesiones. Contraseñas con scrypt (sin dependencias); la sesión es una cookie firmada con HMAC: el
  * navegador no puede cambiar de usuario ni alargarla porque no conoce SESSION_SECRET.
  */
 
-const scryptAsync = promisify(scrypt);
+const scryptAsync = promisify(scrypt) as (password: string, salt: Buffer, keyLength: number, options: { N: number; r: number; p: number }) => Promise<Buffer>;
 const COST = { N: 16384, r: 8, p: 1 };
 const KEY_LENGTH = 32;
 export const COOKIE = 'iki_session';
@@ -15,13 +15,13 @@ export const SESSION_DAYS = 30;
 export const MAX_FAILED_LOGINS = 5;
 export const LOCK_MINUTES = 15;
 
-export async function hashPassword(password) {
+export async function hashPassword(password: string) {
   const salt = randomBytes(16);
   const key = await scryptAsync(password, salt, KEY_LENGTH, COST);
   return ['scrypt', COST.N, COST.r, COST.p, salt.toString('base64url'), key.toString('base64url')].join('$');
 }
 
-export async function verifyPassword(password, stored) {
+export async function verifyPassword(password: string, stored: unknown) {
   const [scheme, N, r, p, salt, key] = String(stored).split('$');
   if (scheme !== 'scrypt' || !key) return false;
   const expected = Buffer.from(key, 'base64url');
@@ -30,20 +30,20 @@ export async function verifyPassword(password, stored) {
 }
 
 /** Hash de relleno: un nombre que no existe tarda lo mismo en rechazarse que una contraseña mala, y no delata qué nombres existen. */
-let dummy;
+let dummy: Promise<string> | undefined;
 export const dummyHash = () => (dummy ??= hashPassword('relleno'));
 
 // --- Datos de la cuenta ------------------------------------------------------------------------
 
 /** Nombre normalizado y su clave única (sin mayúsculas); falla si no es válido. */
-export function cleanName(raw) {
+export function cleanName(raw: unknown) {
   const name = String(raw ?? '').normalize('NFKC').trim().replace(/\s+/g, ' ');
   if (name.length < 3 || name.length > 20) fail(400, 'El nombre debe tener entre 3 y 20 caracteres');
   if (!/^[\p{L}\p{N}][\p{L}\p{N} _.-]*$/u.test(name)) fail(400, 'El nombre solo puede llevar letras, números, espacios, _ . y -');
   return { name, key: name.toLowerCase() };
 }
 
-export function cleanPassword(raw) {
+export function cleanPassword(raw: unknown) {
   const password = String(raw ?? '');
   if (password.length < 8) fail(400, 'La contraseña debe tener al menos 8 caracteres');
   if (password.length > 200) fail(400, 'La contraseña es demasiado larga');
@@ -52,16 +52,16 @@ export function cleanPassword(raw) {
 
 // --- Sesión ------------------------------------------------------------------------------------
 
-const sign = (secret, body) => createHmac('sha256', secret).update(body).digest('base64url');
+const sign = (secret: string, body: string) => createHmac('sha256', secret).update(body).digest('base64url');
 
 /** `version` es la `session_version` de la cuenta: al cerrar sesión se sube y deja de valer cualquier cookie anterior. */
-export function makeSession(secret, userId, version, nowMs) {
+export function makeSession(secret: string, userId: number, version: number, nowMs: number) {
   const body = `${userId}.${version}.${Math.floor(nowMs / 1000) + SESSION_DAYS * 86400}`;
   return `${body}.${sign(secret, body)}`;
 }
 
 /** `{ id, version }` de una sesión con firma válida y sin caducar, o null. */
-export function readSession(secret, token, nowMs) {
+export function readSession(secret: string, token: string | null, nowMs: number) {
   const [id, version, exp, mac] = String(token ?? '').split('.');
   if (!mac) return null;
   const expected = Buffer.from(sign(secret, `${id}.${version}.${exp}`));
@@ -71,7 +71,7 @@ export function readSession(secret, token, nowMs) {
   return Number.isInteger(Number(id)) && Number.isInteger(Number(version)) ? { id: Number(id), version: Number(version) } : null;
 }
 
-export function cookieValue(request, name) {
+export function cookieValue(request: Request, name: string) {
   for (const part of (request.headers.get('cookie') ?? '').split(';')) {
     const [k, ...v] = part.trim().split('=');
     if (k === name) return v.join('=');
@@ -80,7 +80,7 @@ export function cookieValue(request, name) {
 }
 
 /** Cabecera Set-Cookie. `Secure` salvo en http (desarrollo local). */
-export function sessionCookie(token, { secure, clear = false }) {
+export function sessionCookie(token: string, { secure, clear = false }: { secure: boolean; clear?: boolean }) {
   const attrs = ['Path=/', 'HttpOnly', 'SameSite=Lax', `Max-Age=${clear ? 0 : SESSION_DAYS * 86400}`];
   if (secure) attrs.push('Secure');
   return `${COOKIE}=${clear ? '' : token}; ${attrs.join('; ')}`;
@@ -90,11 +90,11 @@ export function sessionCookie(token, { secure, clear = false }) {
  * Defensa contra CSRF en las peticiones que cambian algo: el origen debe ser esta misma web. (Además la cookie es
  * SameSite=Lax y el cuerpo debe ser JSON, que el navegador no manda entre sitios sin permiso.)
  */
-export function checkOrigin(request) {
+export function checkOrigin(request: Request) {
   const origin = request.headers.get('origin');
   const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? new URL(request.url).host;
   if (!origin) fail(403, 'Falta el origen de la petición');
-  let originHost;
+  let originHost: string;
   try {
     originHost = new URL(origin).host;
   } catch {

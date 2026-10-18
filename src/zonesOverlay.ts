@@ -40,5 +40,4 @@ export function createZonesOverlay(boardEl: HTMLElement) {
   };
 }
 
-const pct = (n: number) =>
- `${(n * 100).toFixed(3)}%`;
+const pct = (n: number) => `${(n * 100).toFixed(3)}%`;

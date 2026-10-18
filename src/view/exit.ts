@@ -76,7 +76,6 @@ export function initExit({ button }: { button: HTMLElement }) {
 
   dialog.addEventListener('click', (e) => {
     const action = (e.target as Element).closest?.<HTMLElement>('[data-exit]')?.dataset.exit;
-
     if (action === 'leave') leave();
     else if (action === 'stay' || e.target === dialog) dialog.close();
   });

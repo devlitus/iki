@@ -6,8 +6,8 @@
 export const START_RATING = 1000;
 export const K = 32;
 
-/** @param {{ rating: number, place: number }[]} players  place 1 = ganador; devuelve el cambio de cada uno, en el mismo orden. */
-export function eloDeltas(players, k = K) {
+/** `place` 1 = ganador; devuelve el cambio de cada uno, en el mismo orden. */
+export function eloDeltas(players: { rating: number; place: number }[], k = K): number[] {
   const n = players.length;
   if (n < 2) return players.map(() => 0);
   return players.map((me, i) => {

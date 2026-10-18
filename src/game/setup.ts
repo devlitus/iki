@@ -151,7 +151,6 @@ export function placeInitialCard(game: Game, cardId: string, lotId: string): Gam
  [lotId]: { kind: 'character', card: cardId, owner: player, xp: 0, initial: true } };
   let initialCharacters = game.initialCharacters.filter((id) => id !== cardId);
   let phase: Game['phase'] = game.phase;
-
   if (Object.values(lots).filter((l) => l.initial).length === game.players.length) {
     initialCharacters = []; // con 2-3 jugadores, las sobrantes vuelven a la caja
     phase = 'ready';

@@ -1,9 +1,9 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { localDb } from '../server/db-local.js';
-import { createApp } from '../server/app.js';
-import { eloDeltas } from '../server/rating.js';
-import { cleanAction, settle } from '../server/games.js';
+import { localDb } from '../server/db-local.ts';
+import { createApp } from '../server/app.ts';
+import { eloDeltas } from '../server/rating.ts';
+import { cleanAction, settle } from '../server/games.ts';
 import { act } from '../src/game/engine.ts';
 import { chooseAction, deciderOf } from '../src/ai/player.ts';
 

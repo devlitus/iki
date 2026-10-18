@@ -84,6 +84,5 @@ export function createCover({ onNew, onContinue, onTutorial, onOnline }: {
     get visible() { return !el.hidden; },
     /** Botón «Salir» (solo en el móvil; lo gestiona exit.js). */
     exitButton: el.querySelector<HTMLElement>('.cover-exit')!,
-
   };
 }

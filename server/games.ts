@@ -6,8 +6,13 @@ import { publicView } from '../src/game/view.ts';
 import { createRng, secretSeed } from '../src/game/random.ts';
 import { chooseAction, deciderOf, isAiTurn } from '../src/ai/player.ts';
 import { PLAYER_BOARDS } from '../src/data/playerBoards.ts';
-import { eloDeltas } from './rating.js';
-import { fail, HttpError } from './http.js';
+import { eloDeltas } from './rating.ts';
+import { fail, HttpError } from './http.ts';
+import type { Action, Game } from '../src/types.ts';
+import type { Db, GameRow, Seat, SeatAction, User } from './types.ts';
+
+/** Cambios de una partida que guarda `save` (lo que no viene se queda como estaba). */
+type Patch = { seats?: Seat[]; state?: Game; status?: GameRow['status']; ranked?: boolean; host?: number };
 
 /**
  * Partidas alojadas. Aquí está la autoridad: el navegador solo manda «quiero hacer esto» y el servidor
@@ -27,31 +32,37 @@ const ACTION_TYPES = new Set(['placeInitial', 'placeIkizama', 'income', 'hire', 
 const ACTION_FIELDS = new Set(['type', 'card', 'lot', 'base', 'sandals', 'bonus', 'slot', 'zone', 'pipe', 'bag', 'target', 'choice', 'building', 'buildLot', 'fish', 'lots', 'drop', 'use', 'cardType']);
 
 /** Acción tal como la acepta el servidor: un objeto plano con campos conocidos y valores simples. */
-export function cleanAction(raw) {
+export function cleanAction(raw: any): Action {
   if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) fail(400, 'Acción no válida');
   if (!ACTION_TYPES.has(raw.type)) fail(400, 'Acción desconocida');
-  const out = {};
+  const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(raw)) {
     if (!ACTION_FIELDS.has(key)) fail(400, `Campo no permitido: ${key.slice(0, 20)}`);
-    const simple = (v) => (typeof v === 'string' && v.length <= 64) || typeof v === 'boolean' || Number.isSafeInteger(v);
+    const simple = (v: unknown) => (typeof v === 'string' && v.length <= 64) || typeof v === 'boolean' || Number.isSafeInteger(v);
     const ok = simple(value) || (Array.isArray(value) && value.length <= 10 && value.every((v) => typeof v === 'string' && v.length <= 64));
     if (!ok) fail(400, `Valor no válido en ${key}`);
     out[key] = value;
   }
-  return out;
+  return out as Action;
 }
 
-const asJson = (v) => (v === undefined ? null : JSON.stringify(v));
-const seatOf = (row, userId) => (userId == null ? -1 : row.seats.findIndex((s) => s.user === userId));
+const asJson = (v: unknown) => (v === undefined ? null : JSON.stringify(v));
+const seatOf = (row: Pick<GameRow, 'seats'>, userId: number | undefined) => (userId == null ? -1 : row.seats.findIndex((s) => s.user === userId));
 
-async function load(db, id) {
+async function load(db: Db, id: string): Promise<GameRow> {
   if (!GAME_ID.test(String(id))) fail(404, 'Partida no encontrada');
   const [row] = await db.query('SELECT * FROM games WHERE id = $1', [id]);
   return row ?? fail(404, 'Partida no encontrada');
 }
 
 /** Lo que se cuenta de una partida a quien pregunta (sin ids de otros usuarios, sin estado). */
-function summary(row, user) {
+/** Lo que se cuenta de una partida (ver online/online.ts). */
+type Summary = {
+  id: string; status: string; size: number; ranked: boolean; version: number; isHost: boolean; me: number;
+  seats: Seat[]; view?: Game; results?: unknown[];
+};
+
+function summary(row: GameRow, user: User | null): Summary {
   return {
     id: row.id,
     status: row.status,
@@ -65,7 +76,7 @@ function summary(row, user) {
 }
 
 /** Lo mismo con la partida a la vista (solo para quien está sentado). */
-function detail(row, user, results = null) {
+function detail(row: GameRow, user: User | null, results: unknown[] | null = null) {
   const out = summary(row, user);
   if (row.state) out.view = publicView(row.state);
   if (results) out.results = results;
@@ -96,7 +107,7 @@ const SAVE = `
  * Guarda los cambios SI la partida sigue en la versión que se leyó (si otra petición se adelantó, no escribe nada y
  * devuelve false). Estado, versión y jugadas se escriben en la misma sentencia: o todo o nada.
  */
-async function save(db, row, patch, actions = []) {
+async function save(db: Db, row: GameRow, patch: Patch, actions: SeatAction[] = []) {
   const entries = actions.map((a, i) => ({ n: i + 1, seat: a.seat, action: a.action }));
   const rows = await db.query(SAVE, [row.id, asJson(patch.seats), asJson(patch.state), patch.status ?? null, patch.ranked ?? null,
     Math.max(1, entries.length), row.version, JSON.stringify(entries), patch.host ?? null]);
@@ -107,14 +118,14 @@ const conflict = () => fail(409, 'La partida ha cambiado, inténtalo de nuevo', 
 
 // --- Salas -------------------------------------------------------------------------------------
 
-async function activeGames(db, user) {
+async function activeGames(db: Db, user: User) {
   const [{ n }] = await db.query(
     `SELECT count(*)::int AS n FROM games WHERE status IN ('lobby', 'playing') AND seats @> $1::jsonb`,
     [JSON.stringify([{ user: user.id }])]);
   return n;
 }
 
-export async function createLobby(db, user, { size }) {
+export async function createLobby(db: Db, user: User, { size }: { size: number }) {
   if (size !== 3 && size !== 4) fail(400, 'La partida es de 3 o 4 jugadores');
   if ((await activeGames(db, user)) >= MAX_ACTIVE_GAMES) fail(409, 'Tienes demasiadas partidas abiertas');
   const id = randomBytes(6).toString('base64url');
@@ -123,7 +134,7 @@ export async function createLobby(db, user, { size }) {
   return detail(await load(db, id), user);
 }
 
-export async function listGames(db, user) {
+export async function listGames(db: Db, user: User) {
   const mine = await db.query(
     `SELECT * FROM games WHERE seats @> $1::jsonb AND (status IN ('lobby', 'playing') OR (status = 'ended' AND updated_at > now() - interval '7 days'))
      ORDER BY updated_at DESC LIMIT 20`, [JSON.stringify([{ user: user.id }])]);
@@ -133,7 +144,7 @@ export async function listGames(db, user) {
   return { mine: mine.map((r) => summary(r, user)), open: open.map((r) => summary(r, user)) };
 }
 
-export async function getGame(db, user, id, since = null) {
+export async function getGame(db: Db, user: User, id: string, since: number | null = null) {
   if (since != null) {
     if (!GAME_ID.test(String(id))) fail(404, 'Partida no encontrada');
     const [v] = await db.query('SELECT version, status, seats FROM games WHERE id = $1', [id]);
@@ -142,7 +153,7 @@ export async function getGame(db, user, id, since = null) {
   }
   const row = await load(db, id);
   if (row.status !== 'lobby' && seatOf(row, user.id) < 0) fail(403, 'No juegas en esta partida');
-  let results = null;
+  let results: unknown[] | null = null;
   if (row.status === 'ended' && row.ranked) {
     if (!row.settled) await settle(db, row); // por si el servidor cayó justo entre guardar el final y apuntar el resultado
     results = await db.query(
@@ -153,7 +164,7 @@ export async function getGame(db, user, id, since = null) {
 }
 
 /** Cambia la sala (con reintentos si otra petición se adelanta). `change(row)` devuelve el parche o lanza un error. */
-async function editLobby(db, id, change) {
+async function editLobby(db: Db, id: string, change: (row: GameRow) => { patch: Patch; actions?: SeatAction[] } | Promise<{ patch: Patch; actions?: SeatAction[] }>) {
   for (let attempt = 0; attempt < 4; attempt++) {
     const row = await load(db, id);
     if (row.status !== 'lobby') fail(409, 'La partida ya no está en la sala de espera');
@@ -163,7 +174,7 @@ async function editLobby(db, id, change) {
   return conflict();
 }
 
-export async function joinGame(db, user, id) {
+export async function joinGame(db: Db, user: User, id: string) {
   if ((await activeGames(db, user)) >= MAX_ACTIVE_GAMES) fail(409, 'Tienes demasiadas partidas abiertas');
   const row = await editLobby(db, id, (row) => {
     if (seatOf(row, user.id) >= 0) fail(409, 'Ya estás en esta partida');
@@ -175,7 +186,7 @@ export async function joinGame(db, user, id) {
   return detail(row, user);
 }
 
-export async function leaveGame(db, user, id) {
+export async function leaveGame(db: Db, user: User, id: string) {
   const row = await editLobby(db, id, (row) => {
     if (seatOf(row, user.id) < 0) fail(409, 'No estás en esta partida');
     const seats = row.seats.map((s) => (s.user === user.id ? { free: true } : s));
@@ -187,10 +198,10 @@ export async function leaveGame(db, user, id) {
 }
 
 /** El anfitrión rellena un asiento libre con una IA, o quita la última. */
-export async function setAi(db, user, id, add) {
+export async function setAi(db: Db, user: User, id: string, add: boolean) {
   const row = await editLobby(db, id, (row) => {
     if (row.host !== user.id) fail(403, 'Solo el anfitrión puede cambiar los asientos');
-    let seats;
+    let seats: Seat[];
     if (add) {
       const free = row.seats.findIndex((s) => s.free);
       if (free < 0) fail(409, 'No quedan asientos libres');
@@ -211,12 +222,12 @@ export async function setAi(db, user, id, add) {
  * Juega los turnos de IA que toquen y devuelve el estado resultante; cada jugada se añade a `actions`. Si la IA fallara,
  * se juega la primera jugada legal en su lugar (mejor una jugada mala que la partida bloqueada para siempre).
  */
-function runAi(state, actions) {
+function runAi(state: Game, actions: SeatAction[]) {
   while (isAiTurn(state) && actions.length < MAX_AI_ACTIONS) {
     const seat = deciderOf(state);
-    let action;
+    let action: Action | undefined;
     try {
-      action = chooseAction(state);
+      action = chooseAction(state)!;
       state = act(state, action);
     } catch (error) {
       console.error('La IA no ha podido jugar; se usa una jugada legal', error);
@@ -230,7 +241,7 @@ function runAi(state, actions) {
   return state;
 }
 
-export async function startGame(db, user, id) {
+export async function startGame(db: Db, user: User, id: string) {
   const row = await editLobby(db, id, (row) => {
     if (row.host !== user.id) fail(403, 'Solo el anfitrión puede empezar');
     if (row.seats.some((s) => s.free)) fail(409, 'Faltan jugadores: rellena los asientos libres o añade una IA');
@@ -238,7 +249,7 @@ export async function startGame(db, user, id) {
     const seats = rng.shuffle(row.seats); // el orden en la mesa lo decide el azar, no quién creó la sala
     const boards = rng.shuffle(PLAYER_BOARDS.map((b) => b.id));
     const players = seats.map((s, i) => ({ boardId: boards[i], ai: Boolean(s.ai) }));
-    const actions = [];
+    const actions: SeatAction[] = [];
     const state = runAi(createGame({ players, seed: secretSeed() }), actions);
     // Clasificatoria solo si todos son personas: contra IA sería muy fácil sumar puntos.
     const ranked = seats.every((s) => s.user != null);
@@ -247,24 +258,24 @@ export async function startGame(db, user, id) {
   return detail(row, user);
 }
 
-export async function playAction(db, user, id, rawAction, version) {
+export async function playAction(db: Db, user: User, id: string, rawAction: unknown, version: number) {
   const row = await load(db, id);
   if (row.status !== 'playing') fail(409, 'La partida no está en curso');
   const seat = seatOf(row, user.id);
   if (seat < 0) fail(403, 'No juegas en esta partida');
   if (version !== row.version) throw conflictWith(row, user);
   const action = cleanAction(rawAction);
-  if (deciderOf(row.state) !== seat) fail(409, 'No es tu turno');
+  if (deciderOf(row.state!) !== seat) fail(409, 'No es tu turno');
 
-  let state;
+  let state: Game;
   try {
-    state = act(row.state, action);
+    state = act(row.state!, action);
   } catch (error) {
     if (error instanceof RuleError) fail(422, error.message);
     console.error('Fallo del motor con una acción de usuario', error);
     fail(422, 'Jugada no válida');
   }
-  const actions = [{ seat, action }];
+  const actions: SeatAction[] = [{ seat, action }];
   state = runAi(state, actions);
   const ended = state.phase === 'ended';
   if (!(await save(db, row, { state, status: ended ? 'ended' : undefined }, actions))) throw conflictWith(await load(db, id), user);
@@ -275,7 +286,7 @@ export async function playAction(db, user, id, rawAction, version) {
 }
 
 /** 409 que lleva la partida al día, para que el navegador se actualice sin otra petición. */
-const conflictWith = (row, user) =>
+const conflictWith = (row: GameRow, user: User) =>
   new HttpError(409, 'La partida ha cambiado, inténtalo de nuevo', { conflict: true, game: detail(row, user) });
 
 // --- Final y ranking ---------------------------------------------------------------------------
@@ -297,8 +308,8 @@ const SETTLE = `
  * Apunta el resultado de una partida clasificatoria y mueve el ranking. Una sola sentencia: la marca `settled` impide
  * apuntarla dos veces aunque lleguen dos peticiones a la vez.
  */
-export async function settle(db, row) {
-  const { final } = row.state;
+export async function settle(db: Db, row: GameRow) {
+  const { final } = row.state as Required<Pick<Game, 'final'>>;
   const ids = row.seats.map((s) => s.user);
   const users = await db.query('SELECT id, rating FROM users WHERE id = ANY($1::int[])', [ids]);
   const ratingOf = Object.fromEntries(users.map((u) => [u.id, u.rating]));
@@ -308,6 +319,6 @@ export async function settle(db, row) {
   await db.query(SETTLE, [row.id, JSON.stringify(rows)]);
 }
 
-export async function ranking(db) {
+export async function ranking(db: Db) {
   return db.query(`SELECT name, rating, games, wins FROM users WHERE games > 0 ORDER BY rating DESC, wins DESC, name LIMIT 50`);
 }

@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import { ikiApi } from './server/dev.js';
+import { ikiApi } from './server/dev.ts';
 
 export default defineConfig({
   plugins: [ikiApi()], // /api en desarrollo (en Vercel es la función api/[...path].js)

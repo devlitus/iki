@@ -36,6 +36,5 @@ export function resolveWild(g: Game, a: ActionOf<'resolve'>) {
   rule(Object.hasOwn(CHARACTER_TYPES, a.cardType!), 'Elige un tipo de personaje');
   g.players[g.pending!.player].wildType = a.cardType;
   log(g, { type: 'wild', player: g.pending!.player, cardType: a.cardType });
-
   continueEnding(g);
 }

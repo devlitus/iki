@@ -34,5 +34,4 @@ export const PLAYER_BOARDS: PlayerBoard[] = [
       pipe: [0.8583, 0.5341], bag: [0.9367, 0.5341] } },
 ];
 
-export const PLAYER_BOARDS_BY_ID: Record<string, PlayerBoard> = Object.assign
-(Object.create(null), Object.fromEntries(PLAYER_BOARDS.map((b) => [b.id, b]))); // sin prototipo: «constructor» o «__proto__» no son ids
+export const PLAYER_BOARDS_BY_ID: Record<string, PlayerBoard> = Object.assign(Object.create(null), Object.fromEntries(PLAYER_BOARDS.map((b) => [b.id, b]))); // sin prototipo: «constructor» o «__proto__» no son ids

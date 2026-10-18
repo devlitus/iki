@@ -25,7 +25,6 @@ import { openIntro } from './tutorial/intro.ts';
 import { createTutorialGame } from './tutorial/game.ts';
 import { createOnline } from './online/online.ts';
 import { api, type ApiError } from './online/api.ts';
-
 import { isWaiting } from './view/format.ts';
 import { CHARACTERS_BY_ID } from './data/characters.ts';
 import './view/table.css';
@@ -166,7 +165,6 @@ function runAi() {
 /** Zonas del tablero que se pueden pulsar: los solares exteriores en el paso 13 y, en juego, lo que pida el turno. */
 function targets(): Target[] {
   let list: Target[];
-
   if (game!.phase !== 'initial-characters') list = boardTargets(game!, turnCtx());
   else if (!selectedCard || isWaiting(game!)) list = [];
   else {
@@ -200,7 +198,6 @@ function dispatch(action: Action, { auto = false } = {}) {
     next = act(before, action);
   } catch (error) {
     ui = { ...ui, error: (error as Error).message };
-
     return render();
   }
   aiStalled = false;

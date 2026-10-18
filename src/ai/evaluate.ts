@@ -91,7 +91,6 @@ export function evaluate(g: Game, p: number): number {
 
 /** Valor para `p` frente a los demás: lo que ganan los rivales también le cuenta (un poco) en contra. */
 export function evaluateAgainstOthers(g: Game, p: number): number {
-
   const others = g.players.map((_, q) => q).filter((q) => q !== p);
   const rivals = others.reduce((sum, q) => sum + evaluate(g, q), 0) / others.length;
   return evaluate(g, p) - OPPONENT_WEIGHT * rivals;

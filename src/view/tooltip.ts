@@ -50,8 +50,7 @@ export function initTooltips() {
     if (!el || el.closest('[data-zoom]')) return;
     // Se quita el `title` para que no salga también la etiqueta del navegador; el nombre accesible se conserva.
     if (el.hasAttribute('title')) {
-      if (el.title && !el.hasAttribute('aria-label') && !el.textContent!.trim()
-) el.setAttribute('aria-label', el.title);
+      if (el.title && !el.hasAttribute('aria-label') && !el.textContent!.trim()) el.setAttribute('aria-label', el.title);
       el.dataset.tip = el.title;
       el.removeAttribute('title');
     }

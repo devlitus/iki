@@ -158,7 +158,6 @@ export function createPlayerModal() {
     },
     /** Tras un cambio en la partida, redibuja el modal si está abierto. */
     update(state: Game) {
-
       game = state;
       if (dialog.open) render();
     },

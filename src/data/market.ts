@@ -75,7 +75,6 @@ export function describeToken(t: MarketToken) {
   if (t.kind === 'fish') return `Pescado · ${t.cost} mons${t.bonus ? ` · +${t.bonus} IKI al final` : ''}`;
   if (t.kind === 'pipe') {
     const e = t.effect!;
-
     const what = e.fire ? `+${e.fire} Extinción de Incendios`
       : e.xp ? '+1 experiencia a uno de tus personajes'
       : e.gain!.map(({ res, n }) => `+${n} ${RES[res]}`).join(', ');
