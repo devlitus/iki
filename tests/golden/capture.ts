@@ -195,7 +195,7 @@ function viewScenarios() {
     M.renderSpecialsInfo(el);
     return {
       specials: hash(el.innerHTML),
-      abilities: M.CHARACTERS.map((c) => [c.id, outcome(() => M.abilityText(c)), outcome(() => M.cardSummary((c as { image?: string }).image!))]),
+      abilities: M.CHARACTERS.map((c) => [c.id, outcome(() => M.abilityText(c)), outcome(() => M.cardSummary(c.scan))]),
     };
   }]);
   out.push(['data', () => Object.fromEntries(Object.entries(M.data).map(([name, mod]) => [name, hash(mod)]))]);

@@ -43,6 +43,17 @@ Todos los imports de la grabación pasan por `tests/golden/modules.js`: al renom
 5. **Verificación final** (commit con el informe): `golden:check` contra las grabaciones de `pre-ts`; prueba cruzada
    regrabando desde cero en un worktree de `pre-ts` y comparando con las grabaciones guardadas; tests en verde.
 
+## Informe de la verificación final (2026-10-18)
+
+| Comprobación | Resultado |
+|---|---|
+| `pnpm typecheck` (`strict`, sin `allowJs`) | sin errores |
+| `pnpm test` | 114 de 114 |
+| `pnpm build` | correcto |
+| `pnpm golden:check` | 54 escenarios idénticos byte a byte |
+| `pnpm golden:bundle` | 328 archivos generados (web y servidor) idénticos a `pre-ts` |
+| Prueba cruzada: regrabación desde cero en un worktree de `eed2985` (fase 0, código JS) con la corrección de `view-static` | las 54 grabaciones idénticas a las guardadas |
+
 ## Fallos de la propia grabación (se corrigen en la fase 5, regrabando desde el código JS)
 
 - `view-static`: pide `cardSummary(c.image)` para los personajes, pero los personajes guardan la imagen en `scan`;
