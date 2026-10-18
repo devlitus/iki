@@ -46,7 +46,7 @@ export const MARKET_TOKENS = [
   token('winter', 'pipe', 'pipe-2', 2, { effect: { xp: 1 } }),
   token('winter', 'pipe', 'pipe-7', 7, { effect: { gain: [{ res: 'koban', n: 1 }] } }),
   token('winter', 'bag', 'owl-1', 1, { score: { per: 'mon4' } }),
-  token('winter', 'bag', null, 5, { score: { iki: 5 }, provisional: true }), // sin foto: coste provisional
+  token('winter', 'bag', 'bag-7', 7, { score: { iki: 5 } }),
 ];
 
 export const MARKET_BY_ID = Object.assign(Object.create(null), Object.fromEntries(MARKET_TOKENS.map((t) => [t.id, t]))); // sin prototipo: «constructor» o «__proto__» no son ids

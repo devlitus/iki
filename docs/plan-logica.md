@@ -72,9 +72,8 @@ Por estación, 2 pescados, 2 pipas y 2 bolsas; con imagen, coste en mons y efect
 | Primavera | 2 → 0 · 4 → +1 | 2: +1 fuego · 3: +1 fuego | 2: 2 · 4: 3 |
 | Verano | 2 → 0 · 7 → +7 | 2: +1 arroz · 3: +2 sandalias | 5: 4 · 5: 1 por cada 2 de fuego |
 | Otoño | 2 → 0 · 4 → +1 | 2: +1 fuego · 4: +2 fuego | 3: 1 por personaje del tipo más contratado · 5: 1 por tipo distinto |
-| Invierno | 2 → 0 · 9 → +7 | 2: +1 experiencia · 7: +1 Koban | 1: 1 por cada 4 mons · 5 (provisional): 5 IKI |
+| Invierno | 2 → 0 · 9 → +7 | 2: +1 experiencia · 7: +1 Koban | 1: 1 por cada 4 mons · 7: 5 IKI |
 
-> Falta la imagen y el coste real de la bolsa de Invierno de 5 IKI: provisional a 5 mons y con ficha dibujada.
 
 ### 1.4 Calle, tiendas y puestos — `src/data/zones.js`
 Añadir a cada casilla de la calle su tienda y sus 2 puestos (los solares detrás del pergamino):
@@ -215,7 +214,7 @@ revisar en apaisado móvil que no se rompe.
 ---
 
 ## 6. Dudas resueltas
-1. **Bolsa de Tabaco de Invierno de 5 IKI**: no hay foto. Provisional: coste 5 mons, 5 IKI, ficha dibujada.
+1. **Bolsa de Tabaco de Invierno de 5 IKI**: cuesta 7 mons (foto de la ficha real, `public/tokens/winter/bag-7.webp`).
 2. **Casilla de vuelta**: el primer movimiento desde la zona inicial no da experiencia.
 3. **Puestos**: los 2 solares de detrás del pergamino de cada tienda (tabla 1.4).
 4. **Coste extra**: solo existe el +2 de las esquinas.
