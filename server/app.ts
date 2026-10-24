@@ -5,7 +5,7 @@ import {
   COOKIE, checkOrigin, cleanName, cleanPassword, cookieValue, dummyHash, hashPassword, makeSession,
   readSession, sessionCookie, verifyPassword,
 } from './auth.ts';
-import { LIMITS, check, clientIp, hit, record } from './limits.ts';
+import { LIMITS, clientIp, hit, undo } from './limits.ts';
 import { createLobby, getGame, joinGame, leaveGame, listGames, playAction, ranking, setAi, startGame } from './games.ts';
 import type { Db, User } from './types.ts';
 
@@ -60,18 +60,19 @@ export function createApp({ db, secret, now = Date.now }: { db: Db; secret: stri
     const password = String(body.password ?? '').slice(0, 200);
     const ip = clientIp(request);
     await hit(db, `login:${ip}`, LIMITS.login, now());
-    await check(db, `login-fail:${ip}`, LIMITS.loginFail, now());
-    // Un acierto no pone a cero los fallos: si no, bastaría entrar en una cuenta propia entre intento e intento.
-    const wrong = async () => {
-      await record(db, `login-fail:${ip}`, LIMITS.loginFail, now());
-      return fail(401, 'Nombre o contraseña incorrectos');
-    };
+    // El fallo se cuenta ANTES de mirar la contraseña (de una vez, en la base de datos): así muchas peticiones en paralelo
+    // no pasan todas la comprobación. Si acierta, se devuelve solo este intento; los fallos anteriores siguen contando
+    // (si no, bastaría entrar en una cuenta propia entre intento e intento).
+    const failKey = `login-fail:${ip}`;
+    await hit(db, failKey, LIMITS.loginFail, now());
+    const wrong = () => fail(401, 'Nombre o contraseña incorrectos');
     const [user] = await db.query('SELECT * FROM users WHERE name_key = $1', [key]);
     if (!user) {
       await verifyPassword(password, await dummyHash()); // mismo tiempo que con un usuario real
       return wrong();
     }
     if (!(await verifyPassword(password, user.pass_hash))) return wrong();
+    await undo(db, failKey);
     return withSession({ user: publicUser(user) }, request, user.id, user.session_version);
   }
 

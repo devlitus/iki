@@ -117,6 +117,15 @@ test('login: los fallos bloquean la IP del atacante, no la cuenta de la víctima
   assert.equal((await attacker.call('POST', '/login', { name: victim.name, password: 'contraseña-larga' })).status, 200, 'se desbloquea al pasar la ventana');
 });
 
+test('login: muchos intentos a la vez no se saltan el tope de fallos', async () => {
+  const { name } = await signUp('rafaga');
+  const b = browser();
+  const tries = await Promise.all(Array.from({ length: LIMITS.loginFail.max + 5 }, () => b.call('POST', '/login', { name, password: 'incorrecta-pero-larga' })));
+  assert.equal(tries.filter((r) => r.status === 401).length, LIMITS.loginFail.max);
+  assert.equal(tries.filter((r) => r.status === 429).length, 5);
+  clock += (LIMITS.loginFail.minutes + 1) * 60_000;
+});
+
 test('login: tope de intentos por IP aunque acierte (cada uno cuesta un scrypt)', async () => {
   const { name } = await signUp('tope');
   const b = browser();

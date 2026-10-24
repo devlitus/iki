@@ -49,13 +49,7 @@ export async function hit(db: Db, key: string, limit: Limit, nowMs: number) {
   if (row.hits > limit.max) tooMany(Number(row.window_start), limit, nowMs);
 }
 
-/** 429 si `key` ya llegó al máximo en esta ventana (sin sumar nada). */
-export async function check(db: Db, key: string, limit: Limit, nowMs: number) {
-  const [row] = await db.query('SELECT hits, window_start FROM rate_limits WHERE key = $1 AND window_start > $2::bigint', [key, nowMs - limit.minutes * 60_000]);
-  if (row && row.hits >= limit.max) tooMany(Number(row.window_start), limit, nowMs);
-}
-
-/** Suma un intento a `key` sin rechazar este (el siguiente lo para `check`). */
-export async function record(db: Db, key: string, limit: Limit, nowMs: number) {
-  await db.query(COUNT, [key, nowMs, limit.minutes * 60_000]);
+/** Devuelve un intento sumado con `hit` que al final no cuenta (p. ej. un login que acierta). */
+export async function undo(db: Db, key: string) {
+  await db.query('UPDATE rate_limits SET hits = GREATEST(hits - 1, 0) WHERE key = $1', [key]);
 }
