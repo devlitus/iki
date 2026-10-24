@@ -19,8 +19,8 @@ const SCHEMA = [
     rating        INTEGER NOT NULL DEFAULT 1000,
     games         INTEGER NOT NULL DEFAULT 0,
     wins          INTEGER NOT NULL DEFAULT 0,
-    failed_logins INTEGER NOT NULL DEFAULT 0,
-    locked_until  TIMESTAMPTZ,
+    failed_logins INTEGER NOT NULL DEFAULT 0, -- sin uso: el bloqueo por cuenta se cambió por límites por IP (limits.ts)
+    locked_until  TIMESTAMPTZ,                -- sin uso, ídem
     session_version INTEGER NOT NULL DEFAULT 0,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
   )`,
@@ -56,6 +56,12 @@ const SCHEMA = [
     rating_before INTEGER NOT NULL,
     rating_after  INTEGER NOT NULL,
     PRIMARY KEY (game_id, user_id)
+  )`,
+  // Contadores de límites por IP (limits.ts). `window_start` en milisegundos.
+  `CREATE TABLE IF NOT EXISTS rate_limits (
+    key          TEXT PRIMARY KEY,
+    window_start BIGINT NOT NULL,
+    hits         INTEGER NOT NULL
   )`,
   `CREATE INDEX IF NOT EXISTS games_status_idx ON games (status, updated_at DESC)`,
 ];
