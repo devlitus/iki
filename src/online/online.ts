@@ -1,6 +1,6 @@
 import './online.css';
 import { api, ApiError } from './api.ts';
-import { esc } from '../view/format.ts';
+import { count, esc } from '../view/format.ts';
 
 type User = { id: number; name: string; rating: number; games: number; wins: number };
 type Seat = { free?: boolean; name?: string; ai?: boolean; host?: boolean };
@@ -63,13 +63,15 @@ export function createOnline({ onPlay, onClose }: { onPlay: (id: string) => void
   const gameLine = (g: Room, { join = false } = {}) => `
     <li class="game-row">
       <span class="game-seats">${g.seats.map((x) => (x.free ? '·' : esc(x.name))).join(', ')}</span>
-      <span class="badge">${STATUS[g.status]}</span>${g.ranked ? '<span class="badge">clasificatoria</span>' : ''}
+      <span class="badge">${STATUS[g.status]}</span>${g.ranked ? '<span class="badge">clasificatoria</span>' : g.status === 'lobby' ? '' : '<span class="badge" title="Tiene alguna IA: no cuenta para el ranking">no puntúa</span>'}
       <button type="button" class="btn btn-sm" data-do="${join ? 'join' : 'open'}" data-id="${g.id}">${join ? 'Unirse' : g.status === 'lobby' ? 'Abrir sala' : g.status === 'playing' ? 'Jugar' : 'Ver'}</button>
     </li>`;
 
   const hubScreen = () => `
     <h2>Hola, ${esc(s.user!.name)}</h2>
-    <p class="muted">Puntuación ${s.user!.rating} · ${s.user!.games} partidas · ${s.user!.wins} victorias</p>
+    <p class="muted">${s.user!.games
+      ? `Nivel ${s.user!.rating} · ${count(s.user!.games, 'partida clasificatoria', 'partidas clasificatorias')} · ${count(s.user!.wins, 'victoria')}`
+      : 'Aún no tienes nivel en el ranking: lo tendrás al terminar tu primera partida clasificatoria (solo personas, sin IA).'}</p>
     <div class="actions">
       <button type="button" class="btn primary" data-do="create" data-size="3" ${s.busy ? 'disabled' : ''}>Nueva partida de 3</button>
       <button type="button" class="btn primary" data-do="create" data-size="4" ${s.busy ? 'disabled' : ''}>Nueva partida de 4</button>
@@ -103,10 +105,12 @@ export function createOnline({ onPlay, onClose }: { onPlay: (id: string) => void
   const rankingScreen = () => `
     <h2>Ranking</h2>
     <table class="rank-table">
-      <thead><tr><th>#</th><th>Jugador</th><th>Puntos</th><th>Partidas</th><th>Victorias</th></tr></thead>
+      <thead><tr><th>#</th><th>Jugador</th><th>Nivel</th><th>Partidas</th><th>Victorias</th></tr></thead>
       <tbody>${s.ranking?.length ? s.ranking.map((r, i) => `<tr><td>${i + 1}</td><td>${esc(r.name)}</td><td>${r.rating}</td><td>${r.games}</td><td>${r.wins}</td></tr>`).join('')
         : '<tr><td colspan="5" class="muted">Todavía no hay partidas clasificatorias terminadas.</td></tr>'}</tbody>
     </table>
+    <p class="muted">El nivel no es un contador de puntos: todos empiezan en 1000 y sube o baja al acabar cada partida
+      clasificatoria, más si ganas a quien tiene más nivel que tú. Las partidas con IA no cuentan.</p>
     <footer><button type="button" class="btn" data-do="hub">Volver</button></footer>`;
 
   function draw() {
