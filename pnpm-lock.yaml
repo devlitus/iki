@@ -18,6 +18,9 @@ importers:
       '@types/node':
         specifier: ^26.6.5
         version: 26.6.5
+      esbuild:
+        specifier: 0.25.12
+        version: 0.25.12
       happy-dom:
         specifier: ^21.0.3
         version: 21.0.3

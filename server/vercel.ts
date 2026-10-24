@@ -1,6 +1,6 @@
-import { neonDb } from '../server/db.ts';
-import { createApp } from '../server/app.ts';
-import { serve } from '../server/node-adapter.ts';
+import { neonDb } from './db.ts';
+import { createApp } from './app.ts';
+import { serve } from './node-adapter.ts';
 
 /**
  * Función de Vercel: toda la API (/api/…) pasa por aquí. Necesita DATABASE_URL (Neon) y SESSION_SECRET (≥ 32 caracteres).

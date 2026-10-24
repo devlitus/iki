@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:vercel": "node scripts/build-vercel.ts",
     "preview": "vite preview",
     "test": "node --test tests/*.test.ts",
     "golden:record": "node tests/golden/golden.ts record",
@@ -16,6 +17,7 @@
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.10",
     "@types/node": "^26.6.5",
+    "esbuild": "0.25.12",
     "happy-dom": "^21.0.3",
     "typescript": "^7.0.2",
     "vite": "^6.4.4"

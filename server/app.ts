@@ -14,7 +14,7 @@ type Route = [method: string, pattern: RegExp, auth: boolean, run: (ctx: RouteCt
 
 /**
  * La API: `createApp({ db, secret }).handle(request) → Response`. Solo usa Request/Response estándar, así que la misma
- * aplicación corre en una función de Vercel (api/[...path].js), en el servidor de desarrollo de Vite y en los tests.
+ * aplicación corre en una función de Vercel (server/vercel.ts), en el servidor de desarrollo de Vite y en los tests.
  *
  *   POST /api/register {name, password}   POST /api/login {name, password}   POST /api/logout   GET /api/me
  *   GET  /api/ranking

@@ -18,7 +18,7 @@ const work = mkdtempSync(join(tmpdir(), 'iki-bundle-'));
 const vite = join(root, 'node_modules', 'vite', 'bin', 'vite.js');
 
 function build(dir: string, out: string) {
-  const entry = ['ts', 'js'].map((ext) => `api/[...path].${ext}`).find((f) => existsSync(join(dir, f)));
+  const entry = ['server/vercel.ts', 'api/[...path].ts', 'api/[...path].js'].find((f) => existsSync(join(dir, f)));
   execFileSync(process.execPath, [vite, 'build', '--logLevel', 'error', '--outDir', join(out, 'web')], { cwd: dir, stdio: 'inherit' });
   execFileSync(process.execPath, [vite, 'build', '--logLevel', 'error', '--ssr', entry!, '--minify', 'esbuild', '--outDir', join(out, 'server')], { cwd: dir, stdio: 'inherit' });
 }

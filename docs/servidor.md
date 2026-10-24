@@ -27,7 +27,7 @@ sobrescribe.
 | `server/games.js` | Salas, autoridad de turno, validación, guardado atómico, ranking |
 | `server/auth.js` | Cuentas (scrypt), sesión (cookie firmada HMAC), CSRF |
 | `server/db.js`, `db-local.js` | Postgres: Neon por HTTP en producción, PGlite (Postgres en WASM) en desarrollo y tests |
-| `api/[...path].js` | Función de Vercel; `server/dev.js`, plugin de Vite que monta la misma API en `pnpm dev` |
+| `server/vercel.ts` | Función de Vercel (la empaqueta `scripts/build-vercel.ts`); `server/dev.ts`, plugin de Vite que monta la misma API en `pnpm dev` |
 | `src/online/` | Diálogo «Jugar en línea» (cuenta, salas, ranking) y cliente HTTP |
 
 ## Qué impide hacer trampa
@@ -51,8 +51,10 @@ sobrescribe.
 2. Variables de entorno del proyecto:
    - `DATABASE_URL`: cadena de conexión de Neon.
    - `SESSION_SECRET`: al menos 32 caracteres aleatorios (`openssl rand -base64 48`). Si cambia, se cierran todas las sesiones.
-3. `vercel.json` ya fija `maxDuration: 30` para la función y cabeceras básicas. Conviene poner la región de la función
-   (`regions`) junto a la de la base de datos.
+3. `vercel.json` solo cambia el comando de build a `pnpm build:vercel`: genera `.vercel/output` (Build Output API) con la
+   web de Vite y la API empaquetada en JS por esbuild, con `maxDuration: 30` y cabeceras básicas. Vercel no compila
+   TypeScript: su compilador usa la API de JS de `typescript`, que la 7 ya no tiene. Conviene poner la región de la
+   función junto a la de la base de datos (`regions` en `.vc-config.json`).
 4. Las tablas se crean solas en la primera petición (`CREATE TABLE IF NOT EXISTS`).
 
 Desarrollo: `pnpm dev` levanta también la API con PGlite en `.data/` (borrar la carpeta reinicia cuentas y partidas).
@@ -61,7 +63,7 @@ Con `DATABASE_URL` definida usa Neon en su lugar.
 ## Pendiente / límites conocidos
 
 - **No probado en Vercel ni contra Neon real.** Probado: la API por HTTP en `pnpm dev`, el build, y todo el SQL contra
-  PGlite (Postgres real). Por verificar al desplegar: que `api/[...path].js` reciba las rutas `/api/...` y que
+  PGlite (Postgres real). Por verificar al desplegar: que la función `api` reciba las rutas `/api/...` y que
   `neon().query(texto, params)` se comporte igual que PGlite.
 - **Partidas abandonadas:** si alguien desaparece, la partida se queda esperándole. Falta un plazo por turno y «abandonar»
   (el ausente pierde y su plaza pasa a IA).
