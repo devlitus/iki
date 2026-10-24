@@ -388,8 +388,8 @@ async function dispatchOnline(action: Action) {
   }
 }
 
-// Jugar en línea queda oculto hasta lanzarlo; el servidor y el cliente siguen en el código.
-const ONLINE_ENABLED = false;
+// Jugar en línea queda oculto hasta lanzarlo; para probarlo, VITE_ONLINE=1 en .env.local.
+const ONLINE_ENABLED = import.meta.env.VITE_ONLINE === '1';
 const hub = createOnline({
   onPlay: playOnline,
   onClose: () => cover.show(Boolean(game)),
