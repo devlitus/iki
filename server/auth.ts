@@ -12,8 +12,6 @@ const COST = { N: 16384, r: 8, p: 1 };
 const KEY_LENGTH = 32;
 export const COOKIE = 'iki_session';
 export const SESSION_DAYS = 30;
-export const MAX_FAILED_LOGINS = 5;
-export const LOCK_MINUTES = 15;
 
 export async function hashPassword(password: string) {
   const salt = randomBytes(16);

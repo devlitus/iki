@@ -2,9 +2,10 @@ import { randomUUID } from 'node:crypto';
 import { migrate } from './db.ts';
 import { HttpError, fail, json, readJson } from './http.ts';
 import {
-  COOKIE, LOCK_MINUTES, MAX_FAILED_LOGINS, checkOrigin, cleanName, cleanPassword, cookieValue, dummyHash, hashPassword, makeSession,
+  COOKIE, checkOrigin, cleanName, cleanPassword, cookieValue, dummyHash, hashPassword, makeSession,
   readSession, sessionCookie, verifyPassword,
 } from './auth.ts';
+import { LIMITS, clientIp, hit, undo } from './limits.ts';
 import { createLobby, getGame, joinGame, leaveGame, listGames, playAction, ranking, setAi, startGame } from './games.ts';
 import type { Db, User } from './types.ts';
 
@@ -45,6 +46,7 @@ export function createApp({ db, secret, now = Date.now }: { db: Db; secret: stri
     const body = await readJson(request);
     const { name, key } = cleanName(body.name);
     const password = cleanPassword(body.password);
+    await hit(db, `register:${clientIp(request)}`, LIMITS.register, now());
     const [user] = await db.query(
       `INSERT INTO users (name, name_key, pass_hash) VALUES ($1, $2, $3) ON CONFLICT (name_key) DO NOTHING RETURNING id, name, rating, games, wins`,
       [name, key, await hashPassword(password)]);
@@ -56,21 +58,21 @@ export function createApp({ db, secret, now = Date.now }: { db: Db; secret: stri
     const body = await readJson(request);
     const { key } = cleanName(body.name);
     const password = String(body.password ?? '').slice(0, 200);
+    const ip = clientIp(request);
+    await hit(db, `login:${ip}`, LIMITS.login, now());
+    // El fallo se cuenta ANTES de mirar la contraseña (de una vez, en la base de datos): así muchas peticiones en paralelo
+    // no pasan todas la comprobación. Si acierta, se devuelve solo este intento; los fallos anteriores siguen contando
+    // (si no, bastaría entrar en una cuenta propia entre intento e intento).
+    const failKey = `login-fail:${ip}`;
+    await hit(db, failKey, LIMITS.loginFail, now());
+    const wrong = () => fail(401, 'Nombre o contraseña incorrectos');
     const [user] = await db.query('SELECT * FROM users WHERE name_key = $1', [key]);
     if (!user) {
       await verifyPassword(password, await dummyHash()); // mismo tiempo que con un usuario real
-      fail(401, 'Nombre o contraseña incorrectos');
+      return wrong();
     }
-    if (user.locked_until && new Date(user.locked_until).getTime() > now()) fail(429, 'Demasiados intentos fallidos: espera unos minutos');
-    if (!(await verifyPassword(password, user.pass_hash))) {
-      await db.query( // al llegar al máximo se bloquea la cuenta 15 minutos y el contador empieza de cero
-        `UPDATE users SET
-           locked_until = CASE WHEN failed_logins + 1 >= $2 THEN $3::timestamptz ELSE locked_until END,
-           failed_logins = CASE WHEN failed_logins + 1 >= $2 THEN 0 ELSE failed_logins + 1 END
-         WHERE id = $1`, [user.id, MAX_FAILED_LOGINS, new Date(now() + LOCK_MINUTES * 60_000).toISOString()]);
-      fail(401, 'Nombre o contraseña incorrectos');
-    }
-    await db.query('UPDATE users SET failed_logins = 0, locked_until = NULL WHERE id = $1', [user.id]);
+    if (!(await verifyPassword(password, user.pass_hash))) return wrong();
+    await undo(db, failKey);
     return withSession({ user: publicUser(user) }, request, user.id, user.session_version);
   }
 

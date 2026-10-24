@@ -26,6 +26,7 @@ type Patch = { seats?: Seat[]; state?: Game; status?: GameRow['status']; ranked?
 const MAX_ACTIVE_GAMES = 6; // salas y partidas en curso por jugador
 const MAX_AI_ACTIONS = 800; // tope de seguridad de una cadena de jugadas de IA
 const GAME_ID = /^[\w-]{6,16}$/;
+export const TURN_TIMEOUT_HOURS = 24; // sin jugar en este tiempo, la IA hace el turno de quien lo tiene
 
 /** Acciones que puede mandar un navegador (`start` es interna) y los campos que pueden llevar. */
 const ACTION_TYPES = new Set(['placeInitial', 'placeIkizama', 'income', 'hire', 'move', 'shop', 'character', 'endTurn', 'place', 'resolve']);
@@ -49,9 +50,12 @@ export function cleanAction(raw: any): Action {
 const asJson = (v: unknown) => (v === undefined ? null : JSON.stringify(v));
 const seatOf = (row: Pick<GameRow, 'seats'>, userId: number | undefined) => (userId == null ? -1 : row.seats.findIndex((s) => s.user === userId));
 
+/** La partida en curso lleva TURN_TIMEOUT_HOURS sin moverse (`updated_at` cambia con cada jugada guardada). */
+const STALLED = `(status = 'playing' AND updated_at < now() - interval '${TURN_TIMEOUT_HOURS} hours')`;
+
 async function load(db: Db, id: string): Promise<GameRow> {
   if (!GAME_ID.test(String(id))) fail(404, 'Partida no encontrada');
-  const [row] = await db.query('SELECT * FROM games WHERE id = $1', [id]);
+  const [row] = await db.query(`SELECT *, ${STALLED} AS stalled FROM games WHERE id = $1`, [id]);
   return row ?? fail(404, 'Partida no encontrada');
 }
 
@@ -147,12 +151,14 @@ export async function listGames(db: Db, user: User) {
 export async function getGame(db: Db, user: User, id: string, since: number | null = null) {
   if (since != null) {
     if (!GAME_ID.test(String(id))) fail(404, 'Partida no encontrada');
-    const [v] = await db.query('SELECT version, status, seats FROM games WHERE id = $1', [id]);
+    const [v] = await db.query(`SELECT version, status, seats, ${STALLED} AS stalled FROM games WHERE id = $1`, [id]);
     if (!v) fail(404, 'Partida no encontrada');
-    if (v.version === since && (v.status === 'lobby' || seatOf(v, user.id) >= 0)) return { unchanged: true, version: v.version, status: v.status };
+    if (v.version === since && !v.stalled && (v.status === 'lobby' || seatOf(v, user.id) >= 0)) return { unchanged: true, version: v.version, status: v.status };
   }
-  const row = await load(db, id);
+  let row = await load(db, id);
   if (row.status !== 'lobby' && seatOf(row, user.id) < 0) fail(403, 'No juegas en esta partida');
+  // Si quien pregunta es el que tiene el turno, ha vuelto: juega él.
+  if (row.stalled && deciderOf(row.state!) !== seatOf(row, user.id) && (await takeOver(db, row))) row = await load(db, id);
   let results: unknown[] | null = null;
   if (row.status === 'ended' && row.ranked) {
     if (!row.settled) await settle(db, row); // por si el servidor cayó justo entre guardar el final y apuntar el resultado
@@ -222,8 +228,8 @@ export async function setAi(db: Db, user: User, id: string, add: boolean) {
  * Juega los turnos de IA que toquen y devuelve el estado resultante; cada jugada se añade a `actions`. Si la IA fallara,
  * se juega la primera jugada legal en su lugar (mejor una jugada mala que la partida bloqueada para siempre).
  */
-function runAi(state: Game, actions: SeatAction[]) {
-  while (isAiTurn(state) && actions.length < MAX_AI_ACTIONS) {
+function runAi(state: Game, actions: SeatAction[], plays: (state: Game) => boolean = isAiTurn) {
+  while (plays(state) && actions.length < MAX_AI_ACTIONS) {
     const seat = deciderOf(state);
     let action: Action | undefined;
     try {
@@ -239,6 +245,23 @@ function runAi(state: Game, actions: SeatAction[]) {
     actions.push({ seat, action });
   }
   return state;
+}
+
+/**
+ * Quien tiene el turno lleva TURN_TIMEOUT_HOURS sin jugar: la IA juega ese turno por él (y luego las IA que sigan), para
+ * que nadie pueda dejar la partida colgada, por ejemplo para no perder puntos. Lo dispara el sondeo de cualquiera de
+ * los jugadores sentados. Devuelve si ha guardado algo (si otra petición se adelantó, no hace nada).
+ */
+async function takeOver(db: Db, row: GameRow) {
+  const seat = deciderOf(row.state!);
+  if (seat == null) return false;
+  const actions: SeatAction[] = [];
+  const state = runAi(runAi(row.state!, actions, (s) => deciderOf(s) === seat), actions);
+  if (!actions.length) return false;
+  const ended = state.phase === 'ended';
+  if (!(await save(db, row, { state, status: ended ? 'ended' : undefined }, actions))) return false;
+  if (ended && row.ranked) await settle(db, { ...row, state, status: 'ended' });
+  return true;
 }
 
 export async function startGame(db: Db, user: User, id: string) {

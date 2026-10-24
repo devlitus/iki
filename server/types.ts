@@ -25,6 +25,8 @@ export type GameRow = {
   state: Game | null;
   version: number;
   settled: boolean;
+  /** Calculado al leer: lleva demasiado sin jugarse (games.ts, TURN_TIMEOUT_HOURS). */
+  stalled?: boolean;
 };
 
 /** Jugada guardada en `game_actions`. */

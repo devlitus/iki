@@ -4,6 +4,7 @@ import { localDb } from '../server/db-local.ts';
 import { createApp } from '../server/app.ts';
 import { eloDeltas } from '../server/rating.ts';
 import { cleanAction, settle } from '../server/games.ts';
+import { LIMITS, clientIp } from '../server/limits.ts';
 import { act } from '../src/game/engine.ts';
 import { chooseAction, deciderOf } from '../src/ai/player.ts';
 
@@ -19,13 +20,15 @@ before(async () => {
 });
 after(() => db.close());
 
-/** Un navegador: guarda su cookie de sesión y manda las peticiones con el origen de la web. */
-function browser() {
+/** Un navegador: guarda su cookie de sesión y manda las peticiones con el origen de la web, cada uno desde su IP. */
+let ips = 0;
+function browser(ip = `10.0.${Math.floor(++ips / 250)}.${ips % 250}`) {
   let cookie = '';
   const call = async (method: string, path: string, body?: unknown, { origin = ORIGIN as string | null, type = 'application/json' } = {}) => {
     const headers = new Headers();
     if (cookie) headers.set('cookie', cookie);
     if (origin) headers.set('origin', origin);
+    headers.set('x-real-ip', ip);
     if (body !== undefined) headers.set('content-type', type);
     const res = await app.handle(new Request(`${ORIGIN}/api${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) }));
     const set = res.headers.get('set-cookie');
@@ -85,18 +88,69 @@ test('nombres y contraseñas no válidos se rechazan', async () => {
   assert.equal((await b.call('POST', '/register', { name: 'Correcto', password: 'corta' })).status, 400);
 });
 
-test('login: contraseña errónea, usuario inexistente y bloqueo tras 5 fallos', async () => {
+test('login: contraseña errónea y usuario inexistente dan el mismo mensaje', async () => {
   const { name } = await signUp('login');
   const b = browser();
   const wrong = await b.call('POST', '/login', { name, password: 'incorrecta-pero-larga' });
   const ghost = await b.call('POST', '/login', { name: 'nadie-existe', password: 'incorrecta-pero-larga' });
   assert.equal(wrong.status, 401);
   assert.deepEqual(wrong.body, ghost.body, 'el mensaje no delata qué nombres existen');
+  assert.equal((await b.call('POST', '/login', { name, password: 'contraseña-larga' })).status, 200);
+});
 
-  for (let i = 0; i < 4; i++) await b.call('POST', '/login', { name, password: 'incorrecta-pero-larga' });
-  assert.equal((await b.call('POST', '/login', { name, password: 'contraseña-larga' })).status, 429, 'bloqueado aunque ahora acierte');
-  clock += 16 * 60 * 1000;
-  assert.equal((await b.call('POST', '/login', { name, password: 'contraseña-larga' })).status, 200, 'se desbloquea a los 15 minutos');
+test('login: los fallos bloquean la IP del atacante, no la cuenta de la víctima', async () => {
+  const victim = await signUp('victima');
+  const other = await signUp('otra');
+  const attacker = browser();
+  for (let i = 0; i < LIMITS.loginFail.max; i++) {
+    const target = i % 2 ? victim.name : other.name; // probar contra varias cuentas también cuenta
+    assert.equal((await attacker.call('POST', '/login', { name: target, password: 'incorrecta-pero-larga' })).status, 401);
+  }
+  const blocked = await attacker.call('POST', '/login', { name: victim.name, password: 'contraseña-larga' });
+  assert.equal(blocked.status, 429, 'bloqueada la IP aunque ahora acierte');
+  assert.match(blocked.body.error, /espera \d+ min/);
+  assert.equal((await browser().call('POST', '/login', { name: victim.name, password: 'contraseña-larga' })).status, 200, 'la víctima entra desde su IP');
+
+  // Entrar en una cuenta propia no pone a cero los fallos.
+  assert.equal((await attacker.call('POST', '/login', { name: other.name, password: 'contraseña-larga' })).status, 429);
+  clock += (LIMITS.loginFail.minutes + 1) * 60_000;
+  assert.equal((await attacker.call('POST', '/login', { name: victim.name, password: 'contraseña-larga' })).status, 200, 'se desbloquea al pasar la ventana');
+});
+
+test('login: muchos intentos a la vez no se saltan el tope de fallos', async () => {
+  const { name } = await signUp('rafaga');
+  const b = browser();
+  const tries = await Promise.all(Array.from({ length: LIMITS.loginFail.max + 5 }, () => b.call('POST', '/login', { name, password: 'incorrecta-pero-larga' })));
+  assert.equal(tries.filter((r) => r.status === 401).length, LIMITS.loginFail.max);
+  assert.equal(tries.filter((r) => r.status === 429).length, 5);
+  clock += (LIMITS.loginFail.minutes + 1) * 60_000;
+});
+
+test('login: tope de intentos por IP aunque acierte (cada uno cuesta un scrypt)', async () => {
+  const { name } = await signUp('tope');
+  const b = browser();
+  for (let i = 0; i < LIMITS.login.max; i++) assert.equal((await b.call('POST', '/login', { name, password: 'contraseña-larga' })).status, 200);
+  assert.equal((await b.call('POST', '/login', { name, password: 'contraseña-larga' })).status, 429);
+  clock += (LIMITS.login.minutes + 1) * 60_000;
+});
+
+test('registro: tope de cuentas nuevas por IP', async () => {
+  const ip = '203.0.113.7';
+  for (let i = 0; i < LIMITS.register.max; i++) assert.equal((await browser(ip).call('POST', '/register', { name: `spam${i}`, password: 'clave-larga-1' })).status, 200);
+  assert.equal((await browser(ip).call('POST', '/register', { name: 'spamextra', password: 'clave-larga-1' })).status, 429);
+  assert.equal((await browser().call('POST', '/register', { name: 'spamextra', password: 'clave-larga-1' })).status, 200, 'otra IP sí puede');
+  clock += (LIMITS.register.minutes + 1) * 60_000;
+});
+
+test('clientIp: IPv4, IPv4 mapeada y una IPv6 cuenta como su /64', () => {
+  const ip = (h: Record<string, string>) => clientIp(new Request('http://x/', { headers: h }));
+  assert.equal(ip({ 'x-real-ip': '198.51.100.4' }), '198.51.100.4');
+  assert.equal(ip({ 'x-forwarded-for': '198.51.100.4, 10.0.0.1' }), '198.51.100.4');
+  assert.equal(ip({ 'x-real-ip': '::ffff:198.51.100.4' }), '198.51.100.4');
+  assert.equal(ip({ 'x-real-ip': '2001:db8:aa:bb:1:2:3:4' }), ip({ 'x-real-ip': '2001:0db8:aa:bb::99' }));
+  assert.equal(ip({ 'x-real-ip': '2001:db8::1' }), '2001:db8:0:0::/64');
+  assert.notEqual(ip({ 'x-real-ip': '2001:db8:aa:bb::1' }), ip({ 'x-real-ip': '2001:db8:aa:cc::1' }));
+  assert.equal(ip({}), 'local');
 });
 
 test('la cookie no se puede falsificar ni cambiar de usuario ni alargar', async () => {
@@ -289,6 +343,28 @@ test('una persona y dos IA: las IA juegan solas hasta que vuelve a tocar a la pe
   }
   const log = await db.query('SELECT seat FROM game_actions WHERE game_id = $1', [id]);
   assert.ok(new Set(log.map((l: any) => l.seat)).size === 3, 'el registro tiene también las jugadas de las IA');
+});
+
+test('quien no juega en 24 h: la IA hace su turno al consultar otro jugador, no él mismo', async () => {
+  const { id, players } = await startedGame(3);
+  const byUser = new Map(players.map((p) => [p.id, p]));
+  const row = await dbGame(id);
+  const seat = deciderOf(row.state)!;
+  const idle = byUser.get(row.seats[seat].user)!;
+  const waiting = players.find((p) => p !== idle)!;
+
+  assert.equal((await waiting.b.call('GET', `/games/${id}?since=${row.version}`)).body.unchanged, true, 'antes de tiempo no pasa nada');
+  await db.query(`UPDATE games SET updated_at = now() - interval '25 hours' WHERE id = $1`, [id]);
+  assert.equal((await idle.b.call('GET', `/games/${id}?since=${row.version}`)).status, 200);
+  assert.equal((await dbGame(id)).version, row.version, 'si vuelve el que tiene el turno, juega él');
+
+  const res = await waiting.b.call('GET', `/games/${id}?since=${row.version}`);
+  assert.equal(res.status, 200);
+  assert.ok(res.body.version > row.version, 'la partida avanza');
+  const after = await dbGame(id);
+  assert.notEqual(deciderOf(after.state), seat, 'ya no le toca al que no jugaba');
+  const log = await db.query('SELECT seat FROM game_actions WHERE game_id = $1 AND seq > $2', [id, row.version]);
+  assert.ok(log.length >= 1 && log.every((l: any) => l.seat === seat), 'las jugadas quedan a su nombre');
 });
 
 // --- Ranking -----------------------------------------------------------------------------------
