@@ -116,3 +116,12 @@
   .iki-dialog { padding: 10px 12px; }
   .score-table th, .score-table td { padding: 3px 6px; }
 }
+
+/* «Mientras tanto…»: lo que jugaron las IA mientras esperabas (view/aiPace.ts); cada línea ilumina su zona */
+.meanwhile { margin: 6px 0 8px; padding: 6px 8px; border: 1px solid rgba(255, 210, 122, 0.45); border-radius: 6px; background: rgba(255, 210, 122, 0.08); }
+.meanwhile ol { margin: 4px 0 6px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.meanwhile li button { width: 100%; padding: 2px 6px; font: inherit; font-size: 13px; text-align: left; color: inherit; border: 0; border-left: 3px solid var(--player-color, #ffd27a); border-radius: 0 4px 4px 0; background: none; cursor: pointer; }
+.meanwhile li button:hover, .meanwhile li button:focus-visible { background: rgba(255, 255, 255, 0.08); }
+.meanwhile li button:focus-visible { outline: 2px solid #ffd27a; outline-offset: 1px; }
+.meanwhile p { margin: 2px 0; font-size: 12px; }
+.meanwhile summary { cursor: pointer; padding: 2px 0; }

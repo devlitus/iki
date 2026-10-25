@@ -21,6 +21,7 @@ const PREVIEW_PLAIN_MS = 700; // anuncio de una jugada sin zona (cobrar ingresos
 const THINK_MS = 450; // pausa entre dos jugadas del mismo jugador
 const NEXT_PLAYER_MS = 1000; // pausa al pasar el turno a otro jugador
 const LINGER_MS = 1800; // la franja sigue a la vista un poco después de la última jugada de la IA
+const POINT_MS = 2500; // lo que dura iluminada la zona de una jugada pulsada en «Mientras tanto…»
 
 /** Lo que se ilumina mientras se anuncia una jugada: una zona del tablero y una carta de la Mesa. */
 export type Focus = { zone: string | null; card: string | null; initial: boolean };
@@ -84,6 +85,9 @@ export function createAiPace({ onSkip, onPause, onReplay }: {
   let queue: Step[] = []; // jugadas en línea pendientes de repasar
   let replayTimer: ReturnType<typeof setTimeout> | null = null;
   let replaying = false;
+  let recent: { player: number; zone: string | null; line: string }[] = []; // lo que han jugado las IA desde la última persona
+  let pointTimer: ReturnType<typeof setTimeout> | null = null;
+  const SUMMARY_MAX = 12;
   const factor = () => SPEEDS.find((s) => s.id === speed)!.factor;
 
   const strip = document.createElement('div');
@@ -146,6 +150,7 @@ export function createAiPace({ onSkip, onPause, onReplay }: {
       if (p != null) lines.unshift(...unlogged(game, p, action)); // jugadas que no dejan línea en el registro
       const announced = focus.zone || focus.card || action.type === 'income';
       if (lines.length) show(game, p, lines);
+      if (p != null && lines.length) recent.push({ player: p, zone: focus.zone, line: lines[0] });
       const wait = announced ? (focus.zone || focus.card ? PREVIEW_MS : PREVIEW_PLAIN_MS) * factor() : 0;
       return { game, action, focus, due: performance.now() + wait };
     },
@@ -172,8 +177,49 @@ export function createAiPace({ onSkip, onPause, onReplay }: {
       if (!replaying) nextStep();
     },
 
+    get replaying() { return replaying; },
+
+    /**
+     * «Mientras tanto…»: al volver a decidir una persona, lo que han jugado las IA desde la última vez, encima del cuerpo
+     * del panel de turno (que se redibuja entero: se vuelve a meter tras cada render). Al pulsar una jugada se ilumina
+     * su zona. `visible`: solo en escritorio, fuera del tutorial y cuando decide una persona.
+     */
+    summary(turn: HTMLElement, game: Game, visible: boolean) {
+      if (!visible || !recent.length) return;
+      const shown = recent.slice(-SUMMARY_MAX);
+      const box = document.createElement('details');
+      box.className = 'meanwhile';
+      box.open = true;
+      box.innerHTML = `<summary class="label">Mientras tanto · ${recent.length} ${recent.length === 1 ? 'jugada' : 'jugadas'} de la IA</summary>
+        ${recent.length > shown.length ? `<p class="muted">Las ${shown.length} últimas (el resto, en el registro):</p>` : ''}
+        <ol>${shown.map((r, i) => `<li><button type="button" data-meanwhile="${i}" title="Ver dónde fue en el tablero"
+          style="--player-color:${playerColor(game, r.player)}">${r.line}</button></li>`).join('')}</ol>
+        <button type="button" class="btn btn-sm" data-meanwhile="close">Entendido</button>`;
+      box.addEventListener('click', (e) => {
+        const b = (e.target as Element).closest<HTMLElement>('[data-meanwhile]');
+        if (!b) return;
+        if (b.dataset.meanwhile === 'close') {
+          recent = [];
+          box.remove();
+          return;
+        }
+        const r = shown[Number(b.dataset.meanwhile)];
+        clearTimeout(pointTimer as ReturnType<typeof setTimeout>);
+        onReplay({ zone: r.zone, player: r.player });
+        pointTimer = setTimeout(() => { if (!replaying) onReplay(null); }, POINT_MS);
+      });
+      const body = turn.querySelector('.turn-body');
+      body ? body.before(box) : turn.append(box);
+    },
+
+    /** Una persona ha jugado: lo de antes ya no es «mientras tanto». */
+    clearSummary() {
+      recent = [];
+    },
+
     /** Se sale de la partida en línea: se deja de repasar. */
     stopReplay() {
+      recent = [];
       queue = [];
       clearTimeout(replayTimer as ReturnType<typeof setTimeout>);
       if (replaying) { replaying = false; onReplay(null); }
@@ -206,6 +252,7 @@ export function createAiPace({ onSkip, onPause, onReplay }: {
     hideTimer = null;
     replaying = true;
     show(step.game, step.player, step.lines);
+    recent.push({ player: step.player, zone: step.zone, line: step.lines[0] });
     onReplay({ zone: step.zone, player: step.player });
     const pause = queue[0] && queue[0].player !== step.player ? NEXT_PLAYER_MS : THINK_MS;
     if (!paused) replayTimer = setTimeout(nextStep, ((step.zone ? PREVIEW_MS : PREVIEW_PLAIN_MS) + pause) * factor());

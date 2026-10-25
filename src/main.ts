@@ -1,6 +1,6 @@
 import { createBoard } from './board.ts';
 import { createZonesOverlay } from './zonesOverlay.ts';
-import { ZONES_BY_ID } from './data/zones.ts';
+import { ZONES_BY_ID, zoneCenter } from './data/zones.ts';
 import './cards/card.css';
 import { createBoardPicker } from './players/boardPicker.ts';
 import './players/players.css';
@@ -17,7 +17,7 @@ import { initTooltips } from './view/tooltip.ts';
 import { createPlayerModal } from './view/playerModal.ts';
 import { createDiceRoll } from './view/diceRoll.ts';
 import './view/diceRoll.css';
-import { createMobileLayout } from './view/mobile.ts';
+import { createMobileLayout, isMobileLayout } from './view/mobile.ts';
 import { createAiPace, type AiPlan } from './view/aiPace.ts';
 import { initFullscreen } from './view/fullscreen.ts';
 import { initExit } from './view/exit.ts';
@@ -115,7 +115,10 @@ function render() {
   // Con la partida ya repartida no se cambia de jugadores: en su sitio, la ayuda de las fichas especiales.
   btnPicker.hidden = true;
   specialsInfo.hidden = false;
-  if (playing) renderTurnPanel(turnEl, game, turnCtx());
+  if (playing) {
+    renderTurnPanel(turnEl, game, turnCtx());
+    aiPace.summary(turnEl, game, !isMobileLayout() && !tutorial && !isWaiting(game) && !aiPace.replaying && aiPlan?.game !== game);
+  }
 
   const plan = aiPlan?.game === game ? aiPlan : null; // jugada que la IA está anunciando
   renderDecks(document.getElementById('decks')!, game, {
@@ -171,9 +174,16 @@ const aiPace = createAiPace({
   onPause: () => scheduleAi(),
   onReplay: (step) => {
     replayed = step;
+    if (step?.zone) revealZone(step.zone);
     render();
   },
 });
+
+/** Con el tablero ampliado, lo lleva hasta la zona de la jugada que se anuncia o se repasa (board.reveal). */
+function revealZone(zone: string) {
+  const { u, v } = zoneCenter(ZONES_BY_ID[zone]);
+  board.reveal(u, v);
+}
 
 const aiBlocked = () => cover.visible || picker.isOpen || diceRoll.isOpen || Boolean(tutorial?.blocking(game!)) || Boolean(document.querySelector('dialog[open]:not(#player-modal)'));
 
@@ -200,6 +210,7 @@ function runAi() {
     }
     if (!action) return void (aiStalled = true);
     aiPlan = aiPace.plan(game, action);
+    if (aiPlan.focus.zone) revealZone(aiPlan.focus.zone);
     if (aiPlan.due > performance.now()) return render(); // render() vuelve a programar runAi para cuando acabe
   }
   const { action } = aiPlan!; // segundo tiempo: jugarla
@@ -235,6 +246,7 @@ const turnKey = (g: Game) => [g.phase, whoseTurn(g), g.turn?.index, g.month, Boo
 
 /** Aplica una acción al motor; si no es válida, lo dice en el panel y deja la partida como estaba. */
 function dispatch(action: Action, { auto = false } = {}) {
+  if (!auto) aiPace.clearSummary();
   if (online) return void dispatchOnline(action);
   const before = game!;
   const refusal = !auto && tutorial?.refuse(game!, action);
