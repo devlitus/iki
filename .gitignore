@@ -5,3 +5,4 @@ dist/
 .env*
 .vercel/
 tests/golden/.check/
+.vercel

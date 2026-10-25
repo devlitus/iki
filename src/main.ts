@@ -336,12 +336,28 @@ async function playOnline(id: string) {
     render();
     pollTimer = setInterval(pollOnline, POLL_MS);
     if (game!.phase === 'ended') finalTable.open(game!);
+    else if (firstVisit(id)) diceRoll.show(game!);
   } catch (error) {
     cover.show(Boolean(game));
     toast.textContent = (error as Error).message;
     toast.hidden = false;
     setTimeout(() => { toast.hidden = true; }, 4000);
   }
+}
+
+const SEEN_KEY = 'iki.onlineDiceSeen';
+const SEEN_MAX = 50; // las partidas más recientes bastan: no hace falta recordarlas todas
+
+/** La primera vez que este navegador abre una partida en línea se enseña la tirada de dados; al volver, ya no. */
+function firstVisit(id: string) {
+  try {
+    const seen: string[] = JSON.parse(localStorage.getItem(SEEN_KEY) ?? '[]');
+    if (seen.includes(id)) return false;
+    localStorage.setItem(SEEN_KEY, JSON.stringify([...seen, id].slice(-SEEN_MAX)));
+  } catch {
+    // Sin almacenamiento: se enseña cada vez que se entra, mejor que nunca.
+  }
+  return true;
 }
 
 function leaveOnline() {
