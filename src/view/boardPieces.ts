@@ -1,4 +1,4 @@
-import { NAGAYAS_BY_ID, ZONES_BY_ID, fireTileImage, zoneCenter } from '../data/zones.ts';
+import { NAGAYAS_BY_ID, STREET, ZONES_BY_ID, fireTileImage, zoneCenter } from '../data/zones.ts';
 import { PLAYER_BOARDS_BY_ID } from '../data/playerBoards.ts';
 import { CHARACTERS_BY_ID } from '../data/characters.ts';
 import { BUILDINGS_BY_ID } from '../data/decks.ts';
@@ -7,7 +7,7 @@ import { createCharacterCard } from '../cards/card.ts';
 import type { Board } from '../board.ts';
 import type { Building, Character, Game, LogEntry, SeasonId, Target } from '../types.ts';
 
-type Put = (html: string, zoneId: string, steps: string | null, options?: { du?: number; dv?: number; title?: string }) => HTMLElement;
+type Put = (html: string, zoneId: string, steps: string | null, options?: { du?: number; dv?: number; title?: string; key?: string }) => HTMLElement;
 type Img = (src: string, cls: string, style?: string) => string;
 
 /**
@@ -22,6 +22,70 @@ const FIRE_FLIP_MS = 600;
  * se redibuja el tablero a mitad, la animación sigue por donde iba en vez de empezar otra vez.
  */
 let fireShown: { key: number | null | undefined; from: number; end: number; t0: number } = { key: null, from: -1, end: -1, t0: 0 };
+
+// --- Piezas que se mueven ------------------------------------------------------------------------
+// El tablero se redibuja entero a cada cambio. Las piezas con clave (peones, marcadores, cartas de los solares) recuerdan
+// dónde estaban: si la partida avanza y una cambia de sitio, se desliza desde el anterior (el Oyakata, casilla a casilla
+// por la calle); si aparece, entra con un pequeño salto. Si se redibuja a mitad, la animación sigue por donde iba.
+type UV = { u: number; v: number };
+type Glide = { frames: UV[]; t0: number; ms: number; pop: boolean };
+const GLIDE_MS = 600;
+const STREET_STEP_MS = 280;
+const POP_MS = 450;
+let lastPos = new Map<string, UV>(); // dónde quedó cada pieza en el último dibujo
+let lastZones = new Map<string, string>(); // y en qué zona
+const glides = new Map<string, Glide>(); // animaciones en curso
+let lastGame = { sig: '', seq: -1 }; // partida del último dibujo: solo se anima si es la misma y ha avanzado
+
+/** Casillas de la calle que pisa el Oyakata al ir de `from` a `to` (las dos incluidas), o null si no va por la calle. */
+function streetPath(from: string | undefined, to: string) {
+  const i = STREET.indexOf(from!), j = STREET.indexOf(to);
+  if (i < 0 || j < 0 || i === j) return null;
+  const path = [];
+  for (let k = i; k !== j; k = (k + 1) % STREET.length) path.push(STREET[k]);
+  return [...path, to];
+}
+
+function createMotion(game: Game) {
+  const sig = game.players.map((p) => p.boardId).join();
+  const advanced = sig === lastGame.sig && (game.logSeq ?? 0) > lastGame.seq;
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  lastGame = { sig, seq: game.logSeq ?? 0 };
+  const now = performance.now();
+  const seen = new Map<string, UV>();
+  const zoneOf = new Map<string, string>(); // última zona de cada pieza, para el camino del Oyakata
+  return {
+    /** Anima `el` (ya colocado en `pos`) si su pieza `key` se ha movido o acaba de aparecer. */
+    track(el: HTMLElement, key: string, pos: UV, zone?: string) {
+      seen.set(key, pos);
+      if (zone) zoneOf.set(key, zone);
+      if (still || typeof el.animate !== 'function') return;
+      const prev = lastPos.get(key);
+      let glide = glides.get(key);
+      if (advanced && prev && (prev.u !== pos.u || prev.v !== pos.v)) {
+        const street = key.startsWith('oyakata-') && zone ? streetPath(lastZones.get(key), zone) : null;
+        const frames = [prev, ...(street?.slice(1, -1).map((z) => zoneCenter(ZONES_BY_ID[z])) ?? []), pos];
+        glide = { frames, t0: now, ms: street ? Math.max(GLIDE_MS, STREET_STEP_MS * (street.length - 1)) : GLIDE_MS, pop: false };
+        glides.set(key, glide);
+      } else if (advanced && !prev && lastPos.size) {
+        glide = { frames: [pos], t0: now, ms: POP_MS, pop: true };
+        glides.set(key, glide);
+      }
+      if (!glide) return;
+      const end = glide.frames.at(-1)!;
+      if (now - glide.t0 >= glide.ms || end.u !== pos.u || end.v !== pos.v) return void glides.delete(key); // ya acabó o va a otro sitio
+      const anim = glide.pop
+        ? el.animate([{ opacity: 0, scale: '1.6' }, { opacity: 1, scale: '1' }], { duration: glide.ms, easing: 'cubic-bezier(0.3, 1.4, 0.5, 1)' })
+        : el.animate(glide.frames.map(({ u, v }) => ({ left: `${u * 100}%`, top: `${v * 100}%` })), { duration: glide.ms, easing: 'ease-in-out' });
+      anim.currentTime = now - glide.t0;
+    },
+    /** Al acabar de dibujar: lo visto pasa a ser «dónde estaba» para el siguiente dibujo. */
+    done() {
+      lastPos = seen;
+      lastZones = zoneOf;
+    },
+  };
+}
 
 /**
  * Solares que recorre el fuego en el incendio en curso o recién resuelto: del exterior hacia dentro, hasta el que lo
@@ -77,21 +141,24 @@ function placeFireTile(board: Board, game: Game, nagaya: string, put: Put, img: 
 export function renderBoardPieces(board: Board, game: Game, { targets = [], fireNagaya = null, current = null, destination = null, focus = null, focusPlayer = current }:
   { targets?: Target[]; fireNagaya?: string | null; current?: number | null; destination?: string | null; focus?: string | null; focusPlayer?: number | null } = {}) {
   board.pieces.replaceChildren();
+  const motion = createMotion(game);
   const boardId = (i: number) => game.players[i].boardId;
   const color = (i: number) => PLAYER_BOARDS_BY_ID[boardId(i)].color;
 
-  const put: Put = (html, zoneId, steps, { du = 0, dv = 0, title = '' } = {}) => {
+  const put: Put = (html, zoneId, steps, { du = 0, dv = 0, title = '', key } = {}) => {
     const { u, v } = zoneCenter(ZONES_BY_ID[zoneId]);
     const tpl = document.createElement('template');
     tpl.innerHTML = html.trim();
     const el = tpl.content.firstElementChild as HTMLElement;
     if (steps) el.dataset.steps = steps;
     if (title) el.title = title;
-    return board.place(el, u + du, v + dv);
+    board.place(el, u + du, v + dv);
+    if (key) motion.track(el, key, { u: u + du, v: v + dv }, zoneId);
+    return el;
   };
   const img: Img = (src, cls, style = '') => `<img class="${cls}" src="${src}" style="${style}" alt="" draggable="false">`;
 
-  put(img('/tokens/calendar.webp', 'piece piece-calendar'), `month-${game.month}`, '2', { title: `Mes ${game.month}` });
+  put(img('/tokens/calendar.webp', 'piece piece-calendar'), `month-${game.month}`, '2', { title: `Mes ${game.month}`, key: 'calendar' });
 
   // Mercado de la estación (paso 5): cada ficha conserva su hueco aunque se compre la de al lado.
   const market = (ids: string[], kind: 'fish' | 'pipe' | 'bag', slotOf: (i: number) => string) => ids.forEach((id) => {
@@ -121,14 +188,14 @@ export function renderBoardPieces(board: Board, game: Game, { targets = [], fire
     const k = stackAt(`score-${cell}`);
     const laps = Math.floor(player.iki / 30) * 30;
     put(`<div class="tok tok-score" style="${style}">${laps ? `+${laps}` : ''}</div>`, `score-${cell}`, '12',
-      { du: [-0.012, 0.012, -0.022, 0.022][k], dv: k < 2 ? -0.012 : 0.008, title: `${player.iki} IKI` });
+      { du: [-0.012, 0.012, -0.022, 0.022][k], dv: k < 2 ? -0.012 : 0.008, title: `${player.iki} IKI`, key: `score-${pi}` });
   });
   // Pila de Extinción: la ficha de arriba de cada casilla se dibuja más arriba y por encima.
   const levels: Record<number, number[]> = {};
   game.fireStack.forEach((pi) => (levels[game.players[pi].fire] ??= []).push(pi));
   Object.entries(levels).forEach(([level, stack]) => stack.forEach((pi, k) =>
     put(img(`/tokens/fire-marker/${boardId(pi)}.webp`, 'piece piece-fire', `z-index:${10 - k}`), `fire-${level}`, '11',
-      { dv: (k - (stack.length - 1) / 2) * 0.009, title: `Extinción ${level} · ${game.fireStack.indexOf(pi) + 1}.ª de la pila` })));
+      { dv: (k - (stack.length - 1) / 2) * 0.009, title: `Extinción ${level} · ${game.fireStack.indexOf(pi) + 1}.ª de la pila`, key: `fire-${pi}` })));
 
   // Peones: Oyakata en la calle (o en la zona inicial) e Ikizama en el marcador de turno.
   game.players.forEach((player, pi) => {
@@ -136,9 +203,9 @@ export function renderBoardPieces(board: Board, game: Game, { targets = [], fire
       const k = stackAt(`oyakata-${player.oyakata}`);
       const mark = pi === current ? ' current' : '';
       put(img(`/pawns/oyakata-${boardId(pi)}.webp`, `piece piece-oyakata${mark}`, `z-index:${5 + k}${mark ? `;--player-color:${color(pi)}` : ''}`), player.oyakata, '10',
-        { du: k * 0.008, dv: k * -0.002, title: `Oyakata de ${PLAYER_BOARDS_BY_ID[boardId(pi)].name}${mark ? ' (juega ahora)' : ''}` });
+        { du: k * 0.008, dv: k * -0.002, title: `Oyakata de ${PLAYER_BOARDS_BY_ID[boardId(pi)].name}${mark ? ' (juega ahora)' : ''}`, key: `oyakata-${pi}` });
     }
-    if (player.ikizama) put(img(`/pawns/ikizama-${boardId(pi)}.webp`, 'piece piece-ikizama'), `turn-${player.ikizama}`, null, { title: 'Ikizama' });
+    if (player.ikizama) put(img(`/pawns/ikizama-${boardId(pi)}.webp`, 'piece piece-ikizama'), `turn-${player.ikizama}`, null, { title: 'Ikizama', key: `ikizama-${pi}` });
   });
 
   // Cartas en los solares, cada una con el Kobun de su dueño (en el espacio de experiencia que le toca).
@@ -162,8 +229,10 @@ export function renderBoardPieces(board: Board, game: Game, { targets = [], fire
     card.append(kobun);
     const { u, v } = zoneCenter(zone);
     board.place(card, u, v);
+    motion.track(card, `card-${lot.card}`, { u, v });
   }
 
+  motion.done();
   if (fireNagaya) placeFireTile(board, game, fireNagaya, put, img);
 
   // Destino del movimiento que se está eligiendo (solo se mira: se confirma desde el panel).

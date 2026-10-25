@@ -1,6 +1,8 @@
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 5;
 const FIT_MARGIN = 8;
+const REVEAL_MARGIN = 0.2; // fracción de la vista, por cada lado, en la que una zona ya se ve bien
+const REVEAL_MS = 450;
 
 /**
  * Tablero 2D: encaja la imagen en la ventana, permite zoom (rueda / pellizco) y desplazamiento,
@@ -19,6 +21,7 @@ export async function createBoard({ viewport, board, image, pieces }: {
   let zoom = 1;
   let tx = 0;
   let ty = 0;
+  let revealFrame = 0; // desplazamiento suave en curso (reveal)
 
   function apply() {
     board.style.transform = `translate(${tx}px, ${ty}px) scale(${zoom})`;
@@ -26,6 +29,7 @@ export async function createBoard({ viewport, board, image, pieces }: {
 
   /** Ajusta el tablero al tamaño de la ventana y lo centra sin zoom. */
   function fit() {
+    cancelAnimationFrame(revealFrame);
     const vw = viewport.clientWidth - FIT_MARGIN * 2;
     const vh = viewport.clientHeight - FIT_MARGIN * 2;
     const w = Math.min(vw, vh * aspect);
@@ -51,6 +55,7 @@ export async function createBoard({ viewport, board, image, pieces }: {
 
   viewport.addEventListener('wheel', (e) => {
     e.preventDefault();
+    cancelAnimationFrame(revealFrame);
     zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.0015));
   }, { passive: false });
 
@@ -60,6 +65,7 @@ export async function createBoard({ viewport, board, image, pieces }: {
 
   viewport.addEventListener('pointerdown', (e) => {
     if (e.altKey || e.button !== 0) return;
+    cancelAnimationFrame(revealFrame); // quien arrastra manda
     viewport.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     viewport.classList.add('dragging');
@@ -110,8 +116,41 @@ export async function createBoard({ viewport, board, image, pieces }: {
     return el;
   }
 
+  /**
+   * Con el tablero ampliado, si el punto (u, v) cae fuera de la parte central de la vista, desplaza el tablero (sin
+   * cambiar el zoom) hasta centrarlo: así se ve lo que hace la IA. Sin zoom ya se ve todo y no hace nada; tampoco si
+   * se está arrastrando o pellizcando.
+   */
+  function reveal(u: number, v: number) {
+    if (zoom === MIN_ZOOM || pointers.size) return;
+    const w = board.offsetWidth * zoom;
+    const h = board.offsetHeight * zoom;
+    const vw = viewport.clientWidth;
+    const vh = viewport.clientHeight;
+    const x = tx + u * w;
+    const y = ty + v * h;
+    if (x >= vw * REVEAL_MARGIN && x <= vw * (1 - REVEAL_MARGIN) && y >= vh * REVEAL_MARGIN && y <= vh * (1 - REVEAL_MARGIN)) return;
+    const from = { x: tx, y: ty };
+    const to = { x: vw / 2 - u * w, y: vh / 2 - v * h };
+    cancelAnimationFrame(revealFrame);
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      ({ x: tx, y: ty } = to);
+      return apply();
+    }
+    const t0 = performance.now();
+    const step = (t: number) => {
+      const k = Math.min(1, (t - t0) / REVEAL_MS);
+      const ease = 1 - (1 - k) ** 3;
+      tx = from.x + (to.x - from.x) * ease;
+      ty = from.y + (to.y - from.y) * ease;
+      apply();
+      if (k < 1) revealFrame = requestAnimationFrame(step);
+    };
+    revealFrame = requestAnimationFrame(step);
+  }
+
   fit();
-  return { fit, zoomAt, clientToUV, place, pieces };
+  return { fit, zoomAt, clientToUV, place, reveal, pieces };
 }
 
 export type Board = Awaited<ReturnType<typeof createBoard>>;
