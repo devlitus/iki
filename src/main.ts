@@ -18,6 +18,7 @@ import { createPlayerModal } from './view/playerModal.ts';
 import { createDiceRoll } from './view/diceRoll.ts';
 import './view/diceRoll.css';
 import { createMobileLayout } from './view/mobile.ts';
+import { createAiPace, type AiPlan } from './view/aiPace.ts';
 import { initFullscreen } from './view/fullscreen.ts';
 import { initExit } from './view/exit.ts';
 import { createTutorial } from './tutorial/tutorial.ts';
@@ -116,9 +117,10 @@ function render() {
   specialsInfo.hidden = false;
   if (playing) renderTurnPanel(turnEl, game, turnCtx());
 
+  const plan = aiPlan?.game === game ? aiPlan : null; // jugada que la IA está anunciando
   renderDecks(document.getElementById('decks')!, game, {
-    selectedCard, onSelectCard: (id) => { selectedCard = id; render(); },
-    hireable: hireableCards(game), hiring: ui.hire, onSelectHire: (card) => set({ hire: card, building: null }),
+    selectedCard: plan?.focus.initial ? plan.focus.card : selectedCard, onSelectCard: (id) => { selectedCard = id; render(); },
+    hireable: hireableCards(game), hiring: plan && !plan.focus.initial ? plan.focus.card : ui.hire, onSelectHire: (card) => set({ hire: card, building: null }),
   });
   renderBanner();
   renderSupply(document.getElementById('supply')!, game);
@@ -126,7 +128,8 @@ function render() {
   playerModal.update(game);
   const fireNagaya = game.event?.kind === 'fire' ? game.event.nagaya : fireTileShown;
   const current = playing && game.phase !== 'ended' ? whoseTurn(game) : null;
-  renderBoardPieces(board, game, { targets: targets(), fireNagaya, current, destination: moveDestination(game, ui) });
+  renderBoardPieces(board, game, { targets: targets(), fireNagaya, current, destination: moveDestination(game, ui),
+    focus: plan ? plan.focus.zone : replayed?.zone, focusPlayer: plan ? current : replayed?.player });
   tutorial?.update(game);
   if (tutorial) mobile.reveal(document.getElementById('coach')!.textContent!);
   mobile.update(game, { selectedCard, tutorialFocus: Boolean(tutorial) });
@@ -152,18 +155,35 @@ function renderBanner() {
 }
 
 // --- Jugadores de IA ---------------------------------------------------------------------------
-// Cuando le toca a una IA, tras una pausa (para que se vea lo que hace) elige y juega su acción. Espera mientras haya
-// un diálogo abierto (resumen del Evento, tabla final), la portada o el selector de tableros.
-const AI_DELAY = 700;
+// Cuando le toca a una IA, tras una pausa elige su acción y la anuncia (se ilumina lo que va a usar y la franja de
+// arriba dice qué hace); al acabar el anuncio la juega. El ritmo, la pausa y el «Siguiente» están en view/aiPace.ts.
+// Espera mientras haya un diálogo abierto (resumen del Evento, tabla final), la portada o el selector de tableros.
 const AI_RETRY = 400;
 let aiTimer: ReturnType<typeof setTimeout> | null = null;
 let aiStalled = false; // la IA falló: no reintenta hasta que la partida cambie por otro lado
+let aiPlan: AiPlan | null = null; // jugada elegida y anunciada, a la espera de aplicarse
+let replayed: { zone: string | null; player: number } | null = null; // en línea: jugada de la IA que se está repasando
+const aiPace = createAiPace({
+  onSkip: () => {
+    if (aiPlan?.game === game) aiPlan!.due = 0;
+    scheduleAi(0);
+  },
+  onPause: () => scheduleAi(),
+  onReplay: (step) => {
+    replayed = step;
+    render();
+  },
+});
 
 const aiBlocked = () => cover.visible || picker.isOpen || diceRoll.isOpen || Boolean(tutorial?.blocking(game!)) || Boolean(document.querySelector('dialog[open]:not(#player-modal)'));
 
-function scheduleAi(delay = AI_DELAY) {
+function scheduleAi(delay = aiPace.think()) {
   clearTimeout(aiTimer as ReturnType<typeof setTimeout>);
-  aiTimer = game && !online && !aiStalled && isAiTurn(game) ? setTimeout(runAi, delay) : null; // en línea las IA juegan en el servidor
+  const aiTurn = Boolean(game && !online && !aiStalled && isAiTurn(game)); // en línea las IA juegan en el servidor
+  aiPace.update(game, aiTurn);
+  // Con una jugada anunciada, se aplica cuando acabe su anuncio (aunque se haya redibujado entretanto).
+  if (aiPlan?.game === game) delay = Math.max(0, aiPlan!.due - performance.now());
+  aiTimer = aiTurn && !aiPace.paused ? setTimeout(runAi, delay) : null;
 }
 
 function runAi() {
@@ -171,16 +191,24 @@ function runAi() {
   if (!game || !isAiTurn(game)) return;
   if (aiBlocked()) return scheduleAi(AI_RETRY);
   const before = game;
-  try {
-    const action = chooseAction(game);
-    if (action) dispatch(action, { auto: true });
-  } catch (error) {
-    console.error('La IA no ha podido elegir jugada', error);
+  if (aiPlan?.game !== game) { // primer tiempo: elegir la jugada y anunciarla
+    let action: Action | null = null;
+    try {
+      action = chooseAction(game);
+    } catch (error) {
+      console.error('La IA no ha podido elegir jugada', error);
+    }
+    if (!action) return void (aiStalled = true);
+    aiPlan = aiPace.plan(game, action);
+    if (aiPlan.due > performance.now()) return render(); // render() vuelve a programar runAi para cuando acabe
   }
+  const { action } = aiPlan!; // segundo tiempo: jugarla
+  aiPlan = null;
+  dispatch(action, { auto: true });
   if (game === before) {
     aiStalled = true;
     clearTimeout(aiTimer as unknown as number); // dispatch() puede haber programado otro turno
-  }
+  } else if (aiTimer) scheduleAi(aiPace.think(before, game!));
 }
 
 /** Zonas del tablero que se pueden pulsar: los solares exteriores en el paso 13 y, en juego, lo que pida el turno. */
@@ -319,6 +347,7 @@ function showOnlineChange(before: Game | null) {
   ui = {};
   render();
   if (before) announce(before);
+  if (before && game!.players.some((p) => p.ai)) aiPace.replay(before, game!); // solo las partidas con IA
   showEvent(before!);
   if (game!.phase === 'ended' && before!.phase !== 'ended') finalTable.open(game!);
 }
@@ -364,6 +393,7 @@ function firstVisit(id: string) {
 }
 
 function leaveOnline() {
+  aiPace.stopReplay();
   clearInterval(pollTimer as ReturnType<typeof setInterval>);
   pollTimer = null;
   online = null;
