@@ -6,6 +6,18 @@ Versión web del juego de mesa **IKI** (3-4 jugadores): local en la misma pantal
 en línea con ranking. El código, los comentarios, la interfaz y los documentos están en español; los commits, en inglés
 (`fix: …`, `feat: …`, `chore: …`), cada cambio en una rama `feature/…` o `fix/…` fusionada en `main` con `--no-ff`.
 
+## Al empezar un encargo nuevo
+
+1. **Ramas huérfanas.** Comprobar que no queda ninguna rama sin fusionar en `main` (`git branch --no-merged main` y
+   `git branch -r --no-merged main`). Si queda alguna, lo primero es fusionarla, pero solo después de verificar de forma
+   determinista que no se rompe nada: `pnpm typecheck`, `pnpm test` y `pnpm golden:check` con todos los escenarios
+   idénticos. Si `golden:check` difiere, averiguar por qué antes de volver a grabar: solo se graba de nuevo si el cambio
+   de comportamiento es el pretendido y se reproduce igual en cada ejecución.
+2. **Plan.** Escribir el plan del encargo en `docs/plan-<tema>.md` (objetivo, decisiones, pasos y cómo se verifica) antes
+   de tocar el código, e ir marcando en él lo hecho y lo pendiente.
+3. **Rama.** Crear una rama nueva (`feature/…`, `fix/…`, `docs/…`) para cada encargo, salvo que el encargo esté
+   relacionado con la rama en la que ya se está trabajando: entonces se sigue en esa.
+
 ## Comandos
 
 ```sh
