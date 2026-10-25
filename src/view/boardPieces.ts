@@ -71,10 +71,11 @@ function placeFireTile(board: Board, game: Game, nagaya: string, put: Put, img: 
 
 /**
  * `fireNagaya`: Nagaya cuya loseta de Incendio está boca arriba en el tablero (el incendio en curso o recién contado).
- * `current`: jugador de turno, cuyo Oyakata se resalta; `destination`: casilla a la que llegaría con el movimiento elegido.
+ * `current`: jugador de turno, cuyo Oyakata se resalta; `destination`: casilla a la que llegaría con el movimiento elegido;
+ * `focus`: zona de la jugada que la IA está anunciando o repasando (view/aiPace.ts), con el color de `focusPlayer`.
  */
-export function renderBoardPieces(board: Board, game: Game, { targets = [], fireNagaya = null, current = null, destination = null }:
-  { targets?: Target[]; fireNagaya?: string | null; current?: number | null; destination?: string | null } = {}) {
+export function renderBoardPieces(board: Board, game: Game, { targets = [], fireNagaya = null, current = null, destination = null, focus = null, focusPlayer = current }:
+  { targets?: Target[]; fireNagaya?: string | null; current?: number | null; destination?: string | null; focus?: string | null; focusPlayer?: number | null } = {}) {
   board.pieces.replaceChildren();
   const boardId = (i: number) => game.players[i].boardId;
   const color = (i: number) => PLAYER_BOARDS_BY_ID[boardId(i)].color;
@@ -174,6 +175,25 @@ export function renderBoardPieces(board: Board, game: Game, { targets = [], fire
     mark.style.width = `${zone.w! * 100}%`;
     mark.style.height = `${zone.h! * 100}%`;
     if (current != null) mark.style.setProperty('--player-color', color(current));
+    const { u, v } = zoneCenter(zone);
+    board.place(mark, u, v);
+  }
+
+  // Jugada que anuncia la IA: la zona se ilumina con su color antes de que se aplique.
+  if (focus && ZONES_BY_ID[focus]) {
+    const zone = ZONES_BY_ID[focus];
+    const mark = document.createElement('div');
+    mark.className = 'zone-mark ai-focus';
+    mark.setAttribute('aria-hidden', 'true');
+    if (zone.kind === 'rect') {
+      mark.style.width = `${zone.w! * 100}%`;
+      mark.style.height = `${zone.h! * 100}%`;
+    } else {
+      mark.style.width = `${zone.r! * 200}%`;
+      mark.style.aspectRatio = '1';
+      mark.style.borderRadius = '50%';
+    }
+    if (focusPlayer != null) mark.style.setProperty('--player-color', color(focusPlayer));
     const { u, v } = zoneCenter(zone);
     board.place(mark, u, v);
   }
