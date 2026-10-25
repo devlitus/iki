@@ -336,7 +336,7 @@ async function playOnline(id: string) {
     render();
     pollTimer = setInterval(pollOnline, POLL_MS);
     if (game!.phase === 'ended') finalTable.open(game!);
-    else if (firstVisit(id)) diceRoll.show(game!);
+    else if (game!.phase === 'initial-characters' && firstVisit(id)) diceRoll.show(game!); // continuar una partida no repite los dados
   } catch (error) {
     cover.show(Boolean(game));
     toast.textContent = (error as Error).message;
@@ -348,7 +348,10 @@ async function playOnline(id: string) {
 const SEEN_KEY = 'iki.onlineDiceSeen';
 const SEEN_MAX = 50; // las partidas más recientes bastan: no hace falta recordarlas todas
 
-/** La primera vez que este navegador abre una partida en línea se enseña la tirada de dados; al volver, ya no. */
+/**
+ * La primera vez que este navegador abre una partida en línea recién empezada se enseña la tirada de dados; al volver, ya
+ * no. Recién empezada es mientras se eligen personajes iniciales: esa fase no acaba sin que elijan todas las personas.
+ */
 function firstVisit(id: string) {
   try {
     const seen: string[] = JSON.parse(localStorage.getItem(SEEN_KEY) ?? '[]');
