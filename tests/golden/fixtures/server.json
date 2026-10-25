@@ -13,7 +13,7 @@
 "POST /login {\"name\":\"dani\",\"password\":\"mala-contraseña\"} → 401  {\"error\":\"Nombre o contraseña incorrectos\"}",
 "POST /login {\"name\":\"dani\",\"password\":\"mala-contraseña\"} → 401  {\"error\":\"Nombre o contraseña incorrectos\"}",
 "POST /login {\"name\":\"dani\",\"password\":\"mala-contraseña\"} → 401  {\"error\":\"Nombre o contraseña incorrectos\"}",
-"POST /login {\"name\":\"dani\",\"password\":\"mala-contraseña\"} → 429  {\"error\":\"Demasiados intentos fallidos: espera unos minutos\"}",
+"POST /login {\"name\":\"dani\",\"password\":\"mala-contraseña\"} → 401  {\"error\":\"Nombre o contraseña incorrectos\"}",
 "POST /login {\"name\":\"nadie\",\"password\":\"contraseña-larga\"} → 401  {\"error\":\"Nombre o contraseña incorrectos\"}",
 "POST /login {\"name\":\"dani\",\"password\":\"contraseña-larga\"} → 200 iki_session=4.1.1794824160.GEyexdiAV_QBmDcUJWUAagQwV5m4gFqVY0aqvVFPME0; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000 {\"user\":{\"id\":4,\"name\":\"dani\",\"rating\":1000,\"games\":0,\"wins\":0}}",
 "POST /logout {} → 200 iki_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0 {\"ok\":true}",
